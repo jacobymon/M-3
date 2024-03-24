@@ -3,7 +3,7 @@ class Song:
 
     def __init__(self,uri, s_len, name, album):
         """
-        constructs a song object
+        creates a song object
 
         @param uri: uri of the submitted song
 
@@ -13,5 +13,13 @@ class Song:
 
         @param album: the album of the song
 
-        """ 
+        """
+
+        # self.uri = uri
+        # self.s_len = s_len
+        # self.name = name
+        # self.album = album
+ 
+
+
 
