@@ -1,6 +1,10 @@
 import logo from './logo.svg';
 import './App.css';
 
+/** The main app of the thing
+ * 
+ * @returns Nothing but does stuff
+ */
 function App() {
   return (
     <div className="App">
