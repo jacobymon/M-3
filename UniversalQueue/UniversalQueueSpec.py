@@ -14,7 +14,9 @@ class UniversalQueue:
 
     def insert(self, song): 
         """
-        inserts a song into the queue and calls update_UI()
+        When queue not suspended
+        inserts a song into the queue with a unique id using the song classes set_id() method
+        and calls update_UI()
 
         @param song: a song object that contains all of the attributes needed
         to display info to UI and playback
@@ -22,11 +24,18 @@ class UniversalQueue:
 
     def flush_queue(self):
         """
-        Goes through queue and plays songs, updating display queue
+        Goes through queue and plays songs and allows for pausing as well. It updates display queue
         as necessary by calling update_UI()
 
         """
     
+    def pause_queue(self):
+        """
+        allows us to pause the queu and play the queue.
+
+        @return bool: true when queue is paused, false when queue is unpaused
+        """
+
     def update_ui(self):
         """
         Sends the current state of the queue to the UI for all users
@@ -38,6 +47,7 @@ class UniversalQueue:
         """
         allows a specific user to request the current state of the queue to be displayed for them
         (ie when they first click on to the website link)
+        throw a 400 bad request error if the queue can't be sent
         
         @return: the current state of the queue to the specific user
         """
@@ -46,6 +56,8 @@ class UniversalQueue:
         """
         a privileged host-only function that removes songs from queue.
         removing the current song goes to the next song.
+
+        Throw a 409 Conflict error when the song we want to remove is not in the Universal queue
 
         calls update_ui
 
@@ -61,21 +73,18 @@ class UniversalQueue:
         false when the queue is accepting requests.
         
         """
-
-
-    def insert_into_queue(self, index, song): 
-        """
-        Privileged host-only function that inserts song object into an index of the queue
-
-        @param index: index to insert song object into
-
-        @param song: song object
-        """
     
     def cookie_verifier(cookie):
         """
-        verifies that the privileged functions are being called by the host
+         verifies that the privileged functions are being called by the host.
+        throw error when return is false.
+        
+        If the cookie is actually the hosts
+        and this is false we log the error and shut down. (Our host is not recognized as the host anymore!).
+        ***Not sure how we would know this though
 
         @param cookie: cookie that is being checked to be the hosts, created in startup component
+
+        @return Bool: True when the cookie matches the host's else and error
         """
         

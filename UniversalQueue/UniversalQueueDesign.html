@@ -8,9 +8,17 @@
 <td valign=bottom>&nbsp;<br>
 <font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong>UniversalQueueDesign</strong></big></big></font></td
 ><td align=right valign=bottom
-><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/Users/jacobylockman/Documents/M%5E3/UniversalQueueDesign.py">/Users/jacobylockman/Documents/M^3/UniversalQueueDesign.py</a></font></td></tr></table>
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/Users/jacobylockman/Documents/M%5E3/UniversalQueue/UniversalQueueDesign.py">/Users/jacobylockman/Documents/M^3/UniversalQueue/UniversalQueueDesign.py</a></font></td></tr></table>
     <p><tt>This&nbsp;module&nbsp;implements&nbsp;the&nbsp;Universal&nbsp;Queue&nbsp;class</tt></p>
 <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="logging.html">logging</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
 <td colspan=3 valign=bottom>&nbsp;<br>
@@ -42,30 +50,47 @@ intializes&nbsp;a&nbsp;queue&nbsp;<a href="builtins.html#object">object</a>&nbsp
 initializes&nbsp;an&nbsp;instance&nbsp;of&nbsp;the&nbsp;spotify&nbsp;interface&nbsp;class<br>
 in&nbsp;order&nbsp;to&nbsp;interact&nbsp;with&nbsp;song&nbsp;playback<br>
 &nbsp;<br>
-@attribute&nbsp;suspend_toggle:&nbsp;a&nbsp;boolean&nbsp;value&nbsp;where&nbsp;true<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;suspends&nbsp;the&nbsp;queue&nbsp;from&nbsp;song&nbsp;requests<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and&nbsp;false&nbsp;allows</tt></dd></dl>
-
-<dl><dt><a name="UniversalQueue-cookie_verifier"><strong>cookie_verifier</strong></a>(cookie)</dt><dd><tt>verifies&nbsp;that&nbsp;the&nbsp;privileged&nbsp;functions&nbsp;are&nbsp;being&nbsp;called&nbsp;by&nbsp;the&nbsp;host<br>
+@attribute&nbsp;suspend_toggle:&nbsp;a&nbsp;boolean&nbsp;value&nbsp;where&nbsp;true&nbsp;suspends&nbsp;the<br>
+queue&nbsp;from&nbsp;song&nbsp;requests&nbsp;and&nbsp;false&nbsp;allows<br>
 &nbsp;<br>
-@param&nbsp;cookie:&nbsp;cookie&nbsp;that&nbsp;is&nbsp;being&nbsp;checked&nbsp;to&nbsp;be&nbsp;the&nbsp;hosts,&nbsp;created&nbsp;in&nbsp;startup&nbsp;component</tt></dd></dl>
+@attribute&nbsp;pause_toggle:&nbsp;a&nbsp;boolean&nbsp;value&nbsp;where&nbsp;true&nbsp;indicates&nbsp;pausing,&nbsp;false&nbsp;is&nbsp;playing</tt></dd></dl>
 
-<dl><dt><a name="UniversalQueue-flush_queue"><strong>flush_queue</strong></a>(self)</dt><dd><tt>Goes&nbsp;through&nbsp;queue&nbsp;and&nbsp;plays&nbsp;songs,&nbsp;updating&nbsp;display&nbsp;queue<br>
+<dl><dt><a name="UniversalQueue-clear_queue"><strong>clear_queue</strong></a>(self)</dt><dd><tt>privileged&nbsp;host-only&nbsp;function<br>
+&nbsp;<br>
+sets&nbsp;the&nbsp;queue&nbsp;back&nbsp;to&nbsp;an&nbsp;empty&nbsp;list</tt></dd></dl>
+
+<dl><dt><a name="UniversalQueue-cookie_verifier"><strong>cookie_verifier</strong></a>(cookie)</dt><dd><tt>verifies&nbsp;that&nbsp;the&nbsp;privileged&nbsp;functions&nbsp;are&nbsp;being&nbsp;called&nbsp;by&nbsp;the&nbsp;host.<br>
+throw&nbsp;error&nbsp;when&nbsp;return&nbsp;is&nbsp;false.<br>
+&nbsp;<br>
+If&nbsp;the&nbsp;cookie&nbsp;is&nbsp;actually&nbsp;the&nbsp;hosts<br>
+and&nbsp;this&nbsp;is&nbsp;false&nbsp;we&nbsp;log&nbsp;the&nbsp;error&nbsp;and&nbsp;shut&nbsp;down.&nbsp;(Our&nbsp;host&nbsp;is&nbsp;not&nbsp;recognized&nbsp;as&nbsp;the&nbsp;host&nbsp;anymore!).<br>
+***Not&nbsp;sure&nbsp;how&nbsp;we&nbsp;would&nbsp;know&nbsp;this&nbsp;though<br>
+&nbsp;<br>
+@param&nbsp;cookie:&nbsp;cookie&nbsp;that&nbsp;is&nbsp;being&nbsp;checked&nbsp;to&nbsp;be&nbsp;the&nbsp;hosts,&nbsp;created&nbsp;in&nbsp;startup&nbsp;component<br>
+&nbsp;<br>
+@return&nbsp;Bool:&nbsp;True&nbsp;when&nbsp;the&nbsp;cookie&nbsp;matches&nbsp;the&nbsp;host's&nbsp;else&nbsp;and&nbsp;error</tt></dd></dl>
+
+<dl><dt><a name="UniversalQueue-flush_queue"><strong>flush_queue</strong></a>(self)</dt><dd><tt>Goes&nbsp;through&nbsp;queue&nbsp;and&nbsp;plays&nbsp;songs&nbsp;or&nbsp;pauses,&nbsp;updating&nbsp;display&nbsp;queue<br>
 as&nbsp;necessary&nbsp;by&nbsp;calling&nbsp;update_UI()</tt></dd></dl>
 
-<dl><dt><a name="UniversalQueue-insert"><strong>insert</strong></a>(self, song)</dt><dd><tt>inserts&nbsp;a&nbsp;song&nbsp;into&nbsp;the&nbsp;queue&nbsp;and&nbsp;calls&nbsp;update_UI()<br>
+<dl><dt><a name="UniversalQueue-insert"><strong>insert</strong></a>(self, song)</dt><dd><tt>When&nbsp;queue&nbsp;is&nbsp;not&nbsp;upsended<br>
+inserts&nbsp;a&nbsp;song&nbsp;into&nbsp;the&nbsp;queue&nbsp;and&nbsp;calls&nbsp;update_UI()<br>
 &nbsp;<br>
 @param&nbsp;song:&nbsp;a&nbsp;song&nbsp;<a href="builtins.html#object">object</a>&nbsp;that&nbsp;contains&nbsp;all&nbsp;of&nbsp;the&nbsp;attributes&nbsp;needed<br>
 to&nbsp;display&nbsp;info&nbsp;to&nbsp;UI&nbsp;and&nbsp;playback,&nbsp;passed&nbsp;in&nbsp;from&nbsp;the&nbsp;UI</tt></dd></dl>
 
-<dl><dt><a name="UniversalQueue-insert_into_queue"><strong>insert_into_queue</strong></a>(self, index, song)</dt><dd><tt>Privileged&nbsp;host-only&nbsp;function&nbsp;that&nbsp;inserts&nbsp;song&nbsp;<a href="builtins.html#object">object</a>&nbsp;into&nbsp;an&nbsp;index&nbsp;of&nbsp;the&nbsp;queue<br>
+<dl><dt><a name="UniversalQueue-pause_queue"><strong>pause_queue</strong></a>(self)</dt><dd><tt>allows&nbsp;us&nbsp;to&nbsp;pause&nbsp;the&nbsp;queu&nbsp;and&nbsp;play&nbsp;the&nbsp;queue.<br>
 &nbsp;<br>
-@param&nbsp;index:&nbsp;index&nbsp;to&nbsp;insert&nbsp;song&nbsp;<a href="builtins.html#object">object</a>&nbsp;into<br>
-&nbsp;<br>
-@param&nbsp;song:&nbsp;song&nbsp;<a href="builtins.html#object">object</a></tt></dd></dl>
+@return&nbsp;bool:&nbsp;true&nbsp;when&nbsp;queue&nbsp;is&nbsp;paused,&nbsp;false&nbsp;when&nbsp;queue&nbsp;is&nbsp;unpaused</tt></dd></dl>
 
-<dl><dt><a name="UniversalQueue-remove_from_queue"><strong>remove_from_queue</strong></a>(self, index)</dt><dd><tt>a&nbsp;privileged&nbsp;host-only&nbsp;function&nbsp;that&nbsp;removes&nbsp;songs&nbsp;from&nbsp;queue.<br>
+<dl><dt><a name="UniversalQueue-recover"><strong>recover</strong></a>(self, file)</dt><dd><tt>recovers&nbsp;the&nbsp;current&nbsp;state&nbsp;of&nbsp;the&nbsp;queue.&nbsp;in&nbsp;case&nbsp;of&nbsp;a&nbsp;system&nbsp;crash.<br>
+&nbsp;<br>
+@param&nbsp;file:&nbsp;the&nbsp;file&nbsp;we&nbsp;are&nbsp;reading&nbsp;from&nbsp;(same&nbsp;file&nbsp;as&nbsp;the&nbsp;one&nbsp;we&nbsp;wrote&nbsp;to)</tt></dd></dl>
+
+<dl><dt><a name="UniversalQueue-remove_from_queue"><strong>remove_from_queue</strong></a>(self, id)</dt><dd><tt>&nbsp;a&nbsp;privileged&nbsp;host-only&nbsp;function&nbsp;that&nbsp;removes&nbsp;songs&nbsp;from&nbsp;queue.<br>
 removing&nbsp;the&nbsp;current&nbsp;song&nbsp;goes&nbsp;to&nbsp;the&nbsp;next&nbsp;song.<br>
+&nbsp;<br>
+Throw&nbsp;exception&nbsp;when&nbsp;the&nbsp;song&nbsp;we&nbsp;want&nbsp;to&nbsp;remove&nbsp;is&nbsp;not&nbsp;in&nbsp;the&nbsp;Universal&nbsp;queue<br>
 &nbsp;<br>
 calls&nbsp;update_ui<br>
 &nbsp;<br>
