@@ -1,5 +1,7 @@
+
 import logo from './logo.svg';
 import './App.css';
+// import MyComponent from './components/MyComponent';
 
 /** The main app of the thing
  * 
@@ -21,6 +23,7 @@ function App() {
         >
           Learn React
         </a>
+        {/* <MyComponent/> */}
       </header>
     </div>
   );
