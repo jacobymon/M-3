@@ -1,0 +1,6 @@
+# Ignore credentials
+*.yaml
+*.config
+*.txt
+__pycache__/
+
