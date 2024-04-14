@@ -69,8 +69,9 @@ class UniversalQueue:
 
     def update_ui(self):
         """
-        Sends the current state of the queue to the UI for all users
-        to be displayed on their front end
+        Sends the current state of the queue to the UI for all users. It will handle requests from users
+        with long polling and will be called after any change is made to the queue. This is due
+        axios only being able to send requests to the back end.
         
 
         @return the current state of the queue to all users
@@ -84,9 +85,7 @@ class UniversalQueue:
         """
         allows a specific user to request the current state of the queue to be displayed for them
         (ie when they first click on to the website link)
-
-        @param: the user that called the function, passed in from
-        front end
+        throw a 400 bad request error if the queue can't be sent
         
         @return: the current state of the queue to the specific user
         """
