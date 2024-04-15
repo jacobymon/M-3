@@ -8,14 +8,17 @@ class TestUniQueue(unittest.TestCase):
 
     def test_init(self):
 
-        self.assertEqual(self.queue, [])
+        self.assertEqual(self.queue.data, [])
 
-        self.assertFalse(self.suspend_toggle)
+        self.assertFalse(self.queue.suspend_toggle)
 
-        self.assertFalse(self.pause_toggle)
-        
+        self.assertFalse(self.queue.pause_toggle)
 
 
         #IMPORTANT this is a place holder for checking if we have a real instance
         #of the spotify interface class, not a mocl
+
+
+if __name__ == "__main__":
+    unittest.main()
         

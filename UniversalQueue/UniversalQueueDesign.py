@@ -9,7 +9,7 @@ class UniversalQueue:
     Stores all of the song requests in a queue order
     """
 
-    def __init__(self) -> list:
+    def __init__(self):
         """
             creates a Universal Queue object
             intializes a queue object as an empty list
@@ -21,10 +21,13 @@ class UniversalQueue:
 
             @attribute pause_toggle: a boolean value where true indicates pausing, false is playing                                      
         """
-        
-        #self.data = []
-        #self.spotify = Spotify_Interface_Class()
-        #self.suspend_toggle = False
+        self.data = []
+
+        #PSUEDO CODE FOR NOW UNTIL MOCK COMES: self.spotify = Spotify_Interface_Class()
+
+        self.suspend_toggle = False
+
+        self.pause_toggle = False
 
     def insert(self, song): 
         """
