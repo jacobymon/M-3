@@ -1,13 +1,12 @@
-[
+
+{
+"status": 200,
+"search_results":
     {
-    "status": 200,
-    "search_results":
-        {
-        "uri": "asadfas",
-        "s_len": 123,
-        "name" : "breh",
-        "album": "the breh album",
-        "artist": "dude"
-        }
+    "uri": "asadfas",
+    "s_len": 123,
+    "name" : "breh",
+    "album": "the breh album",
+    "artist": "dude"
     }
-]
+}
