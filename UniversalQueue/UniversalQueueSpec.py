@@ -4,7 +4,7 @@ class UniversalQueue:
     Stores all of the song requests in a queue order
     """
 
-    def __init__(self) -> list:
+    def __init__(self):
         """
             creates a Universal Queue object
             intializes a queue object as an empty list

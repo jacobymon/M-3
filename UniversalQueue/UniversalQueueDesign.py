@@ -21,6 +21,7 @@ class UniversalQueue:
 
             @attribute pause_toggle: a boolean value where true indicates pausing, false is playing                                      
         """
+        
         #self.data = []
         #self.spotify = Spotify_Interface_Class()
         #self.suspend_toggle = False

@@ -12,6 +12,10 @@ class TestUniQueue(unittest.TestCase):
 
         self.assertFalse(self.suspend_toggle)
 
+        self.assertFalse(self.pause_toggle)
+        
+
+
         #IMPORTANT this is a place holder for checking if we have a real instance
         #of the spotify interface class, not a mocl
         
