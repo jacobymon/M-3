@@ -6,9 +6,7 @@ functionality that the host can use to manage the Universal Queue- removing
 songs, and suspending or unsuspending the queue. Finally, it will also include 
 tools for the host to pause and play the music, and control the volume.*/
 
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 //import './components.css' // eventually import a proper css file
 
@@ -39,7 +37,6 @@ function requestQueue() {
 		// Set the error code globally
 		// Return an empty queue
 	return []
-
 
 }
 
@@ -151,7 +148,6 @@ function requestQueueUpdates(updateSongs) {
 	//Else if any other queue errors:
 		// set queueError
 	
-
 }
 
 // GUI functions
@@ -203,7 +199,7 @@ function DeleteButton(props) {
  * 
  * @return HTML code for the current song queue.
  */
-export default function DisplayedQueue(props) {
+function DisplayedQueue() {
 
 	/**
    	 * songs: a list of song objects
@@ -254,11 +250,11 @@ export default function DisplayedQueue(props) {
 	useEffect( () => {
 		// Set hostToolsErrorCode to 0 after some time passes, 
 		// so that the error message dissapears
-	}, [hostToolsErrorCode])
+	}, [hostToolsErrorCode]) 
 	
 	
 	return (
-	 <Box sx={{ width: '100%' }}>
+	 <>
 
 	  {/*If there's an error code, display that*/}
 	  {hostToolsErrorCode!=0 &&
@@ -276,9 +272,9 @@ export default function DisplayedQueue(props) {
 	  }
 
 	  {/*Regardless of whether you're a host or not, 
-	  	make a stack to display the queue*/}
+	  	display an array of songs in the queue*/}
 
-	  <Stack>
+	  <>
 	   {/* For each song in songs, generate an entry*/}
 	   {songs.map(
 		(song) => <Song >
@@ -290,8 +286,9 @@ export default function DisplayedQueue(props) {
 		 submissionID={song.submissionID}
 		</Song>
 	   )} 
-	  </Stack>
+	  </>
 
-	 </Box>
+	 </>
 	);
 }
+export default DisplayedQueue
