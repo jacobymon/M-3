@@ -21,13 +21,13 @@ class UniversalQueue:
 
             @attribute pause_toggle: a boolean value where true indicates pausing, false is playing                                      
         """
-        #self.queue = []
+        #self.data = []
         #self.spotify = Spotify_Interface_Class()
         #self.suspend_toggle = False
 
     def insert(self, song): 
         """
-        When queue is not upsended
+        When queue is not supsended
         inserts a song into the queue and calls update_UI()
 
         @param song: a song object that contains all of the attributes needed
