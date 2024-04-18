@@ -1,7 +1,7 @@
 
 import logo from './logo.svg';
 import './App.css';
-import MyComponent from './modules/TestComponent/myComponent';
+import { SongSubmission } from './components/SongSubmission';
 
 /** The main app of the thing
  * 
@@ -23,7 +23,7 @@ function App() {
         >
           Learn React
         </a>
-        <MyComponent data="this is data"/>
+        <SongSubmission />
       </header>
     </div>
   );
