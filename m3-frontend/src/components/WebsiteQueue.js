@@ -132,7 +132,7 @@ function changeVolume(vol) {
  * @param {function} updateSongs The function from displayedQueue to change the data in
  * 									songs (and re-render the displayed queue)
  */
-function requestQueueUpdates(updateSongs) {
+const requestQueueUpdates = (updateSongs) => {
 	//Call Request Queue Updates
 	//If response is 201: we're given a new queue to use
 		// update songs to be that queue
@@ -146,9 +146,8 @@ function requestQueueUpdates(updateSongs) {
 		/* The server is under strain, so don't make a request for a while.*/
 		// Call requestQueueUpdates after a 1-min delay
 	//Else if any other queue errors:
-		// set queueError
-	
-}
+		// set queueError	
+};
 
 // GUI functions
 
@@ -291,4 +290,7 @@ function DisplayedQueue() {
 	 </>
 	);
 }
-export default DisplayedQueue
+export default DisplayedQueue;
+
+// For testing only
+export {requestQueueUpdates};
