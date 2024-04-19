@@ -1,7 +1,7 @@
 import unittest
 import UniversalQueueDesign
 import json
-import Song
+from Song import Song
 
 class TestUniQueue(unittest.TestCase):
 
@@ -34,6 +34,11 @@ class TestUniQueue(unittest.TestCase):
             self.SongTest3_data = file.read()
 
         self.song3 = Song(self.SongTest3_data)
+
+        with open('SongTest6.json', 'r') as file:
+            self.SongTest6_data = file.read()
+
+        self.song6 = Song(self.SongTest6_data)
 
 
     def test_init(self):
@@ -68,26 +73,37 @@ class TestUniQueue(unittest.TestCase):
 
         self.assertTrue(self.uniQueue.suspend_toggle)
 
-    #IN PROGRESS
-    def test_insert(self):
 
-        self.uniQueue.data.insert(self.song1)
+    def test_insert(self):
+        #note that while it is possible to insert the same mocked song object here, it would not be
+        #in a real use case, thus it's not tested for.
+
+        self.uniQueue.insert(self.song1)
 
         self.assertEqual(self.uniQueue.data[0], self.song1)
 
-        self.uniQueue.data.insert(self.song3)
+        self.uniQueue.insert(self.song3)
 
         self.assertEqual(self.uniQueue.data[-1], self.song3)
 
-        self.uniQueue.data.insert(self.song1)
+        self.uniQueue.insert(self.song6)
 
+        #testing id functionality
         self.assertNotEqual(self.uniQueue.data[0].id, self.uniQueue.data[1].id)
 
         self.assertNotEqual(self.uniQueue.data[0].id, self.uniQueue.data[2].id)
 
         self.assertNotEqual(self.uniQueue.data[1].id, self.uniQueue.data[2].id)
 
-        #cleanup will be removing song from queue, the function is not written yet
+        #testing error handleing
+        self.uniQueue.set_suspend_toggle(True)
+
+        self.assertRaises(ValueError, self.uniQueue.insert, self.song1)
+
+        #cleanup
+        self.uniQueue.set_suspend_toggle(False)
+
+        # eventually we will be removing song from queue, the function is not written yet
 
 
 

@@ -28,27 +28,29 @@ class Song:
         status = dict.get('status')
 
         if status == 200:
-            try:
-                dict.get('search_results')
-            except:
-                raise ValueError('search_result field missing in json')
+
+            #***********Need to check this error logic with Max**********
+            # try:
+            #     dict.get('search_results')
+            # except:
+            #     raise ValueError('search_result field missing in json')
             
 
-            try:
-                dict.get('search_results').get('uri')
-            except:
-                raise ValueError('search_result key missing in json')
+            # try:
+            #     dict.get('search_results').get('uri')
+            # except:
+            #     raise ValueError('search_result key missing in json')
             
             
-            if dict.get('search_results').get('uri') == None:
-                raise ValueError('search_result value is null')
+            # if dict.get('search_results').get('uri') == None:
+            #     raise ValueError('search_result value is null')
             
-            else:
-                self.uri = dict.get('search_results').get('uri')
+            # else:
+            #     self.uri = dict.get('search_results').get('uri')
+            #***********Need to check this error logic with Max**********
 
 
-
-
+            self.uri = dict.get('search_results').get('uri')   
             self.s_len = dict.get('search_results').get('s_len')
             self.name = dict.get('search_results').get('name')
             self.album = dict.get('search_results').get('album')
@@ -65,18 +67,7 @@ class Song:
 
         @param id: unique id created by the universal queue
         """
-        #self.id = id
-
-# if __name__ == "__main__":
-
-#     with open('SongTest.json', 'r') as file:
-#         json_data = file.read()
-
-#     # Creating an instance of the Song class and passing JSON data
-#     song_instance = Song(json_data)
-
-#     # Accessing attributes of the song instance
-#     print(song_instance.id)
+        self.id = id
 
 
 

@@ -32,6 +32,8 @@ class UniversalQueue:
         #this is a MOCK for testing purposes!!!
         self.hostCookie = "host"
 
+        self.idCount = 0
+
     def insert(self, song): 
         """
         When queue not suspended
@@ -41,14 +43,13 @@ class UniversalQueue:
         @param song: a song object that contains all of the attributes needed
         to display info to UI and playback
         """
-        #if suspend toggle is False
-        # if self.suspend_toggle == False:
-
-        #     self.data.append(song)
+        if self.suspend_toggle == False:
+            song.set_id(self.idCount)
+            self.idCount += 1 #update the next id to be unique for the next set
+            self.data.append(song)
             #write() #NOT IMPLEMENTED YET
-        #Get the made song object from the front-end
-        #self.queue.append(song) 
-        #call write()
+        else:
+            raise ValueError('can not insert')
 
 
     def flush_queue(self):
