@@ -303,9 +303,28 @@ describe('Submit Button', () => {
   //Backend API Related Tests
   it('test-timeout', async () => {
 
+
+
+
+    // This test case is different from all of the other error cases.
+    // It assumes axios will return an error and not resolve. This is
+    // likely the case but I do not know if that is the correct format 
+
+
+
+
+
+
+
     const data = {
-      status: 408,
+      respose: {
+        status: 408,
+      }
     };
+
+    // const data = {
+    //   status: 408,
+    // };
 
     let expected_error = {
       status: 408,
@@ -313,7 +332,7 @@ describe('Submit Button', () => {
     }
 
     //Expect error 408 from backend (TODO)
-    axios.post.mockResolvedValue(data);
+    axios.post.mockRejectedValue(data);
 
     await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
   });

@@ -22,15 +22,34 @@ export async function searchSongs(searchbar_query) {
   // If data cannot be found, input a neutral value (ie. “Unknown”)
   // Do set_search_results(processed_data) to set the values of what should appear in the dropdown
 
-  const response = await axios.get('https://jsonplaceholder.typicode.com/albums');
-  console.log("searchSongs(\"" + searchbar_query + "\")");
-  // console.log("status: " + response.status);
+  try {
+    const response = await axios.post("https://jsonplaceholder.typicode.com/albums", selected_song);
+    console.log("Successful response: " + response);
+    
+    return {
+      status: response.status,
+      response: "My Success Message"
+    };
 
-  let ret = {
-    status: response.status,
-    response: response.results,
+  } catch (error) {
+    console.log("Error response: ", error);
+    
+    return {
+      status: error.response ? error.response.status : 500,
+      response: "My Error Message"
+    };
+
   }
-  return ret;
+
+  // const response = await axios.get('https://jsonplaceholder.typicode.com/albums');
+  // console.log("searchSongs(\"" + searchbar_query + "\")");
+  // // console.log("status: " + response.status);
+
+  // let ret = {
+  //   status: response.status,
+  //   response: response.results,
+  // }
+  // return ret;
   // return response.results[0].title;
   
 }
@@ -47,31 +66,27 @@ export async function submitSong(selected_song) {
   }
 
 
-   // Attempt to make an API call to the backend to submit the song
-   // Example
-  //  axios.post("http://127.0.0.1:5000/api?songJSON=" + selected_song)
-  //    .then(response => {
-  //      // Do something with the backend response
-  //    })
-  //    .catch(error => {
-  //      // Handle error
-  //      // set_submit_error(true)
-  //      // Examine the “error” value to determine what went wrong
-  //      // For common errors (ie. Not Found, Timeout), provide adequate feedback
-  //      // ie. set_submit_error_message(“Unable to connect to host”)
-  //      // or set_submit_error_message(“Your request timed out. Please try again.”)
-  //      console.error('Error fetching data:', error);
-  //    });
-
-    const response = await axios.post('https://jsonplaceholder.typicode.com/albums', selected_song);
     console.log("submitSong(" + selected_song + ")");
 
-    let ret = {
-      status: response.status,
-      message: "My Message",
+    try {
+      const response = await axios.post("https://jsonplaceholder.typicode.com/albums", selected_song);
+      console.log("Successful response: " + response);
+      
+      return {
+        status: response.status,
+        response: "My Success Message"
+      };
+
+    } catch (error) {
+      console.log("Error response: ", error);
+      
+      return {
+        status: error.response ? error.response.status : 500,
+        response: "My Error Message"
+      };
+
     }
 
-    return ret;
 }
 
 export async function submitURLSong(url_textbox_input) {
@@ -96,10 +111,29 @@ export async function submitURLSong(url_textbox_input) {
   //     console.error('Error fetching data:', error);
   //   });
 
-  const response = await axios.post('https://jsonplaceholder.typicode.com/albums', url_textbox_input);
-    console.log("submitURLSong(" + url_textbox_input + ")");
+  try {
+    const response = await axios.post("https://jsonplaceholder.typicode.com/albums", selected_song);
+    console.log("Successful response: " + response);
+    
+    return {
+      status: response.status,
+      response: "My Success Message"
+    };
 
-    return response.status;
+  } catch (error) {
+    console.log("Error response: ", error);
+    
+    return {
+      status: error.response ? error.response.status : 500,
+      response: "My Error Message"
+    };
+
+  }
+
+  // const response = await axios.post('https://jsonplaceholder.typicode.com/albums', url_textbox_input);
+  //   console.log("submitURLSong(" + url_textbox_input + ")");
+
+    // return response.status;
 }
 
 
