@@ -1,9 +1,10 @@
 
 import logo from './logo.svg';
 import './App.css';
+import { SongSubmission } from './components/SongSubmission';
 import MyComponent from './modules/TestComponent/myComponent';
 import DisplayedQueue from './components/WebsiteQueue';
-// import MyComponent from './components/MyComponent';
+
 
 /** The main app of the thing
  * 
@@ -25,7 +26,7 @@ function App() {
         >
           Learn React
         </a>
-        <MyComponent data="this is data"/>
+        <SongSubmission />
       </header>
     </div>
   );
