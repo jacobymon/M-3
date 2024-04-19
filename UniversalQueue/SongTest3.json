@@ -1,0 +1,13 @@
+
+{
+    "status": 200,
+    "search_results":
+        {
+        "uri": "uri",
+        "s_len": 321,
+        "name" : "name",
+        "album": "album",
+        "artist": "artist"
+        }
+    }
+    

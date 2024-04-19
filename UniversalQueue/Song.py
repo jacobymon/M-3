@@ -28,7 +28,27 @@ class Song:
         status = dict.get('status')
 
         if status == 200:
-            self.uri = dict.get('search_results').get('uri')
+            try:
+                dict.get('search_results')
+            except:
+                raise ValueError('search_result field missing in json')
+            
+
+            try:
+                dict.get('search_results').get('uri')
+            except:
+                raise ValueError('search_result key missing in json')
+            
+            
+            if dict.get('search_results').get('uri') == None:
+                raise ValueError('search_result value is null')
+            
+            else:
+                self.uri = dict.get('search_results').get('uri')
+
+
+
+
             self.s_len = dict.get('search_results').get('s_len')
             self.name = dict.get('search_results').get('name')
             self.album = dict.get('search_results').get('album')

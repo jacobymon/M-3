@@ -1,6 +1,7 @@
 import unittest
 import UniversalQueueDesign
 import json
+import Song
 
 class TestUniQueue(unittest.TestCase):
 
@@ -22,6 +23,19 @@ class TestUniQueue(unittest.TestCase):
         #MAYBE DELETEME
         #  with open('UniQueueTest3.json', 'r') as file:
         #     self.badRequest = file.read()
+
+        #mock Songs
+        with open('SongTest.json', 'r') as file:
+            self.SongTest_data = file.read()
+
+        self.song1 = Song(self.SongTest_data)
+
+        with open('SongTest3.json', 'r') as file:
+            self.SongTest3_data = file.read()
+
+        self.song3 = Song(self.SongTest3_data)
+
+
     def test_init(self):
 
         self.assertEqual(self.uniQueue.data, [])
@@ -53,6 +67,39 @@ class TestUniQueue(unittest.TestCase):
         self.uniQueue.set_suspend_toggle(True)
 
         self.assertTrue(self.uniQueue.suspend_toggle)
+
+    #IN PROGRESS
+    def test_insert(self):
+
+        self.uniQueue.data.insert(self.song1)
+
+        self.assertEqual(self.uniQueue.data[0], self.song1)
+
+        self.uniQueue.data.insert(self.song3)
+
+        self.assertEqual(self.uniQueue.data[-1], self.song3)
+
+        self.uniQueue.data.insert(self.song1)
+
+        self.assertNotEqual(self.uniQueue.data[0].id, self.uniQueue.data[1].id)
+
+        self.assertNotEqual(self.uniQueue.data[0].id, self.uniQueue.data[2].id)
+
+        self.assertNotEqual(self.uniQueue.data[1].id, self.uniQueue.data[2].id)
+
+        #cleanup will be removing song from queue, the function is not written yet
+
+
+
+
+
+
+        
+
+        
+
+        
+
 
 
 

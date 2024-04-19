@@ -34,13 +34,18 @@ class UniversalQueue:
 
     def insert(self, song): 
         """
-        When queue is not supsended
-        inserts a song into the queue and calls update_UI()
+        When queue not suspended
+        inserts a song into the queue with a unique id using the song classes set_id() method
+        and calls update_UI()
 
         @param song: a song object that contains all of the attributes needed
-        to display info to UI and playback, passed in from the UI
+        to display info to UI and playback
         """
         #if suspend toggle is False
+        # if self.suspend_toggle == False:
+
+        #     self.data.append(song)
+            #write() #NOT IMPLEMENTED YET
         #Get the made song object from the front-end
         #self.queue.append(song) 
         #call write()
