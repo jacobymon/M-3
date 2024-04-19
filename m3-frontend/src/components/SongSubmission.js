@@ -145,18 +145,37 @@ export async function submitURLSong(url_textbox_input) {
 export function SongSubmission({ data }) {
   const [searchBarError, setSearchBarError] = useState(null);
   const [submitButtonError, setSubmitButtonError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [URLTextboxInput, setURLTextboxInput] = useState("");
+
+
+  const handleSearchBarKeystroke = (e) => {
+    setSearchQuery(e.target.value)
+    console.log("Pre Search")
+    console.log(searchSongs(e.target.value))
+    console.log("Post Search")
+  }
 
   return (
     <div>
-      <h1>Hello there</h1>
-      <input data-testid="SearchBar"/>
-      <input data-testid="URLTextBox"/>
-      <button data-testid="SubmitButton" onClick={() => submitSong("I submit songs")}>
-        Clickable
-      </button>
-      <button data-testid="URLSubmitButton" onClick={() => submitURLSong("I submit URLs")}>
-        AlsoClickable
-      </button>
+      <h1>M-3</h1>
+      
+      <div>
+        <input data-testid="SearchBar" placeholder="Search for songs..." onChange={handleSearchBarKeystroke}/>
+        <input data-testid="URLTextBox" placeholder="Paste a song URL..." onChange={(e) => setURLTextboxInput(e.target.value)}/>
+      </div>
+      <div>
+        <button data-testid="SubmitButton" onClick={() => submitSong("I submit songs")}>
+          Submit Song
+        </button>
+        <button data-testid="URLSubmitButton" onClick={() => submitURLSong("I submit URLs")}>
+          Submit Song URL
+        </button>
+      </div>
+
+      
+      <p>{searchQuery}</p>
+      <p>{URLTextboxInput}</p>
       <p data-testid={"Result" + 0} onClick={() => console.log("I am the 0 result")}>Hello</p>
       <p data-testid="Result1" onClick={() => console.log("I am the 1 result")}>Hello</p>
       <p data-testid="Result2" onClick={() => console.log("I am the 2 result")}>Hello</p>
