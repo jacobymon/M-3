@@ -144,14 +144,24 @@ class Spotify_Interface_Class:
         return data 
 
 s = Spotify_Interface_Class()
+
 @app.route('/return_results', methods=['GET', 'POST'])
 @cross_origin()
 def return_results():
     search_string = request.args.get('search_string')
     response = {'search_string': s.return_data(search_string)}
-    # response = jsonify(response)
     print(response)
     return response
+
+
+@app.route('/return_results_from_url', methods=['GET', 'POST'])
+@cross_origin()
+def return_results_from_url():
+    url = request.args.get('spotify_url')
+    response = {'spotify_url': s.from_url(url)}
+    print(response)
+    return response
+
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', port=8080) 
