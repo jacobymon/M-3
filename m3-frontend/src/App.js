@@ -2,7 +2,6 @@
 import logo from './logo.svg';
 import './App.css';
 import { SongSubmission } from './components/SongSubmission';
-import MyComponent from './modules/TestComponent/myComponent';
 import DisplayedQueue from './components/WebsiteQueue';
 
 

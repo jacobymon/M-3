@@ -22,9 +22,13 @@ export async function searchSongs(searchbar_query) {
   // If data cannot be found, input a neutral value (ie. “Unknown”)
   // Do set_search_results(processed_data) to set the values of what should appear in the dropdown
 
+  // axios.get("http://localhost:8080/return_results?search_string=" + searchbar_query)
+  
+
   try {
-    const response = await axios.post("https://jsonplaceholder.typicode.com/albums", selected_song);
+    const response = await axios.get("http://localhost:8080/return_results?search_string=" + searchbar_query);
     console.log("Successful response: " + response);
+    console.log(response);
     
     return {
       status: response.status,
@@ -67,6 +71,7 @@ export async function submitSong(selected_song) {
 
 
     console.log("submitSong(" + selected_song + ")");
+
 
     try {
       const response = await axios.post("https://jsonplaceholder.typicode.com/albums", selected_song);
@@ -112,7 +117,7 @@ export async function submitURLSong(url_textbox_input) {
   //   });
 
   try {
-    const response = await axios.post("https://jsonplaceholder.typicode.com/albums", selected_song);
+    const response = await axios.post("https://jsonplaceholder.typicode.com/albums", url_textbox_input);
     console.log("Successful response: " + response);
     
     return {

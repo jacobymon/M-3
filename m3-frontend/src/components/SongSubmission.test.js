@@ -297,6 +297,32 @@ describe('Submit Button', () => {
     await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
 
   });
+
+  it('test-song-no-s_len', async () => {
+
+    const selected_song = {
+      id: 2,
+      uri: 'URI 2',
+      // s_len: 'Length 2',
+      title: 'Title 2',
+      artist: 'Artist 2',
+      album: "Album 2"
+    };
+
+    const data = {
+      status: 400,
+    };
+    
+    let expected_error = {
+      status: 400,
+      response: "Could not find the song’s s_len."
+    }
+    
+    // axios.post.mockResolvedValue(data); // Setup mock to resolve with `data`
+
+    await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
+
+  });
   
 
 
