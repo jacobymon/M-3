@@ -8,16 +8,18 @@ s = Spotify_Interface_Class()
 
 # To do anything interesting, we'll need a track id. We can get this by passing a string to "return_results"
 
-tracks = s.return_results("Get Back The Beatles")
+# data = s.return_results("Get Back The Beatles")
+
+# print(data)
 
 # This tracks object actually contains a lot of potential results (20 currently, set by a macro), but we'll
 # assume the first result is probably what we wanted and take its id
 
-track_id = tracks.items[0].id
+# track_id = tracks.items[0].id
 
 # Now let's play the track
 
-s.play(track_id)
+# s.play(track_id)
 
 # Running this should start "Get Back" on the playback Now
 
