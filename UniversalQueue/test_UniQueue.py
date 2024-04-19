@@ -44,6 +44,19 @@ class TestUniQueue(unittest.TestCase):
         self.assertTrue(self.uniQueue.cookie_verifier(self.hostCookie))
 
 
+    def test_set_suspend_toggle(self):
+
+        self.uniQueue.set_suspend_toggle(False)
+
+        self.assertFalse(self.uniQueue.suspend_toggle)
+
+        self.uniQueue.set_suspend_toggle(True)
+
+        self.assertTrue(self.uniQueue.suspend_toggle)
+
+
+
+
 
 
 if __name__ == "__main__":
