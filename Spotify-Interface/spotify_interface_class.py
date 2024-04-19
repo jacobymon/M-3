@@ -25,7 +25,7 @@ class Spotify_Interface_Class:
         self.device_id = get_first_available_device(self.spotify).id
         pass
 
-    def play(self, uri): 
+    def play(self, track_id): 
         """
         plays a song on the spotify playback
 
@@ -33,7 +33,14 @@ class Spotify_Interface_Class:
         @attribute spotify: The spotify tekore object
         """
         #Play the uri of the song on playback
-        self.spotify.playback_start_tracks([uri], self.device_id) 
+        print(track_id)
+        self.spotify.playback_start_tracks(track_ids=[track_id], device_id=self.device_id) 
+        current_track = self.spotify.playback_currently_playing()
+        if current_track.item.id == track_id:
+            return 0
+        else: 
+            #Should raise an exception here later down the line
+            return 1
 
     def pause(self): 
         """
@@ -41,7 +48,17 @@ class Spotify_Interface_Class:
         @attribute spotify: The spotify tekore object
         """
         #pause the playback
+        #If you pause while the player is already paused, it causes a 403 error
         self.spotify.playback_pause()
+        current_state = self.spotify.playback()
+
+        # Might need to add a sleep call here to make sure the playback actually starts before the check
+        # occurs
+
+        if current_state.is_playing == False:
+            return 0
+        else: 
+            return 1
 
     def unpause(self):
         """
@@ -50,6 +67,14 @@ class Spotify_Interface_Class:
         """
         #unpause the playback
         self.spotify.playback_resume()
+
+        current_state = self.spotify.playback()
+        # Might need to add a sleep call here to make sure the playback actually starts before the check
+        # occurs
+        if current_state.is_playing:
+            return 0
+        else: 
+            return 1
 
     def return_results(self, search_string):
         """
@@ -61,7 +86,5 @@ class Spotify_Interface_Class:
         #return song objects to the front-end for the user to select from in the UI
 
         tracks, = self.spotify.search(query=search_string, limit=NUM_ITEMS)
+
         return tracks
-
-
-    
