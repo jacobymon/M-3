@@ -1,18 +1,26 @@
 """ This module implements the Universal Queue class """
 import tekore as tk
+from flask import Flask, jsonify, request 
+from flask_cors import CORS, cross_origin
+import json
 
 from auth import get_user_token
 from player import get_first_available_device
 
+# from UniversalQueue.Song import Song
+
 #Method called on startup to retrieve the user token
 token = get_user_token()
-NUM_ITEMS = 20
+NUM_ITEMS = 5
+
+app = Flask(__name__)
+CORS(app) 
 
 class Spotify_Interface_Class:
     """
     Serves as a stanard interface / wrapper class around the spotify tekore object
     """
-
+    
     def __init__(self): 
         """
         Creates a Spotify tekore object
@@ -76,7 +84,16 @@ class Spotify_Interface_Class:
         else: 
             return 1
 
-    def return_results(self, search_string):
+    # @app.route('/return_results', methods=['GET', 'POST'])
+    # @cross_origin()
+    # def return_results(self):
+
+        # response = {'search_string': self.return_data('Get Back The Beatles')}
+        # response = jsonify(response)
+        # print(response)
+        # return response
+
+    def return_data(self, search_string):
         """
         unpauses the spotify playback
 
@@ -85,6 +102,37 @@ class Spotify_Interface_Class:
         """
         #return song objects to the front-end for the user to select from in the UI
 
-        tracks, = self.spotify.search(query=search_string, limit=NUM_ITEMS)
+        tracks, = self.spotify.search(query=search_string, types=('track',), limit=NUM_ITEMS)
+        results = []
+        for track in tracks.items: 
+            json_data = {
+                    'id': 0,
+                    'uri' : track.id,
+                    's_len' : track.duration_ms,
+                    'title' : track.name,
+                    'artist': track.artists[0].name,
+                    'album' : track.album.name
+                    }
 
-        return tracks
+            # json_data = jsonify(json_data)
+
+            results.append(json_data)
+        
+        data = {'status': 200, 'results': results}
+
+        # data = jsonify(data) 
+
+        return data 
+
+s = Spotify_Interface_Class()
+@app.route('/return_results', methods=['GET', 'POST'])
+@cross_origin()
+def return_results():
+    search_string = request.args.get('search_string')
+    response = {'search_string': s.return_data(search_string)}
+    # response = jsonify(response)
+    print(response)
+    return response
+
+if __name__ == '__main__':
+    app.run(host = '0.0.0.0', port=8080) 
