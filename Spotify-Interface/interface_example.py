@@ -9,6 +9,7 @@ s = Spotify_Interface_Class()
 # To do anything interesting, we'll need a track id. We can get this by passing a string to "return_results"
 
 # data = s.return_results("Get Back The Beatles")
+print(s.from_url("https://open.spotify.com/track/7dflu0aBzB9kpcSinIph9r?si=8956bcb862e64a46"))
 
 # print(data)
 

@@ -114,13 +114,32 @@ class Spotify_Interface_Class:
                     'album' : track.album.name
                     }
 
-            # json_data = jsonify(json_data)
-
             results.append(json_data)
         
         data = {'status': 200, 'results': results}
 
-        # data = jsonify(data) 
+        return data 
+
+    def from_url(self, url):
+        response = tk.from_url(url)
+
+        track_id = response[1]
+
+        track = self.spotify.track(track_id)
+        
+        results = []
+        json_data = {
+                'id': 0,
+                'uri' : track_id,
+                's_len' : track.duration_ms,
+                'title' : track.name,
+                'artist': track.artists[0].name,
+                'album' : track.album.name
+                }
+
+        results.append(json_data)
+        
+        data = {'status': 200, 'results': results}
 
         return data 
 
