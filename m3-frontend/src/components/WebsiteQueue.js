@@ -6,9 +6,7 @@ functionality that the host can use to manage the Universal Queue- removing
 songs, and suspending or unsuspending the queue. Finally, it will also include 
 tools for the host to pause and play the music, and control the volume.*/
 
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 //import './components.css' // eventually import a proper css file
 
@@ -39,7 +37,6 @@ function requestQueue() {
 		// Set the error code globally
 		// Return an empty queue
 	return []
-
 
 }
 
@@ -135,7 +132,7 @@ function changeVolume(vol) {
  * @param {function} updateSongs The function from displayedQueue to change the data in
  * 									songs (and re-render the displayed queue)
  */
-function requestQueueUpdates(updateSongs) {
+const requestQueueUpdates = (updateSongs) => {
 	//Call Request Queue Updates
 	//If response is 201: we're given a new queue to use
 		// update songs to be that queue
@@ -149,10 +146,8 @@ function requestQueueUpdates(updateSongs) {
 		/* The server is under strain, so don't make a request for a while.*/
 		// Call requestQueueUpdates after a 1-min delay
 	//Else if any other queue errors:
-		// set queueError
-	
-
-}
+		// set queueError	
+};
 
 // GUI functions
 
@@ -203,7 +198,7 @@ function DeleteButton(props) {
  * 
  * @return HTML code for the current song queue.
  */
-export default function DisplayedQueue(props) {
+function DisplayedQueue() {
 
 	/**
    	 * songs: a list of song objects
@@ -254,11 +249,11 @@ export default function DisplayedQueue(props) {
 	useEffect( () => {
 		// Set hostToolsErrorCode to 0 after some time passes, 
 		// so that the error message dissapears
-	}, [hostToolsErrorCode])
+	}, [hostToolsErrorCode]) 
 	
 	
 	return (
-	 <Box sx={{ width: '100%' }}>
+	 <>
 
 	  {/*If there's an error code, display that*/}
 	  {hostToolsErrorCode!=0 &&
@@ -276,9 +271,9 @@ export default function DisplayedQueue(props) {
 	  }
 
 	  {/*Regardless of whether you're a host or not, 
-	  	make a stack to display the queue*/}
+	  	display an array of songs in the queue*/}
 
-	  <Stack>
+	  <>
 	   {/* For each song in songs, generate an entry*/}
 	   {songs.map(
 		(song) => <Song >
@@ -290,8 +285,12 @@ export default function DisplayedQueue(props) {
 		 submissionID={song.submissionID}
 		</Song>
 	   )} 
-	  </Stack>
+	  </>
 
-	 </Box>
+	 </>
 	);
 }
+export default DisplayedQueue;
+
+// For testing only
+export {requestQueueUpdates};

@@ -1,7 +1,8 @@
 """ This module implements the Song class which takes in json data sent from the UI to create a song object """
+import json
 class Song:
 
-    def __init__(self, uri, s_len, name, album, artist, id):
+    def __init__(self, json_data):
         """
         creates a song object
 
@@ -19,11 +20,24 @@ class Song:
 
         """
 
-        # self.uri = uri
-        # self.s_len = s_len
-        # self.name = name
-        # self.album = album
-        # self.artist = artist
+
+        # Loading JSON data into a Python dictionary
+        dict = json.loads(json_data)
+
+        # Accessing the JSON attributes to initialize Song attributes
+        status = dict.get('status')
+
+        if status == 200:
+            self.uri = dict.get('search_results').get('uri')
+            self.s_len = dict.get('search_results').get('s_len')
+            self.name = dict.get('search_results').get('name')
+            self.album = dict.get('search_results').get('album')
+            self.artist = dict.get('search_results').get('artist')
+            self.id = None
+
+        else:
+            raise ValueError('status of json not acceptable')
+
 
     def set_id(self, id):
         """
@@ -32,7 +46,17 @@ class Song:
         @param id: unique id created by the universal queue
         """
         #self.id = id
- 
+
+# if __name__ == "__main__":
+
+#     with open('SongTest.json', 'r') as file:
+#         json_data = file.read()
+
+#     # Creating an instance of the Song class and passing JSON data
+#     song_instance = Song(json_data)
+
+#     # Accessing attributes of the song instance
+#     print(song_instance.id)
 
 
 

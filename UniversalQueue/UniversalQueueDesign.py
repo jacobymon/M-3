@@ -9,7 +9,7 @@ class UniversalQueue:
     Stores all of the song requests in a queue order
     """
 
-    def __init__(self) -> list:
+    def __init__(self):
         """
             creates a Universal Queue object
             intializes a queue object as an empty list
@@ -21,13 +21,20 @@ class UniversalQueue:
 
             @attribute pause_toggle: a boolean value where true indicates pausing, false is playing                                      
         """
-        #self.queue = []
-        #self.spotify = Spotify_Interface_Class()
-        #self.suspend_toggle = False
+        self.data = []
+
+        #PSUEDO CODE FOR NOW UNTIL MOCK COMES: self.spotify = Spotify_Interface_Class()
+
+        self.suspend_toggle = False
+
+        self.pause_toggle = False
+
+        #this is a MOCK for testing purposes!!!
+        self.hostCookie = "host"
 
     def insert(self, song): 
         """
-        When queue is not upsended
+        When queue is not supsended
         inserts a song into the queue and calls update_UI()
 
         @param song: a song object that contains all of the attributes needed
@@ -69,8 +76,9 @@ class UniversalQueue:
 
     def update_ui(self):
         """
-        Sends the current state of the queue to the UI for all users
-        to be displayed on their front end
+        Sends the current state of the queue to the UI for all users. It will handle requests from users
+        with long polling and will be called after any change is made to the queue. This is due
+        axios only being able to send requests to the back end.
         
 
         @return the current state of the queue to all users
@@ -84,9 +92,7 @@ class UniversalQueue:
         """
         allows a specific user to request the current state of the queue to be displayed for them
         (ie when they first click on to the website link)
-
-        @param: the user that called the function, passed in from
-        front end
+        throw a 400 bad request error if the queue can't be sent
         
         @return: the current state of the queue to the specific user
         """
@@ -116,31 +122,7 @@ class UniversalQueue:
         #exceptions as e:
             #send e to front end
 
-    def set_suspend_toggle(self, flag):
-        """
-        privileged host-only function
-
-        toggle for the queue for accepting song requests or not.
-
-        @param flag: a boolean value that is true when the queue is NOT accepting requests
-        false when the queue is accepting requests.
-        
-        """
-        #verify cookie is host's
-        #if flag == True:
-        #   self.suspend_toggle = True
-        #else:
-        #   self.suspend_toggle = False
-
-    def clear_queue(self):
-        """
-        privileged host-only function
-
-        sets the queue back to an empty list
-        """
-
-    
-    def cookie_verifier(cookie):
+    def cookie_verifier(self, cookie):
         """
         verifies that the privileged functions are being called by the host.
         throw error when return is false.
@@ -153,10 +135,41 @@ class UniversalQueue:
 
         @return Bool: True when the cookie matches the host's else and error
         """
-        # if cookie == Host's
-            #return True
-        # else:
-            #return error
+        #check status code first (we would do this in routes.py with flask)
+        if cookie == self.hostCookie:
+            return True
+        else:
+            return False
+
+    def set_suspend_toggle(self, flag):
+        """
+        privileged host-only function
+
+        toggle for the queue for accepting song requests or not.
+
+        @param flag: a boolean value that is true when the queue is NOT accepting requests
+        false when the queue is accepting requests.
+        
+        """
+        #MOCKED verify cookie is host's, would pass the cookie in from request instead
+        #of self.cookie
+        if self.cookie_verifier(self.hostCookie):
+
+            if flag == True:
+                self.suspend_toggle = True
+
+            else:
+                self.suspend_toggle = False
+
+    def clear_queue(self):
+        """
+        privileged host-only function
+
+        sets the queue back to an empty list
+        """
+
+    
+    
 
     def write(self, file):
         """

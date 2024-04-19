@@ -4,7 +4,7 @@ class UniversalQueue:
     Stores all of the song requests in a queue order
     """
 
-    def __init__(self) -> list:
+    def __init__(self):
         """
             creates a Universal Queue object
             intializes a queue object as an empty list
@@ -38,7 +38,9 @@ class UniversalQueue:
 
     def update_ui(self):
         """
-        Sends the current state of the queue to the UI for all users
+        Sends the current state of the queue to the UI for all users. It will handle requests from users
+        with long polling and will be called after any change is made to the queue. This is due
+        axios only being able to send requests to the back end.
         
 
         @return the current state of the queue to all users

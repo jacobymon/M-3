@@ -38,6 +38,7 @@
     ]
   },
   "devDependencies": {
+    "@craco/craco": "^7.1.0",
     "jest": "^27.5.1",
     "react-styleguidist": "^13.1.2"
   }
