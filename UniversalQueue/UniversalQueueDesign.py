@@ -122,30 +122,6 @@ class UniversalQueue:
         #exceptions as e:
             #send e to front end
 
-    def set_suspend_toggle(self, flag):
-        """
-        privileged host-only function
-
-        toggle for the queue for accepting song requests or not.
-
-        @param flag: a boolean value that is true when the queue is NOT accepting requests
-        false when the queue is accepting requests.
-        
-        """
-        #verify cookie is host's
-        #if flag == True:
-        #   self.suspend_toggle = True
-        #else:
-        #   self.suspend_toggle = False
-
-    def clear_queue(self):
-        """
-        privileged host-only function
-
-        sets the queue back to an empty list
-        """
-
-    
     def cookie_verifier(self, cookie):
         """
         verifies that the privileged functions are being called by the host.
@@ -164,6 +140,36 @@ class UniversalQueue:
             return True
         else:
             return False
+
+    def set_suspend_toggle(self, flag):
+        """
+        privileged host-only function
+
+        toggle for the queue for accepting song requests or not.
+
+        @param flag: a boolean value that is true when the queue is NOT accepting requests
+        false when the queue is accepting requests.
+        
+        """
+        #MOCKED verify cookie is host's, would pass the cookie in from request instead
+        #of self.cookie
+        if self.cookie_verifier(self.hostCookie):
+
+            if flag == True:
+                self.suspend_toggle = True
+
+            else:
+                self.suspend_toggle = False
+
+    def clear_queue(self):
+        """
+        privileged host-only function
+
+        sets the queue back to an empty list
+        """
+
+    
+    
 
     def write(self, file):
         """
