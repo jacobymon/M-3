@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import axios from "axios";
+import debounce from 'lodash.debounce';
 // import './myComponent.css'; 
 
 export async function searchSongs(searchbar_query) {
@@ -26,7 +27,7 @@ export async function searchSongs(searchbar_query) {
   
 
   try {
-    const response = await axios.get("http://localhost:8080/return_results?search_string=" + searchbar_query);
+    const response = await axios.get("http://172.28.99.52:8080/return_results?search_string=" + searchbar_query);
     console.log("Successful response: " + response);
     console.log(response);
     
@@ -76,6 +77,7 @@ export async function submitSong(selected_song) {
     try {
       const response = await axios.post("https://jsonplaceholder.typicode.com/albums", selected_song);
       console.log("Successful response: " + response);
+      console.log(response);
       
       return {
         status: response.status,
@@ -84,6 +86,7 @@ export async function submitSong(selected_song) {
 
     } catch (error) {
       console.log("Error response: ", error);
+      console.log(error);
       
       return {
         status: error.response ? error.response.status : 500,
@@ -115,11 +118,12 @@ export async function submitURLSong(url_textbox_input) {
   //     // or set_submit_error_message(“Your request timed out. Please try again.”)
   //     console.error('Error fetching data:', error);
   //   });
+  console.log(url_textbox_input)
 
   try {
-    const response = await axios.post("https://jsonplaceholder.typicode.com/albums", url_textbox_input);
+    const response = await axios.post("http://172.28.99.52:8080/return_results_from_url?spotify_url=" + url_textbox_input);
     console.log("Successful response: " + response);
-    
+    console.log(response);
     return {
       status: response.status,
       response: "My Success Message"
@@ -127,6 +131,7 @@ export async function submitURLSong(url_textbox_input) {
 
   } catch (error) {
     console.log("Error response: ", error);
+    console.log(error);
     
     return {
       status: error.response ? error.response.status : 500,
@@ -149,12 +154,23 @@ export function SongSubmission({ data }) {
   const [URLTextboxInput, setURLTextboxInput] = useState("");
 
 
+  // const debouncedSearchBar = useCallback(
+  //   debounce((newValue) => setSearchQuery(newValue), 1000),
+  //   []  // Dependencies array is empty, so the debounced function is created only once
+  // );
+
+  const searchSongs_debounced = useCallback(
+    debounce((searchInput) => searchSongs(searchInput), 500),
+    []  // Dependencies array is empty, so the debounced function is created only once
+  );
+
   const handleSearchBarKeystroke = (e) => {
     setSearchQuery(e.target.value)
     console.log("Pre Search")
-    console.log(searchSongs(e.target.value))
+    searchSongs_debounced(e.target.value);
     console.log("Post Search")
   }
+
 
   return (
     <div>
@@ -168,7 +184,7 @@ export function SongSubmission({ data }) {
         <button data-testid="SubmitButton" onClick={() => submitSong("I submit songs")}>
           Submit Song
         </button>
-        <button data-testid="URLSubmitButton" onClick={() => submitURLSong("I submit URLs")}>
+        <button data-testid="URLSubmitButton" onClick={() => submitURLSong(URLTextboxInput)}>
           Submit Song URL
         </button>
       </div>
