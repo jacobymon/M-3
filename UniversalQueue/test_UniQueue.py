@@ -1,20 +1,27 @@
 import unittest
-from UniversalQueueDesign import UniversalQueue
+import UniversalQueueDesign
+import json
 
 class TestUniQueue(unittest.TestCase):
 
     def setUp(self):
-        self.uniQueue = UniversalQueue()
+        self.uniQueue = UniversalQueueDesign.UniversalQueue()
 
         #create mock user requests via json with cookies
         with open('UniQueueTest.json', 'r') as file:
-            self.hostCookie = file.read()
+            hostRequestData= file.read()
+            hostRequestData = json.loads(hostRequestData)
+            self.hostCookie = hostRequestData.get('cookie')
+
 
         with open('UniQueueTest2.json', 'r') as file:
-            self.userCookie = file.read()
+            userRequestData= file.read()
+            userRequestData = json.loads(userRequestData)
+            self.userCookie = userRequestData.get('cookie')
 
-        with open('UniQueueTest3.json', 'r') as file:
-            self.badRequest = file.read()
+        #MAYBE DELETEME
+        #  with open('UniQueueTest3.json', 'r') as file:
+        #     self.badRequest = file.read()
     def test_init(self):
 
         self.assertEqual(self.uniQueue.data, [])
@@ -32,12 +39,10 @@ class TestUniQueue(unittest.TestCase):
         #when integration comes we will add tests with patch and mocked requests
         #for now we will use a static json
 
-        
-        self.assertFalse(UniversalQueueDesign.cookie_verifier(self.userCookie))
+        self.assertFalse(self.uniQueue.cookie_verifier(self.userCookie))
 
-        self.assertTrue(UniversalQueueDesign.cookie_verifier(self.hostCookie))
+        self.assertTrue(self.uniQueue.cookie_verifier(self.hostCookie))
 
-        self.assertRaises(ValueError, UniversalQueue, self.badRequest)
 
 
 

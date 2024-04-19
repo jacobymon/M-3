@@ -29,6 +29,9 @@ class UniversalQueue:
 
         self.pause_toggle = False
 
+        #this is a MOCK for testing purposes!!!
+        self.hostCookie = "host"
+
     def insert(self, song): 
         """
         When queue is not supsended
@@ -143,7 +146,7 @@ class UniversalQueue:
         """
 
     
-    def cookie_verifier(cookie):
+    def cookie_verifier(self, cookie):
         """
         verifies that the privileged functions are being called by the host.
         throw error when return is false.
@@ -156,10 +159,11 @@ class UniversalQueue:
 
         @return Bool: True when the cookie matches the host's else and error
         """
-        # if cookie == Host's
-            #return True
-        # else:
-            #return error
+        #check status code first (we would do this in routes.py with flask)
+        if cookie == self.hostCookie:
+            return True
+        else:
+            return False
 
     def write(self, file):
         """
