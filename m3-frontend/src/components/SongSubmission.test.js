@@ -9,51 +9,62 @@ import axios from "axios";
 // const axios = require('axios');
 jest.mock("axios");
 
-const data = {
-  status: 200,
-  results: [
-    {
-      id: 1,
-      uri: 'URI 1',
-      s_len: 'Length 1',
-      title: 'Title 1',
-      artist: 'Artist 1',
-      album: "Album 1"
-    },
-    {
-      id: 2,
-      uri: 'URI 2',
-      s_len: 'Length 2',
-      title: 'Title 2',
-      artist: 'Artist 2',
-      album: "Album 2"
-    },
-    {
-      id: 3,
-      uri: 'URI 3',
-      s_len: 'Length 3',
-      title: 'Title 3',
-      artist: 'Artist 3',
-      album: "Album 3"
-    },
-    {
-      id: 4,
-      uri: 'URI 4',
-      s_len: 'Length 4',
-      title: 'Title 4',
-      artist: 'Artist 4',
-      album: "Album 4"
-    },
-    {
-      id: 5,
-      uri: 'URI 5',
-      s_len: 'Length 5',
-      title: 'Title 5',
-      artist: 'Artist 5',
-      album: "Album 5"
-    },
-  ]
+const search_songs_response = {
+  status: 200,  // Status of the Axios call
+  data: {
+    search_string: {
+      status: 200, // Status of what was actually returned
+      results: [
+        {
+          id: 1,
+          uri: 'URI 1',
+          s_len: 'Length 1',
+          title: 'Title 1',
+          artist: 'Artist 1',
+          album: "Album 1"
+        },
+        {
+          id: 2,
+          uri: 'URI 2',
+          s_len: 'Length 2',
+          title: 'Title 2',
+          artist: 'Artist 2',
+          album: "Album 2"
+        },
+        {
+          id: 3,
+          uri: 'URI 3',
+          s_len: 'Length 3',
+          title: 'Title 3',
+          artist: 'Artist 3',
+          album: "Album 3"
+        },
+        {
+          id: 4,
+          uri: 'URI 4',
+          s_len: 'Length 4',
+          title: 'Title 4',
+          artist: 'Artist 4',
+          album: "Album 4"
+        },
+        {
+          id: 5,
+          uri: 'URI 5',
+          s_len: 'Length 5',
+          title: 'Title 5',
+          artist: 'Artist 5',
+          album: "Album 5"
+        },
+      ],
+    }
+  }
 };
+
+const axios_network_error = {
+  code: "ERR_NETWORK",
+  message: "Network Error",
+  name: "AxiosError",
+}
 
 const selected_song = {
   id: 2,
@@ -64,7 +75,7 @@ const selected_song = {
   album: "Album 2"
 };
 
-const song_url = "Valid Song URL"
+const song_url = "Valid Song URL";
         
 
 
@@ -78,11 +89,11 @@ describe('Search Bar', () => {
   // Search Bar Related Tests
   it('test-auto-search', async () => {
     
-    axios.get.mockResolvedValue(data); // Setup mock to resolve with `data`
+    axios.get.mockResolvedValue(search_songs_response);
 
     let expected_result = {
       status: 200,
-      response: data.results
+      response: search_songs_response.data.search_string.results
     }
 
     await expect(searchSongs("T")).resolves.toEqual(expected_result);
@@ -92,20 +103,35 @@ describe('Search Bar', () => {
 
   it('test-dropdown-select-song', async () => {
 
-    axios.get.mockResolvedValue(data); // Setup mock to resolve with `data`
+    axios.get.mockResolvedValue(search_songs_response); // Setup mock to resolve with `data`
 
     let expected_result = {
       status: 200,
-      response: data.results
+      response: search_songs_response.data.search_string.results
     }
 
     await expect(searchSongs("T")).resolves.toEqual(expected_result);
     await expect(searchSongs("Th")).resolves.toEqual(expected_result);
     await expect(searchSongs("The")).resolves.toEqual(expected_result);
+
+
+
+
+
+
+
+    // Add stuff for actually selecting the song from the dropdown
+    // Rendering, getting the 5 results by seeing they exist (Take from Full Test)
+
+
+
+
+
+
+
   });
 
-  it('test-null-searchBar-query', async () => {
-    // const errorMessage = 'Please enter a song name to search.';
+  it('test-empty-searchBar-query', async () => {
 
     let expected_error = {
       status: 400,
@@ -114,9 +140,7 @@ describe('Search Bar', () => {
 
     // Doesn't need to mock anything because it should catch it before it calls axios
 
-    // axios.get.mockResolvedValue(new Error(errorMessage));
-
-    await expect(searchSongs(null)).resolves.toEqual(expected_error);
+    await expect(searchSongs("")).resolves.toEqual(expected_error);
   });
 
   //Backend API Related Tests
@@ -127,12 +151,21 @@ describe('Search Bar', () => {
       response: 'Bad OAuth request.'
     }
 
-    let bad_response = {
-      status: 403,
-    }
+    // let bad_response = {
+    //   status: 200,
+    // }
+
+    let bad_search_songs_response = {
+      status: 200,  // Status of the Axios call
+      data: {
+        search_string: {
+          status: 403, // Status of what was actually returned
+        }
+      }
+    };
 
     //Expect error 403 from backend (TODO)
-    axios.get.mockResolvedValue(bad_response);
+    axios.get.mockResolvedValue(bad_search_songs_response);
 
     await expect(searchSongs("Test bad OAuth")).resolves.toEqual(expected_error);
   });
@@ -150,12 +183,21 @@ describe('Search Bar', () => {
       response: 'Exceeded Spotify search limit. Please wait a few seconds before retrying.'
     }
 
-    let bad_response = {
-      status: 429,
-    }
+    // let bad_response = {
+    //   status: 429,
+    // }
+
+    let bad_search_songs_response = {
+      status: 200,  // Status of the Axios call
+      data: {
+        search_string: {
+          status: 429, // Status of what was actually returned
+        }
+      }
+    };
 
     //Expect error 403 from backend (TODO)
-    axios.get.mockResolvedValue(bad_response);
+    axios.get.mockResolvedValue(bad_search_songs_response);
 
     await expect(searchSongs("Test Exceed Rate Limit")).resolves.toEqual(expected_error);
 
@@ -169,9 +211,18 @@ describe('Submit Button', () => {
   // Submit Button Related Tests
   it('test-valid-song', async () => {
 
-    const data = {
+    const data = {    // Still uncertain of how this data will be returned. I imagine something similar to search songs
       status: 200,
     };
+
+    // const submit_song_response = {
+    //   status: 200,  // Status of the Axios call
+    //   data: {
+    //     submission: {
+    //       status: 200, // Status of what was actually returned
+    //     }
+    //   }
+    // };
 
     let expected_result = {
       status: 200,
@@ -186,17 +237,10 @@ describe('Submit Button', () => {
 
   it('test-song-null', async () => {
 
-
-    // const data = {
-    //   status: 200,
-    // };
-
     let expected_error = {
       status: 400,
       response: "No song was selected."
     }
-    
-    // axios.post.mockResolvedValue(data); // Setup mock to resolve with `data`
 
     await expect(submitSong(null)).resolves.toEqual(expected_error);
 
@@ -211,10 +255,6 @@ describe('Submit Button', () => {
       // title: 'Title 2',
       artist: 'Artist 2',
       album: "Album 2"
-    };
-
-    const data = {
-      status: 400,
     };
 
     let expected_error = {
@@ -238,17 +278,11 @@ describe('Submit Button', () => {
       artist: 'Artist 2',
       album: "Album 2"
     };
-
-    const data = {
-      status: 400,
-    };
     
     let expected_error = {
       status: 400,
       response: "Could not find the song’s URI."
     }
-    
-    // axios.post.mockResolvedValue(data); // Setup mock to resolve with `data`
 
     await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
 
@@ -269,8 +303,6 @@ describe('Submit Button', () => {
       status: 400,
       response: "Could not find the song’s artist."
     }
-    
-    // axios.post.mockResolvedValue(data); // Setup mock to resolve with `data`
 
     await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
 
@@ -291,8 +323,6 @@ describe('Submit Button', () => {
       status: 400,
       response: "Could not find the song’s album."
     }
-    
-    // axios.post.mockResolvedValue(data); // Setup mock to resolve with `data`
 
     await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
 
@@ -307,10 +337,6 @@ describe('Submit Button', () => {
       title: 'Title 2',
       artist: 'Artist 2',
       album: "Album 2"
-    };
-
-    const data = {
-      status: 400,
     };
     
     let expected_error = {
@@ -327,64 +353,51 @@ describe('Submit Button', () => {
 
 
   //Backend API Related Tests
-  it('test-timeout', async () => {
+  // it('test-timeout', async () => {
 
 
+  //   // I don't think I have a way of distinguishing Axios network errors like timeout and not found.
+  //   // Axios just gives a generic network error.
 
 
-    // This test case is different from all of the other error cases.
-    // It assumes axios will return an error and not resolve. This is
-    // likely the case but I do not know if that is the correct format 
+  //   let expected_error = {
+  //     status: 408,
+  //     response: "Song submission timed out. Please try again."
+  //   }
 
+  //   //Expect error 408 from backend (TODO)
+  //   axios.post.mockRejectedValue(axios_network_error);
 
+  //   await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
+  // });
 
+  // it('test-not-found', async () => {
 
+  //   const data = {
+  //     status: 404,
+  //   };
 
+  //   let expected_error = {
+  //     status: 404,
+  //     response: "Could not find host machine. Please try again."
+  //   }
 
+  //   //Expect error 404 from backend (TODO)
+  //   axios.post.mockResolvedValue(data);
 
-    const data = {
-      respose: {
-        status: 408,
-      }
-    };
+  //   await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
 
-    // const data = {
-    //   status: 408,
-    // };
-
-    let expected_error = {
-      status: 408,
-      response: "Song submission timed out. Please try again."
-    }
-
-    //Expect error 408 from backend (TODO)
-    axios.post.mockRejectedValue(data);
-
-    await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
-  });
-
-  it('test-not-found', async () => {
-
-    const data = {
-      status: 404,
-    };
-
-    let expected_error = {
-      status: 404,
-      response: "Could not find host machine. Please try again."
-    }
-
-    //Expect error 404 from backend (TODO)
-    axios.post.mockResolvedValue(data);
-
-    await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
-
-  });
+  // });
 
   it('test-internal-server-error', async () => {
 
-    const data = {
-      status: 500,
+    let bad_submit_song_response = {
+      status: 200,  // Status of the Axios call
+      data: {
+        search_string: {
+          status: 500, // Status of what was actually returned
+        }
+      }
     };
 
     let expected_error = {
@@ -393,29 +406,46 @@ describe('Submit Button', () => {
     }
 
     //Expect error 500 from backend (TODO)
-    axios.post.mockResolvedValue(data);
+    axios.post.mockResolvedValue(bad_submit_song_response);
 
     await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
   });
 
   it('test-generic-api-error', async () => {
 
-    const data = {
-      status: 599,  // Any error code that is not already handled
-    };
-
     let expected_error = {
       status: 500,
-      response: "An API error has occurred."
+      response: "A network error has occurred."
     }
 
-    //Expect error 400 or 500 from backend (TODO)
-    axios.post.mockResolvedValue(data);
+    //Expect a network error from axios
+    axios.post.mockResolvedValue(axios_network_error);
 
     await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
   });
 
 });
+
+
+/// HAVVE NOT MADE REFINEMENTS TO URL TEXTBOX STUFF AND BELOW
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 describe('URL Textbox', () => {

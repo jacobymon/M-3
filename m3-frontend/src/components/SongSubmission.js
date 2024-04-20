@@ -118,7 +118,7 @@ export async function submitURLSong(url_textbox_input) {
   //     // or set_submit_error_message(“Your request timed out. Please try again.”)
   //     console.error('Error fetching data:', error);
   //   });
-  console.log(url_textbox_input)
+  console.log("Here" + url_textbox_input)
 
   try {
     const response = await axios.post("http://172.28.99.52:8080/return_results_from_url?spotify_url=" + url_textbox_input);
