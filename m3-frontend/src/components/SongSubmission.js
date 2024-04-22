@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import axios from "axios";
+import debounce from 'lodash.debounce';
 // import './myComponent.css'; 
 
 export async function searchSongs(searchbar_query) {
@@ -26,7 +27,7 @@ export async function searchSongs(searchbar_query) {
   
 
   try {
-    const response = await axios.get("http://localhost:8080/return_results?search_string=" + searchbar_query);
+    const response = await axios.get("http://172.28.99.52:8080/return_results?search_string=" + searchbar_query);
     console.log("Successful response: " + response);
     console.log(response);
     
@@ -76,6 +77,7 @@ export async function submitSong(selected_song) {
     try {
       const response = await axios.post("https://jsonplaceholder.typicode.com/albums", selected_song);
       console.log("Successful response: " + response);
+      console.log(response);
       
       return {
         status: response.status,
@@ -84,6 +86,7 @@ export async function submitSong(selected_song) {
 
     } catch (error) {
       console.log("Error response: ", error);
+      console.log(error);
       
       return {
         status: error.response ? error.response.status : 500,
@@ -115,11 +118,12 @@ export async function submitURLSong(url_textbox_input) {
   //     // or set_submit_error_message(“Your request timed out. Please try again.”)
   //     console.error('Error fetching data:', error);
   //   });
+  console.log("Here" + url_textbox_input)
 
   try {
-    const response = await axios.post("https://jsonplaceholder.typicode.com/albums", url_textbox_input);
+    const response = await axios.post("http://172.28.99.52:8080/return_results_from_url?spotify_url=" + url_textbox_input);
     console.log("Successful response: " + response);
-    
+    console.log(response);
     return {
       status: response.status,
       response: "My Success Message"
@@ -127,6 +131,7 @@ export async function submitURLSong(url_textbox_input) {
 
   } catch (error) {
     console.log("Error response: ", error);
+    console.log(error);
     
     return {
       status: error.response ? error.response.status : 500,
@@ -145,18 +150,48 @@ export async function submitURLSong(url_textbox_input) {
 export function SongSubmission({ data }) {
   const [searchBarError, setSearchBarError] = useState(null);
   const [submitButtonError, setSubmitButtonError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [URLTextboxInput, setURLTextboxInput] = useState("");
+
+
+  // const debouncedSearchBar = useCallback(
+  //   debounce((newValue) => setSearchQuery(newValue), 1000),
+  //   []  // Dependencies array is empty, so the debounced function is created only once
+  // );
+
+  const searchSongs_debounced = useCallback(
+    debounce((searchInput) => searchSongs(searchInput), 500),
+    []  // Dependencies array is empty, so the debounced function is created only once
+  );
+
+  const handleSearchBarKeystroke = (e) => {
+    setSearchQuery(e.target.value)
+    console.log("Pre Search")
+    searchSongs_debounced(e.target.value);
+    console.log("Post Search")
+  }
+
 
   return (
     <div>
-      <h1>Hello there</h1>
-      <input data-testid="SearchBar"/>
-      <input data-testid="URLTextBox"/>
-      <button data-testid="SubmitButton" onClick={() => submitSong("I submit songs")}>
-        Clickable
-      </button>
-      <button data-testid="URLSubmitButton" onClick={() => submitURLSong("I submit URLs")}>
-        AlsoClickable
-      </button>
+      <h1>M-3</h1>
+      
+      <div>
+        <input data-testid="SearchBar" placeholder="Search for songs..." onChange={handleSearchBarKeystroke}/>
+        <input data-testid="URLTextBox" placeholder="Paste a song URL..." onChange={(e) => setURLTextboxInput(e.target.value)}/>
+      </div>
+      <div>
+        <button data-testid="SubmitButton" onClick={() => submitSong("I submit songs")}>
+          Submit Song
+        </button>
+        <button data-testid="URLSubmitButton" onClick={() => submitURLSong(URLTextboxInput)}>
+          Submit Song URL
+        </button>
+      </div>
+
+      
+      <p>{searchQuery}</p>
+      <p>{URLTextboxInput}</p>
       <p data-testid={"Result" + 0} onClick={() => console.log("I am the 0 result")}>Hello</p>
       <p data-testid="Result1" onClick={() => console.log("I am the 1 result")}>Hello</p>
       <p data-testid="Result2" onClick={() => console.log("I am the 2 result")}>Hello</p>
