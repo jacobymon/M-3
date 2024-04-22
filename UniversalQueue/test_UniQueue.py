@@ -105,6 +105,31 @@ class TestUniQueue(unittest.TestCase):
 
         # eventually we will be removing song from queue, the function is not written yet
 
+    def test_remove_from_queue(self):
+        self.uniQueue.remove_from_queue(1)
+
+        self.assertRaises(ValueError,self.uniQueue.remove_from_queue, 3) #remove id that's not in queue
+
+
+
+        self.assertEqual(self.uniQueue.data[0].id, 0)
+        self.assertEqual(self.uniQueue.data[-1].id, 2)
+
+        self.uniQueue.remove_from_queue(0)
+
+        self.assertEqual(self.uniQueue.data[0].id, 2)
+
+        self.uniQueue.remove_from_queue(2)
+
+        self.assertEqual(self.uniQueue.data, [])
+
+        self.assertRaises(ValueError,self.uniQueue.remove_from_queue, 0) #removal of empty queue
+
+
+
+
+
+
 
 
 
