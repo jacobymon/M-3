@@ -123,28 +123,98 @@ class TestUniQueue(unittest.TestCase):
         self.assertEqual(self.uniQueue.data, [])
 
         self.assertRaises(ValueError,self.uniQueue.remove_from_queue, 0) #removal of empty queue
+
+
+    def test_write_and_recover(self):
+
+
+        # self.uniQueue.insert(self.song1)
+
+        # with open('WriteTest.txt', 'r') as file:
+        #     self.WriteTest_data = file.read()
+
+        # self.assertEqual(self.WriteTest_data, self.uniQueue.data)
+
+        # self.uniQueue.insert(self.song3)
+
+        # with open('WriteTest.txt', 'r') as file:
+        #     self.WriteTest_data = file.read()
+
+        # self.assertEqual(self.WriteTest_data, self.uniQueue.data)
+
+        # self.uniQueue.insert(self.song6)
+
+        # with open('WriteTest.txt', 'r') as file:
+        #     self.WriteTest_data = file.read()
+
+        # self.assertEqual(self.WriteTest_data, self.uniQueue.data)
+
+        #the code above needs to be changed so that we are checking that write() puts parsible json data that can be recovered into a queue.
+
+
+        formerState= self.uniQueue.data
+
+        #**** simulated crash 1
+        self.uniQueue.data = []
+
+        self.uniQueue.recover("WriteTest.txt")
+
+        self.assertEqual(self.WriteTest_data, formerState)
+
+        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
+
+
+    
+        self.uniQueue.remove_from_queue(0)
+
+        with open('WriteTest.txt', 'r') as file:
+            self.WriteTest_data = file.read()
+
+        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
+
+        self.uniQueue.remove_from_queue(2)
+
+        with open('WriteTest.txt', 'r') as file:
+            self.WriteTest_data = file.read()
+
+        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
+
+        formerState= self.uniQueue.data
+
+        #**** simulated crash 2
+        self.uniQueue.data = []
+
+        self.uniQueue.recover("WriteTest.txt")
+
+        self.assertEqual(self.WriteTest_data, formerState)
+
+        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
+
+        self.uniQueue.remove_from_queue(1)
+
+        with open('WriteTest.txt', 'r') as file:
+            self.WriteTest_data = file.read()
+
+        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         
-
-
-
-
-
-
-
-
-
-
-
-        
-
-        
-
-        
-
-
-
-
-
 
 
 if __name__ == "__main__":
