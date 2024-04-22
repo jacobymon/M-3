@@ -118,15 +118,30 @@ class UniversalQueue:
         @param index: index recieved from host corresponding song the want removed from queue
        
         """
-        #verify cookie is the host's
-        #try
-        #  #remove song by it's id from queue
-        # if index == 0: 
-        #     #If the song that deleted is currently playing, start playing the next one
-        #     flush_queue()
-        # write()
-        #exceptions as e:
-            #send e to front end
+        #MOCKED verify cookie is host's, would pass the cookie in from request instead
+        #of self.cookie
+        #IMPORTANT removal of first song starts playing next song is checked manually
+        #IMPORTANT this operation is curretnly O(n). Look into making it O(1) with dictionary
+        if self.cookie_verifier(self.hostCookie):
+            for s in self.data:
+                if s.id == id:
+                    if s.id == self.data[0].id:
+                        self.data.remove(s)
+                        #play next song
+                        #flush_queue
+
+                    else:
+                        self.data.remove(s)
+                    #write()
+                    return
+            else:
+                raise ValueError('invalid id')
+
+            # except:
+            #     raise ValueError('invalid id')
+        
+
+       
 
     def cookie_verifier(self, cookie):
         """

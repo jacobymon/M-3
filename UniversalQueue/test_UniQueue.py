@@ -74,7 +74,7 @@ class TestUniQueue(unittest.TestCase):
         self.assertTrue(self.uniQueue.suspend_toggle)
 
 
-    def test_insert(self):
+    def test_insert_and_removal(self):
         #note that while it is possible to insert the same mocked song object here, it would not be
         #in a real use case, thus it's not tested for.
 
@@ -103,14 +103,13 @@ class TestUniQueue(unittest.TestCase):
         #cleanup
         self.uniQueue.set_suspend_toggle(False)
 
-        # eventually we will be removing song from queue, the function is not written yet
 
-    def test_remove_from_queue(self):
+        #***************remove_from_queue tests**********************
+
         self.uniQueue.remove_from_queue(1)
 
-        self.assertRaises(ValueError,self.uniQueue.remove_from_queue, 3) #remove id that's not in queue
-
-
+        self.assertRaises(ValueError, self.uniQueue.remove_from_queue, 3) #remove id that's not in queue
+        
 
         self.assertEqual(self.uniQueue.data[0].id, 0)
         self.assertEqual(self.uniQueue.data[-1].id, 2)
@@ -124,6 +123,7 @@ class TestUniQueue(unittest.TestCase):
         self.assertEqual(self.uniQueue.data, [])
 
         self.assertRaises(ValueError,self.uniQueue.remove_from_queue, 0) #removal of empty queue
+        
 
 
 
