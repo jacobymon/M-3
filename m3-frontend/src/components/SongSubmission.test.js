@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, getByTestId } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { searchSongs, submitSong, submitURLSong, SongSubmission } from "./SongSubmission";
 import axios from "axios";
@@ -577,8 +577,8 @@ describe('URL Textbox', () => {
 describe('Full System', () => {
 
   it('test-search-and-submit', async () => {
-
-    const { getByTestId } = render(<SongSubmission />);
+    // const { screen.getByTestId } = 
+    render(<SongSubmission />);
 
     // Expect no errors to start
     let searchBarError = screen.queryByTestId("SearchBarError");
@@ -587,7 +587,7 @@ describe('Full System', () => {
     let submitButtonError = screen.queryByTestId("SubmitBarError");
     expect(submitButtonError).not.toBeInTheDocument();
 
-    const searchBar = getByTestId("SearchBar");
+    const searchBar = screen.screen.getByTestId("SearchBar");
     expect(searchBar).toHaveValue('');
 
     axios.get.mockResolvedValue(search_songs_response); // Setup mock to resolve with `data`
@@ -608,14 +608,14 @@ describe('Full System', () => {
     expect(search_results).toEqual(expected_search_result);
     
     // Check that there are Result0 - Result4
-    expect(getByTestId("Result0")).toBeInTheDocument();
-    expect(getByTestId("Result1")).toBeInTheDocument();
-    expect(getByTestId("Result2")).toBeInTheDocument();
-    expect(getByTestId("Result3")).toBeInTheDocument();
-    expect(getByTestId("Result4")).toBeInTheDocument();
+    expect(screen.getByTestId("Result0")).toBeInTheDocument();
+    expect(screen.getByTestId("Result1")).toBeInTheDocument();
+    expect(screen.getByTestId("Result2")).toBeInTheDocument();
+    expect(screen.getByTestId("Result3")).toBeInTheDocument();
+    expect(screen.getByTestId("Result4")).toBeInTheDocument();
 
 
-    const firstResult = getByTestId("Result0");
+    const firstResult = screen.getByTestId("Result0");
     fireEvent.click(firstResult);
     let selected_song = search_results.response[0];
 
@@ -624,14 +624,14 @@ describe('Full System', () => {
 
     // Check that Result0 - Result 4 are gone
     // Commented out for testing testing purposes
-    expect(getByTestId("Result0")).not.toBeInTheDocument();
-    expect(getByTestId("Result1")).not.toBeInTheDocument();
-    expect(getByTestId("Result2")).not.toBeInTheDocument();
-    expect(getByTestId("Result3")).not.toBeInTheDocument();
-    expect(getByTestId("Result4")).not.toBeInTheDocument();
+    expect(screen.getByTestId("Result0")).not.toBeInTheDocument();
+    expect(screen.getByTestId("Result1")).not.toBeInTheDocument();
+    expect(screen.getByTestId("Result2")).not.toBeInTheDocument();
+    expect(screen.getByTestId("Result3")).not.toBeInTheDocument();
+    expect(screen.getByTestId("Result4")).not.toBeInTheDocument();
 
 
-    const submitButton = getByTestId("SubmitButton");
+    const submitButton = screen.getByTestId("SubmitButton");
 
     const submit_data = {
       status: 200,
@@ -673,7 +673,7 @@ describe('Full System', () => {
 
   it('test-URL-and-submit', async () => {
 
-    const { getByTestId } = render(<SongSubmission />);
+    render(<SongSubmission />);
 
     // Expect no errors to start
     let searchBarError = screen.queryByTestId("SearchBarError");
@@ -682,13 +682,13 @@ describe('Full System', () => {
     let submitButtonError = screen.queryByTestId("SubmitBarError");
     expect(submitButtonError).not.toBeInTheDocument();
 
-    const URLTestBox = getByTestId("URLTextBox");
+    const URLTestBox = screen.getByTestId("URLTextBox");
     expect(URLTestBox).toHaveValue('');
 
     // Entering text into the textbox
     fireEvent.change(URLTestBox, { target: { value: "Valid URL"}});
 
-    const URLSubmitButton = getByTestId("URLSubmitButton");
+    const URLSubmitButton = screen.getByTestId("URLSubmitButton");
 
     const submit_data = {
       status: 200,

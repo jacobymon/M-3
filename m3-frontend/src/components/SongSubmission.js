@@ -1,22 +1,67 @@
 import React, { useState, useCallback } from 'react';
 import axios from "axios";
 import debounce from 'lodash.debounce';
-// import './myComponent.css'; 
+import './SongSubmission.css';
 
 export async function searchSongs(searchbar_query) {
   // Do the API request to Backend, get the results
   // May be good to ensure that there is at least 1 character in the search_query string
-
+  
 
   // Check results. Was there an error?
   // If there was an error, set_searchbar_error(true) and        set_searchbar_error_message(“Relevant error message”)
-  if (searchbar_query === null) {
+  if (searchbar_query == "") {
     return {
       status: 400,
       response: 'Please enter a song name to search.'
     };
   }
 
+  return {
+    status: 200, // Status of what was actually returned
+    results: [
+          {
+            id: 1,
+            uri: 'URI 1',
+            s_len: 'Length 1',
+            title: searchbar_query + ' 1',
+            artist: 'Artist 1',
+            album: "Album 1"
+          },
+          {
+            id: 2,
+            uri: 'URI 2',
+            s_len: 'Length 2',
+            title: searchbar_query + ' 2',
+            artist: 'Artist 2',
+            album: "Album 2"
+          },
+          {
+            id: 3,
+            uri: 'URI 3',
+            s_len: 'Length 3',
+            title: searchbar_query + ' 3',
+            artist: 'Artist 3',
+            album: "Album 3"
+          },
+          {
+            id: 4,
+            uri: 'URI 4',
+            s_len: 'Length 4',
+            title: searchbar_query + ' 4',
+            artist: 'Artist 4',
+            album: "Album 4"
+          },
+          {
+            id: 5,
+            uri: 'URI 5',
+            s_len: 'Length 5',
+            title: searchbar_query + ' 5',
+            artist: 'Artist 5',
+            album: "Album 5"
+          },
+        ],
+  }
 
   // If there was no error, set_searchbar_error(false) and set_searchbar_error_message(“No error”)
   // If there was no error, process the results into something usable by the program (ie. trim the JSONs to only include song name, URI, artist, album).
@@ -24,6 +69,7 @@ export async function searchSongs(searchbar_query) {
   // Do set_search_results(processed_data) to set the values of what should appear in the dropdown
 
   // axios.get("http://localhost:8080/return_results?search_string=" + searchbar_query)
+  
   
 
   try {
@@ -39,11 +85,12 @@ export async function searchSongs(searchbar_query) {
   } catch (error) {
     console.log("Error response: ", error);
     
+    
+
     return {
       status: error.response ? error.response.status : 500,
       response: "My Error Message"
     };
-
   }
 
   // const response = await axios.get('https://jsonplaceholder.typicode.com/albums');
@@ -102,22 +149,6 @@ export async function submitURLSong(url_textbox_input) {
   // set_submit_error(true), set_submit_error_message(“No URL has been provided”)
   // Return early
 
-
-  // Attempt to make an API call to the backend to submit the song
-  // Example
-  // axios.post("http://127.0.0.1:5000/api?songJSON=" + url_textbox_input)
-  //   .then(response => {
-  //     // Do something with the backend response
-  //   })
-  //   .catch(error => {
-  //     // Handle error
-  //     // set_submit_error(true)
-  //     // Examine the “error” value to determine what went wrong
-  //     // For common errors (ie. Not Found, Timeout), provide adequate feedback
-  //     // ie. set_submit_error_message(“Unable to connect to host”)
-  //     // or set_submit_error_message(“Your request timed out. Please try again.”)
-  //     console.error('Error fetching data:', error);
-  //   });
   console.log("Here" + url_textbox_input)
 
   try {
@@ -152,6 +183,8 @@ export function SongSubmission({ data }) {
   const [submitButtonError, setSubmitButtonError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [URLTextboxInput, setURLTextboxInput] = useState("");
+  const [searchResults, setSearchResults] = useState("");
+  const [selectedSong, setSelectedSong] = useState(null);
 
 
   // const debouncedSearchBar = useCallback(
@@ -164,11 +197,26 @@ export function SongSubmission({ data }) {
     []  // Dependencies array is empty, so the debounced function is created only once
   );
 
-  const handleSearchBarKeystroke = (e) => {
+  const handleSearchBarKeystroke = async (e) => {
+    
     setSearchQuery(e.target.value)
     console.log("Pre Search")
-    searchSongs_debounced(e.target.value);
+    // searchSongs_debounced(e.target.value);
+    let response_json = await searchSongs(e.target.value)
+    console.log(response_json.results)
+    if (response_json.status == 200) {
+      setSearchResults(response_json.results);
+    }else{
+      setSearchResults(null);
+    }
     console.log("Post Search")
+  }
+
+  const handleDropdownSelectSong = (song) => {
+    console.log(`Selected: ${song.title}`);
+    setSearchQuery(song.title);
+    setSelectedSong(song)
+    setSearchResults(null)
   }
 
 
@@ -176,19 +224,49 @@ export function SongSubmission({ data }) {
     <div>
       <h1>M-3</h1>
       
-      <div>
+      {/* <div>
         <input data-testid="SearchBar" placeholder="Search for songs..." onChange={handleSearchBarKeystroke}/>
         <input data-testid="URLTextBox" placeholder="Paste a song URL..." onChange={(e) => setURLTextboxInput(e.target.value)}/>
+      </div> */}
+      <div className='searchContainer'>
+    <input className='searchBar' data-testid="SearchBar"
+      placeholder="Search for songs..."
+      value={searchQuery} 
+      onChange={handleSearchBarKeystroke}
+    />
+    {searchResults && (
+      <div className='dropdownContainer'>
+        {searchResults.map((item, index) => (
+          <div className='dropdownItem' key={index} onClick={() => handleDropdownSelectSong(item)}>
+            <div className='itemTitle'>{item.title}</div>
+            <div className='itemSubtitle'>{item.artist} - {item.album}</div>
+          </div>
+        ))}
       </div>
+    )}
+    <button data-testid="SubmitButton" 
+        className='submitButton'
+      onClick={() => submitSong(selectedSong)}>
+      Submit Song
+    </button>
+</div>
       <div>
-        <button data-testid="SubmitButton" onClick={() => submitSong("I submit songs")}>
-          Submit Song
-        </button>
+        <input
+          className='searchBar'
+          data-testid="URLTextBox"
+          placeholder="Paste a song URL..."
+          onChange={(e) => setURLTextboxInput(e.target.value)}
+          style={{ width: '300px' }}
+        />
+      </div>
+      {
+      <div>
+        
         <button data-testid="URLSubmitButton" onClick={() => submitURLSong(URLTextboxInput)}>
           Submit Song URL
         </button>
       </div>
-
+    }
       
       <p>{searchQuery}</p>
       <p>{URLTextboxInput}</p>
