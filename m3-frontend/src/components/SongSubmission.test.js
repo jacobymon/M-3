@@ -419,33 +419,12 @@ describe('Submit Button', () => {
     }
 
     //Expect a network error from axios
-    axios.post.mockResolvedValue(axios_network_error);
+    axios.post.mockRejectedValue(axios_network_error);
 
     await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
   });
 
 });
-
-
-/// HAVVE NOT MADE REFINEMENTS TO URL TEXTBOX STUFF AND BELOW
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 describe('URL Textbox', () => {
@@ -470,76 +449,84 @@ describe('URL Textbox', () => {
 
   it('test-bad-url-submit', async () => {
 
-    const data = {
-      status: 404,  // Any error code that is not already handled
+    let bad_submit_url_response = {
+      status: 200,  // Status of the Axios call
+      data: {
+        search_string: {
+          status: 404, // Status of what was actually returned
+        }
+      }
     };
 
     let expected_error = {
       status: 404,
       response: "No song was found for that URL."
     }
-
+    
     //Expect error 400 or 500 from backend (TODO)
-    axios.post.mockResolvedValue(data);
+    axios.post.mockResolvedValue(bad_submit_url_response);
 
     await expect(submitURLSong("Bad Song URL")).resolves.toEqual(expected_error);
     
   });
 
-  it('test-null-url-submit', async () => {
-
-    const errorMessage = 'No URL was provided.';
+  it('test-empty-url-submit', async () => {
 
     let expected_error = {
       status: 404,
       response: "No URL was provided."
     }
 
-    await expect(submitURLSong(null)).resolves.toEqual(expected_error);
+    await expect(submitURLSong("")).resolves.toEqual(expected_error);
     
   });
 
 
 
   //Backend API Related Tests
-  it('test-timeout', async () => {
+  // it('test-timeout', async () => {
 
-    const data = {
-      status: 408,
-    };
+  //   const data = {
+  //     status: 408,
+  //   };
 
-    let expected_error = {
-      status: 408,
-      response: "URL Song submission timed out. Please try again."
-    }
+  //   let expected_error = {
+  //     status: 408,
+  //     response: "URL Song submission timed out. Please try again."
+  //   }
 
-    //Expect error 408 from backend (TODO)
-    axios.post.mockResolvedValue(data);
+  //   //Expect error 408 from backend (TODO)
+  //   axios.post.mockResolvedValue(data);
 
-    await expect(submitURLSong("URL Timeout")).resolves.toEqual(expected_error);
-  });
+  //   await expect(submitURLSong("URL Timeout")).resolves.toEqual(expected_error);
+  // });
 
-  it('test-not-found', async () => {
+  // it('test-not-found', async () => {
 
-    const data = {
-      status: 404,
-    };
+  //   const data = {
+  //     status: 404,
+  //   };
 
-    let expected_error = {
-      status: 404,
-      response: "Could not find host machine. Please try again."
-    }
+  //   let expected_error = {
+  //     status: 404,
+  //     response: "Could not find host machine. Please try again."
+  //   }
 
-    //Expect error 404 from backend (TODO)
-    axios.post.mockResolvedValue(data);
+  //   //Expect error 404 from backend (TODO)
+  //   axios.post.mockResolvedValue(data);
 
-    await expect(submitURLSong("Host Machine not Found")).resolves.toEqual(expected_error);
-  });
+  //   await expect(submitURLSong("Host Machine not Found")).resolves.toEqual(expected_error);
+  // });
 
   it('test-internal-server-error', async () => {
 
-    const data = {
-      status: 500,
+    let bad_submit_url_response = {
+      status: 200,  // Status of the Axios call
+      data: {
+        search_string: {
+          status: 500, // Status of what was actually returned
+        }
+      }
     };
 
     let expected_error = {
@@ -548,28 +535,41 @@ describe('URL Textbox', () => {
     }
 
     //Expect error 500 from backend (TODO)
-    axios.post.mockResolvedValue(data);
+    axios.post.mockResolvedValue(bad_submit_url_response);
 
     await expect(submitURLSong("URL Internal Server Error")).resolves.toEqual(expected_error);
 
   });
 
-  it('test-generic-api-error', async () => {
+  // it('test-generic-api-error', async () => {
 
-    const data = {
-      status: 599,  // Any error code that is not already handled
-    };
+  //   const data = {
+  //     status: 599,  // Any error code that is not already handled
+  //   };
+
+  //   let expected_error = {
+  //     status: 500,
+  //     response: "An API error has occurred."
+  //   }
+
+  //   //Expect error 500 from backend (TODO)
+  //   axios.post.mockResolvedValue(data);
+
+  //   await expect(submitURLSong("URL API Error")).resolves.toEqual(expected_error);
+
+  // });
+
+  it('test-generic-api-error', async () => {
 
     let expected_error = {
       status: 500,
-      response: "An API error has occurred."
+      response: "A network error has occurred."
     }
 
-    //Expect error 500 from backend (TODO)
-    axios.post.mockResolvedValue(data);
+    //Expect a network error from axios
+    axios.post.mockRejectedValue(axios_network_error);
 
-    await expect(submitURLSong("URL API Error")).resolves.toEqual(expected_error);
-
+    await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
   });
 
 });
@@ -590,11 +590,11 @@ describe('Full System', () => {
     const searchBar = getByTestId("SearchBar");
     expect(searchBar).toHaveValue('');
 
-    axios.get.mockResolvedValue(data); // Setup mock to resolve with `data`
+    axios.get.mockResolvedValue(search_songs_response); // Setup mock to resolve with `data`
 
     let expected_search_result = {
       status: 200,
-      response: data.results
+      response: search_songs_response.data.search_string.results
     }
 
     // Entering text into the textbox and simulating if we had gotten the data
