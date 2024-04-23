@@ -17,43 +17,43 @@ const search_songs_response = {
       results: [
         {
           id: 1,
-          uri: 'URI 1',
-          s_len: 'Length 1',
-          title: 'Title 1',
-          artist: 'Artist 1',
-          album: "Album 1"
+          uri: "URI 1",
+          s_len: 11,
+          title: searchbar_query + " 1",
+          artist: "Artist 1",
+          album: "Album 1",
         },
         {
           id: 2,
-          uri: 'URI 2',
-          s_len: 'Length 2',
-          title: 'Title 2',
-          artist: 'Artist 2',
-          album: "Album 2"
+          uri: "URI 2",
+          s_len: 22,
+          title: searchbar_query + " 2",
+          artist: "Artist 2",
+          album: "Album 2",
         },
         {
           id: 3,
-          uri: 'URI 3',
-          s_len: 'Length 3',
-          title: 'Title 3',
-          artist: 'Artist 3',
-          album: "Album 3"
+          uri: "URI 3",
+          s_len: 33,
+          title: searchbar_query + " 3",
+          artist: "Artist 3",
+          album: "Album 3",
         },
         {
           id: 4,
-          uri: 'URI 4',
-          s_len: 'Length 4',
-          title: 'Title 4',
-          artist: 'Artist 4',
-          album: "Album 4"
+          uri: "URI 4",
+          s_len: 44,
+          title: searchbar_query + " 4",
+          artist: "Artist 4",
+          album: "Album 4",
         },
         {
           id: 5,
-          uri: 'URI 5',
-          s_len: 'Length 5',
-          title: 'Title 5',
-          artist: 'Artist 5',
-          album: "Album 5"
+          uri: "URI 5",
+          s_len: 55,
+          title: searchbar_query + " 5",
+          artist: "Artist 5",
+          album: "Album 5",
         },
       ],
     }
