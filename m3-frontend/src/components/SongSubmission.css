@@ -1,0 +1,95 @@
+.songSubmission {
+    margin-top: 20px;
+}
+
+.searchContainer {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin: 5px;
+}
+
+.searchBar {
+    width: 75%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 4px;
+    background-color: #282828; /* Spotify-like dark background */
+    color: #fff; /* White text */
+    font-size: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    margin-right: 5px;
+}
+
+.dropdownContainer {
+    position: absolute;
+    width: 71%;
+    margin-top: 57px;
+    /* margin-left: 10px; */
+    background-color: #ddd;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border-radius: 0 0 4px 4px;
+    opacity: 1;
+    animation: fade-in 0.15s ease-out;
+    z-index: 2;
+}
+@keyframes fade-in {
+    0% { opacity: 0 }
+    100% { opacity: 1 }
+  }
+
+  @keyframes fade-out {
+    0% { opacity: 0 }
+    100% { opacity: 1 }
+  }
+  
+.dropdownItem {
+    padding: 10px;
+    cursor: pointer;
+    background-color: #ddd; /* White background */
+    transition: background-color 0.2s;
+    border-bottom: 1px solid #f0f0f0; /*Light border for separation*/
+    text-wrap: wrap;
+}
+
+.dropdownItem:hover {
+    background-color: #bbb; /* Light grey background on hover */
+}
+
+.itemTitle {
+    font-size: 20px;
+    font-weight: bold; /* Make the title stand out */
+    color: #333;
+}
+
+.itemSubtitle {
+    font-size: 14px;
+    color: #666; /* Subdued color for artist and album */
+}
+
+.submitButton {
+    width: 30%;
+    padding: 10px 20px;
+    background-color: #FFC20E; /* Harvey Mudd yellow */
+    color: #333; /* Dark text for better contrast */
+    font-size: 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    outline: none; /* Remove default focus border */
+    align-self: center;
+}
+
+.submitButton:hover {
+    background-color: #EAB308; /* Slightly darker yellow on hover */
+}
+
+.submitButton:active {
+    background-color: #C6930A; /* Even darker yellow when active */
+}
+
+.submitButton:focus {
+    box-shadow: 0 0 0 2px rgba(255, 194, 14, 0.5); /* Focus ring around the button with a lighter yellow */
+}

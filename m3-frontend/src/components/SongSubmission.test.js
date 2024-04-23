@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, getByTestId } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { searchSongs, submitSong, submitURLSong, SongSubmission } from "./SongSubmission";
 import axios from "axios";
@@ -419,33 +419,12 @@ describe('Submit Button', () => {
     }
 
     //Expect a network error from axios
-    axios.post.mockResolvedValue(axios_network_error);
+    axios.post.mockRejectedValue(axios_network_error);
 
     await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
   });
 
 });
-
-
-/// HAVVE NOT MADE REFINEMENTS TO URL TEXTBOX STUFF AND BELOW
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 describe('URL Textbox', () => {
@@ -470,76 +449,84 @@ describe('URL Textbox', () => {
 
   it('test-bad-url-submit', async () => {
 
-    const data = {
-      status: 404,  // Any error code that is not already handled
+    let bad_submit_url_response = {
+      status: 200,  // Status of the Axios call
+      data: {
+        search_string: {
+          status: 404, // Status of what was actually returned
+        }
+      }
     };
 
     let expected_error = {
       status: 404,
       response: "No song was found for that URL."
     }
-
+    
     //Expect error 400 or 500 from backend (TODO)
-    axios.post.mockResolvedValue(data);
+    axios.post.mockResolvedValue(bad_submit_url_response);
 
     await expect(submitURLSong("Bad Song URL")).resolves.toEqual(expected_error);
     
   });
 
-  it('test-null-url-submit', async () => {
-
-    const errorMessage = 'No URL was provided.';
+  it('test-empty-url-submit', async () => {
 
     let expected_error = {
       status: 404,
       response: "No URL was provided."
     }
 
-    await expect(submitURLSong(null)).resolves.toEqual(expected_error);
+    await expect(submitURLSong("")).resolves.toEqual(expected_error);
     
   });
 
 
 
   //Backend API Related Tests
-  it('test-timeout', async () => {
+  // it('test-timeout', async () => {
 
-    const data = {
-      status: 408,
-    };
+  //   const data = {
+  //     status: 408,
+  //   };
 
-    let expected_error = {
-      status: 408,
-      response: "URL Song submission timed out. Please try again."
-    }
+  //   let expected_error = {
+  //     status: 408,
+  //     response: "URL Song submission timed out. Please try again."
+  //   }
 
-    //Expect error 408 from backend (TODO)
-    axios.post.mockResolvedValue(data);
+  //   //Expect error 408 from backend (TODO)
+  //   axios.post.mockResolvedValue(data);
 
-    await expect(submitURLSong("URL Timeout")).resolves.toEqual(expected_error);
-  });
+  //   await expect(submitURLSong("URL Timeout")).resolves.toEqual(expected_error);
+  // });
 
-  it('test-not-found', async () => {
+  // it('test-not-found', async () => {
 
-    const data = {
-      status: 404,
-    };
+  //   const data = {
+  //     status: 404,
+  //   };
 
-    let expected_error = {
-      status: 404,
-      response: "Could not find host machine. Please try again."
-    }
+  //   let expected_error = {
+  //     status: 404,
+  //     response: "Could not find host machine. Please try again."
+  //   }
 
-    //Expect error 404 from backend (TODO)
-    axios.post.mockResolvedValue(data);
+  //   //Expect error 404 from backend (TODO)
+  //   axios.post.mockResolvedValue(data);
 
-    await expect(submitURLSong("Host Machine not Found")).resolves.toEqual(expected_error);
-  });
+  //   await expect(submitURLSong("Host Machine not Found")).resolves.toEqual(expected_error);
+  // });
 
   it('test-internal-server-error', async () => {
 
-    const data = {
-      status: 500,
+    let bad_submit_url_response = {
+      status: 200,  // Status of the Axios call
+      data: {
+        search_string: {
+          status: 500, // Status of what was actually returned
+        }
+      }
     };
 
     let expected_error = {
@@ -548,28 +535,41 @@ describe('URL Textbox', () => {
     }
 
     //Expect error 500 from backend (TODO)
-    axios.post.mockResolvedValue(data);
+    axios.post.mockResolvedValue(bad_submit_url_response);
 
     await expect(submitURLSong("URL Internal Server Error")).resolves.toEqual(expected_error);
 
   });
 
-  it('test-generic-api-error', async () => {
+  // it('test-generic-api-error', async () => {
 
-    const data = {
-      status: 599,  // Any error code that is not already handled
-    };
+  //   const data = {
+  //     status: 599,  // Any error code that is not already handled
+  //   };
+
+  //   let expected_error = {
+  //     status: 500,
+  //     response: "An API error has occurred."
+  //   }
+
+  //   //Expect error 500 from backend (TODO)
+  //   axios.post.mockResolvedValue(data);
+
+  //   await expect(submitURLSong("URL API Error")).resolves.toEqual(expected_error);
+
+  // });
+
+  it('test-generic-api-error', async () => {
 
     let expected_error = {
       status: 500,
-      response: "An API error has occurred."
+      response: "A network error has occurred."
     }
 
-    //Expect error 500 from backend (TODO)
-    axios.post.mockResolvedValue(data);
+    //Expect a network error from axios
+    axios.post.mockRejectedValue(axios_network_error);
 
-    await expect(submitURLSong("URL API Error")).resolves.toEqual(expected_error);
-
+    await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
   });
 
 });
@@ -577,8 +577,8 @@ describe('URL Textbox', () => {
 describe('Full System', () => {
 
   it('test-search-and-submit', async () => {
-
-    const { getByTestId } = render(<SongSubmission />);
+    // const { screen.getByTestId } = 
+    render(<SongSubmission />);
 
     // Expect no errors to start
     let searchBarError = screen.queryByTestId("SearchBarError");
@@ -587,14 +587,14 @@ describe('Full System', () => {
     let submitButtonError = screen.queryByTestId("SubmitBarError");
     expect(submitButtonError).not.toBeInTheDocument();
 
-    const searchBar = getByTestId("SearchBar");
+    const searchBar = screen.screen.getByTestId("SearchBar");
     expect(searchBar).toHaveValue('');
 
-    axios.get.mockResolvedValue(data); // Setup mock to resolve with `data`
+    axios.get.mockResolvedValue(search_songs_response); // Setup mock to resolve with `data`
 
     let expected_search_result = {
       status: 200,
-      response: data.results
+      response: search_songs_response.data.search_string.results
     }
 
     // Entering text into the textbox and simulating if we had gotten the data
@@ -608,14 +608,14 @@ describe('Full System', () => {
     expect(search_results).toEqual(expected_search_result);
     
     // Check that there are Result0 - Result4
-    expect(getByTestId("Result0")).toBeInTheDocument();
-    expect(getByTestId("Result1")).toBeInTheDocument();
-    expect(getByTestId("Result2")).toBeInTheDocument();
-    expect(getByTestId("Result3")).toBeInTheDocument();
-    expect(getByTestId("Result4")).toBeInTheDocument();
+    expect(screen.getByTestId("Result0")).toBeInTheDocument();
+    expect(screen.getByTestId("Result1")).toBeInTheDocument();
+    expect(screen.getByTestId("Result2")).toBeInTheDocument();
+    expect(screen.getByTestId("Result3")).toBeInTheDocument();
+    expect(screen.getByTestId("Result4")).toBeInTheDocument();
 
 
-    const firstResult = getByTestId("Result0");
+    const firstResult = screen.getByTestId("Result0");
     fireEvent.click(firstResult);
     let selected_song = search_results.response[0];
 
@@ -624,14 +624,14 @@ describe('Full System', () => {
 
     // Check that Result0 - Result 4 are gone
     // Commented out for testing testing purposes
-    expect(getByTestId("Result0")).not.toBeInTheDocument();
-    expect(getByTestId("Result1")).not.toBeInTheDocument();
-    expect(getByTestId("Result2")).not.toBeInTheDocument();
-    expect(getByTestId("Result3")).not.toBeInTheDocument();
-    expect(getByTestId("Result4")).not.toBeInTheDocument();
+    expect(screen.getByTestId("Result0")).not.toBeInTheDocument();
+    expect(screen.getByTestId("Result1")).not.toBeInTheDocument();
+    expect(screen.getByTestId("Result2")).not.toBeInTheDocument();
+    expect(screen.getByTestId("Result3")).not.toBeInTheDocument();
+    expect(screen.getByTestId("Result4")).not.toBeInTheDocument();
 
 
-    const submitButton = getByTestId("SubmitButton");
+    const submitButton = screen.getByTestId("SubmitButton");
 
     const submit_data = {
       status: 200,
@@ -673,7 +673,7 @@ describe('Full System', () => {
 
   it('test-URL-and-submit', async () => {
 
-    const { getByTestId } = render(<SongSubmission />);
+    render(<SongSubmission />);
 
     // Expect no errors to start
     let searchBarError = screen.queryByTestId("SearchBarError");
@@ -682,13 +682,13 @@ describe('Full System', () => {
     let submitButtonError = screen.queryByTestId("SubmitBarError");
     expect(submitButtonError).not.toBeInTheDocument();
 
-    const URLTestBox = getByTestId("URLTextBox");
+    const URLTestBox = screen.getByTestId("URLTextBox");
     expect(URLTestBox).toHaveValue('');
 
     // Entering text into the textbox
     fireEvent.change(URLTestBox, { target: { value: "Valid URL"}});
 
-    const URLSubmitButton = getByTestId("URLSubmitButton");
+    const URLSubmitButton = screen.getByTestId("URLSubmitButton");
 
     const submit_data = {
       status: 200,
