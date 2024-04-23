@@ -19,7 +19,7 @@ const search_songs_response = {
           id: 1,
           uri: "URI 1",
           s_len: 11,
-          title: searchbar_query + " 1",
+          title: "Title 1",
           artist: "Artist 1",
           album: "Album 1",
         },
@@ -27,7 +27,7 @@ const search_songs_response = {
           id: 2,
           uri: "URI 2",
           s_len: 22,
-          title: searchbar_query + " 2",
+          title: "Title 2",
           artist: "Artist 2",
           album: "Album 2",
         },
@@ -35,7 +35,7 @@ const search_songs_response = {
           id: 3,
           uri: "URI 3",
           s_len: 33,
-          title: searchbar_query + " 3",
+          title: "Title 3",
           artist: "Artist 3",
           album: "Album 3",
         },
@@ -43,7 +43,7 @@ const search_songs_response = {
           id: 4,
           uri: "URI 4",
           s_len: 44,
-          title: searchbar_query + " 4",
+          title: "Title 4",
           artist: "Artist 4",
           album: "Album 4",
         },
@@ -51,7 +51,7 @@ const search_songs_response = {
           id: 5,
           uri: "URI 5",
           s_len: 55,
-          title: searchbar_query + " 5",
+          title: "Title 5",
           artist: "Artist 5",
           album: "Album 5",
         },
@@ -203,6 +203,28 @@ describe('Search Bar', () => {
 
   });
 
+  it('test-unknown-api-error', async () => {
+
+    let expected_error = {
+      status: 500,
+      response: "An error has occured in the backend."
+    }
+
+    let bad_search_songs_response = {
+      status: 200,  // Status of the Axios call
+      data: {
+        search_string: {
+          status: 500, // Status of what was actually returned
+        }
+      }
+    };
+
+    //Expect a network error from axios
+    axios.get.mockResolvedValue(bad_search_songs_response);
+
+    await expect(searchSongs("Test Backend Error")).resolves.toEqual(expected_error);
+  });
+
 });
 
 
@@ -259,10 +281,9 @@ describe('Submit Button', () => {
 
     let expected_error = {
       status: 400,
-      response: "Could not find the title of the selected song."
+      response: "Could not find the song’s title."
     }
-    
-    // axios.post.mockResolvedValue(data); // Setup mock to resolve with `data`
+
 
     await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
 
@@ -341,7 +362,7 @@ describe('Submit Button', () => {
     
     let expected_error = {
       status: 400,
-      response: "Could not find the song’s s_len."
+      response: "Could not find the song’s length."
     }
     
     // axios.post.mockResolvedValue(data); // Setup mock to resolve with `data`
@@ -473,7 +494,7 @@ describe('URL Textbox', () => {
   it('test-empty-url-submit', async () => {
 
     let expected_error = {
-      status: 404,
+      status: 400,
       response: "No URL was provided."
     }
 
@@ -587,7 +608,7 @@ describe('Full System', () => {
     let submitButtonError = screen.queryByTestId("SubmitBarError");
     expect(submitButtonError).not.toBeInTheDocument();
 
-    const searchBar = screen.screen.getByTestId("SearchBar");
+    const searchBar = screen.getByTestId("SearchBar");
     expect(searchBar).toHaveValue('');
 
     axios.get.mockResolvedValue(search_songs_response); // Setup mock to resolve with `data`
@@ -624,11 +645,11 @@ describe('Full System', () => {
 
     // Check that Result0 - Result 4 are gone
     // Commented out for testing testing purposes
-    expect(screen.getByTestId("Result0")).not.toBeInTheDocument();
-    expect(screen.getByTestId("Result1")).not.toBeInTheDocument();
-    expect(screen.getByTestId("Result2")).not.toBeInTheDocument();
-    expect(screen.getByTestId("Result3")).not.toBeInTheDocument();
-    expect(screen.getByTestId("Result4")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("Result0")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("Result1")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("Result2")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("Result3")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("Result4")).not.toBeInTheDocument();
 
 
     const submitButton = screen.getByTestId("SubmitButton");

@@ -73,20 +73,42 @@ export async function searchSongs(searchbar_query) {
     const response = await axios.get(
       "http://172.28.99.52:8080/return_results?search_string=" + searchbar_query
     );
-    console.log("Successful response: " + response);
-    console.log(response);
 
-    return {
-      status: response.data.search_string.status,
-      response: response.data.search_string.results,
-    };
+    switch(response.data.search_string.status) {
+      case 200:
+        return {
+          status: response.data.search_string.status,
+          response: response.data.search_string.results,
+        };
+      case 403:
+        return {
+          status: response.data.search_string.status,
+          response: 'Bad OAuth request.',
+        };
+      case 429:
+        return {
+          status: response.data.search_string.status,
+          response: 'Exceeded Spotify search limit. Please wait a few seconds before retrying.',
+        };
+      default:
+        return {
+          status: 500,
+          response: 'An error has occured in the backend.',
+        };
+    }
+    
   } catch (error) {
     console.log("Error response: ", error);
 
-    return {
-      status: error.response ? error.response.status : 500,
-      response: "My Error Message",
-    };
+    if (error.response !== undefined) {
+      // Check the status and return some error message
+    }else{
+      return {
+        status: 500,
+        response: "My Error Message",
+      };
+    }
+
   }
 
   // const response = await axios.get('https://jsonplaceholder.typicode.com/albums');
@@ -110,6 +132,31 @@ export async function submitSong(selected_song) {
       status: 400,
       response: "No song was selected.",
     };
+  }else if (selected_song.title === undefined) {
+    return {
+      status: 400,
+      response: "Could not find the song’s title."
+    }
+  }else if (selected_song.uri === undefined) {
+    return {
+      status: 400,
+      response: "Could not find the song’s URI."
+    }
+  }else if (selected_song.artist === undefined) {
+    return {
+      status: 400,
+      response: "Could not find the song’s artist."
+    }
+  }else if (selected_song.album === undefined) {
+    return {
+      status: 400,
+      response: "Could not find the song’s album."
+    }
+  }else if (selected_song.s_len === undefined) {
+    return {
+      status: 400,
+      response: "Could not find the song’s length."
+    }
   }
 
   let post_data =  {
@@ -121,21 +168,40 @@ export async function submitSong(selected_song) {
 
   try {
     const response = await axios.post("http://172.28.99.52:8080/submit_song", post_data);
-    console.log("Successful response: " + response);
     console.log(response);
 
-    return {
-      status: response.status,
-      response: "My Success Message",
-    };
+    switch(response.data.search_string.status){
+      case 200: 
+        return {
+          status: response.data.search_string.status,
+          response: "",
+        };
+      case 500:
+        return {
+          status: response.data.search_string.status,
+          response: "An internal server error has occurred. Please try again."
+        }
+      default: 
+        return {
+          status: 500,
+          response: "An error has occured in the backend."
+        }
+    }
+    
   } catch (error) {
-    console.log("Error response: ", error);
+    // console.log("Error response: ", error);
     console.log(error);
 
+    console.log("Submit button error!!!")
     return {
-      status: error.response ? error.response.status : 500,
-      response: "My Error Message",
+      status: 500,
+      response: "A network error has occurred.",
     };
+
+    // return {
+    //   status: error.response ? error.response.status : 500,
+    //   response: "My Error Message",
+    // };
   }
 }
 
@@ -151,16 +217,27 @@ export async function submitURLSong(url_textbox_input) {
   console.log("Here" + url_textbox_input);
 
   try {
-    const response = await axios.post(
-      "http://172.28.99.52:8080/return_results_from_url?spotify_url=" +
-        url_textbox_input
-    );
-    console.log("Successful response: " + response);
+    const response = await axios.post("http://172.28.99.52:8080/return_results_from_url?spotify_url=" + url_textbox_input);
     console.log(response);
-    return {
-      status: response.status,
-      response: "My Success Message",
-    };
+
+    switch(response.data.search_string.status) {
+      case 200:
+        return {
+          status: response.status,
+          response: "My Success Message",
+        };
+      case 500:
+        return {
+          status: 500,
+          response: "An internal server error has occurred. Please try again."
+        };
+      default:
+        return {
+          status: 500,
+          response: "An error has occured in the backend."
+        }; 
+    }
+    
   } catch (error) {
     console.log("Error response: ", error);
     console.log(error);
