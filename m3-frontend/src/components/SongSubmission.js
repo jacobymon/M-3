@@ -192,6 +192,7 @@ export function SongSubmission({ data }) {
   //   []  // Dependencies array is empty, so the debounced function is created only once
   // );
 
+
   const searchSongs_debounced = useCallback(
     debounce((searchInput) => searchSongs(searchInput), 500),
     []  // Dependencies array is empty, so the debounced function is created only once
@@ -221,70 +222,63 @@ export function SongSubmission({ data }) {
 
 
   return (
-    <div>
-      <h1>M-3</h1>
-      
-      {/* <div>
-        <input data-testid="SearchBar" placeholder="Search for songs..." onChange={handleSearchBarKeystroke}/>
-        <input data-testid="URLTextBox" placeholder="Paste a song URL..." onChange={(e) => setURLTextboxInput(e.target.value)}/>
-      </div> */}
-      <div className='searchContainer'>
-    <input className='searchBar' data-testid="SearchBar"
-      placeholder="Search for songs..."
-      value={searchQuery} 
-      onChange={handleSearchBarKeystroke}
-    />
-    {searchResults && (
-      <div className='dropdownContainer'>
-        {searchResults.map((item, index) => (
-          <div className='dropdownItem' key={index} onClick={() => handleDropdownSelectSong(item)}>
-            <div className='itemTitle'>{item.title}</div>
-            <div className='itemSubtitle'>{item.artist} - {item.album}</div>
-          </div>
-        ))}
-      </div>
-    )}
-    <button data-testid="SubmitButton" 
-        className='submitButton'
-      onClick={() => submitSong(selectedSong)}>
-      Submit Song
-    </button>
-</div>
-      <div>
-        <input
-          className='searchBar'
-          data-testid="URLTextBox"
-          placeholder="Paste a song URL..."
-          onChange={(e) => setURLTextboxInput(e.target.value)}
-          style={{ width: '300px' }}
-        />
-      </div>
-      {
-      <div>
-        
-        <button data-testid="URLSubmitButton" onClick={() => submitURLSong(URLTextboxInput)}>
-          Submit Song URL
-        </button>
-      </div>
-    }
-      
-      <p>{searchQuery}</p>
-      <p>{URLTextboxInput}</p>
-      <p data-testid={"Result" + 0} onClick={() => console.log("I am the 0 result")}>Hello</p>
-      <p data-testid="Result1" onClick={() => console.log("I am the 1 result")}>Hello</p>
-      <p data-testid="Result2" onClick={() => console.log("I am the 2 result")}>Hello</p>
-      <p data-testid="Result3" onClick={() => console.log("I am the 3 result")}>Hello</p>
-      <p data-testid="Result4" onClick={() => console.log("I am the 4 result")}>Hello</p>
+    <div className='songSubmission'>      
+        <div className='searchContainer'>
+          
+          <input className='searchBar' data-testid="SearchBar"
+            placeholder="Search for songs..."
+            value={searchQuery} 
+            onChange={handleSearchBarKeystroke}
+          />
+
+          {searchResults && 
+            <div className='dropdownContainer'>
+              {searchResults.map((item, index) => (
+                <div className='dropdownItem' data-testid={"Result" + index}
+                  key={index} onClick={() => handleDropdownSelectSong(item)}>
+                  <div className='itemTitle'>{item.title}</div>
+                  <div className='itemSubtitle'>{item.artist} - {item.album}</div>
+                </div>
+              ))}
+            </div>
+          }
+
+          <button data-testid="SubmitButton" className='submitButton'
+            onClick={() => submitSong(selectedSong)}>
+            Submit Song
+          </button>
+
+        </div>
+
+        <div className='searchContainer'>
+          
+          <input
+              className='searchBar'
+              data-testid="URLTextBox"
+              placeholder="Paste a song URL..."
+              onChange={(e) => setURLTextboxInput(e.target.value)}
+            />
+
+          <button data-testid="URLSubmitButton" className='submitButton'
+            onClick={() => submitURLSong(URLTextboxInput)}>
+            Submit URL
+          </button>
+
+        </div>
       { searchBarError && 
         <div data-testid="SearchBarError">
-          Hello there
+          {searchBarError.response}
         </div>
       }
       { submitButtonError && 
         <div data-testid="SubmitButtonError">
-          Hello there again
+          {submitButtonError.response}
         </div>
       }
+    
+      <p>{searchQuery}</p>
+      <p>{URLTextboxInput}</p>
+      
     </div>
     
   );
