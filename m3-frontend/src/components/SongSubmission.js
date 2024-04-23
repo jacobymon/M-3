@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import axios from "axios";
 import debounce from 'lodash.debounce';
 import './SongSubmission.css';
@@ -10,7 +10,7 @@ export async function searchSongs(searchbar_query) {
 
   // Check results. Was there an error?
   // If there was an error, set_searchbar_error(true) and        set_searchbar_error_message(“Relevant error message”)
-  if (searchbar_query == "") {
+  if (searchbar_query === "") {
     return {
       status: 400,
       response: 'Please enter a song name to search.'
@@ -179,63 +179,106 @@ export async function submitURLSong(url_textbox_input) {
 
 
 export function SongSubmission({ data }) {
-  const [searchBarError, setSearchBarError] = useState(null);
-  const [submitButtonError, setSubmitButtonError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [URLTextboxInput, setURLTextboxInput] = useState("");
-  const [searchResults, setSearchResults] = useState("");
-  const [selectedSong, setSelectedSong] = useState(null);
+  const [searchBarError, setSearchBarError] = useState(null);       // Hold error messages related to the search bar
+  const [submitButtonError, setSubmitButtonError] = useState(null); // Hold error messages related to song submission
+  const [searchQuery, setSearchQuery] = useState("");               // Represents and holds the value in the search bar
+  const [URLTextboxInput, setURLTextboxInput] = useState("");       // Represents and holds the value in the URL text box
+  const [searchResults, setSearchResults] = useState("");           // Holds an array of songs for the dropdown
+  const [hideSearchResults, setHideSearchResults] = useState(false);// A toggle for hiding the dropdown if it is not clicked
+  const [selectedSong, setSelectedSong] = useState(null);           // The song that has been selected from the dropdown
 
 
-  // const debouncedSearchBar = useCallback(
-  //   debounce((newValue) => setSearchQuery(newValue), 1000),
-  //   []  // Dependencies array is empty, so the debounced function is created only once
-  // );
-
-
+  // A function wrapper for searchSongs that debounces the call.
+  // That means, if called multiple times in the time interval specified, 
+  // it only returns the results of the most recent call of the function.
   const searchSongs_debounced = useCallback(
-    debounce((searchInput) => searchSongs(searchInput), 500),
+    () => debounce((searchInput) => searchSongs(searchInput), 500),
     []  // Dependencies array is empty, so the debounced function is created only once
   );
 
-  const handleSearchBarKeystroke = async (e) => {
-    
-    setSearchQuery(e.target.value)
-    console.log("Pre Search")
-    // searchSongs_debounced(e.target.value);
-    let response_json = await searchSongs(e.target.value)
-    console.log(response_json.results)
-    if (response_json.status == 200) {
-      setSearchResults(response_json.results);
-    }else{
-      setSearchResults(null);
+  // A use effect to check if we are clicking outside the dropdown and run a function. 
+  useEffect(() => { 
+    document.addEventListener('click', handleClickOutsideDropdown);
+
+    return () => {
+      document.removeEventListener('click', handleClickOutsideDropdown);
+    };
+  }, []);
+
+  // Handles emptying the search bar if a song has been selected but the search query is backspaced
+  // Meant to simulate deleting the selected song from the search bar
+  const handleSearchBarKeyDown = (e) => {
+    console.log("Doing key down");
+    // console.log(e);
+    if (selectedSong && e.key === 'Backspace') {
+      setSearchQuery("");
+      setSelectedSong(null);
     }
-    console.log("Post Search")
   }
 
-  const handleDropdownSelectSong = (song) => {
+  // Handles running a debounced searchSongs whenever the search bar is changed
+  const handleSearchBarKeystroke = async (e) => {
+    
+    console.log("Doing key stroke");
+    setSearchQuery(e.target.value)
+   
+    // searchSongs_debounced(e.target.value);
+    let response_json = await searchSongs(e.target.value) // Comment out and replace with above when done
+    
+    // console.log(response_json.results)
+    if (response_json.status === 200) {
+      setSearchResults(response_json.results);
+    } else{
+      setSearchResults(null);
+    }
+  }
+
+  // Handles displaying the dropdown when clicking on the search bar, 
+  // if it was previously hidden
+  const handleSearchBarClick = (e) => {
+    // Prevents the behavior to be done clicking outside the dropdown
+    e.stopPropagation();
+
+    console.log("Clicked searchbar");
+    setHideSearchResults(false)
+  }
+
+  // Handle selecting a song from the dropdown
+  const handleDropdownSelectSong = (song, e) => {
+    // Prevents the behavior to be done clicking outside the dropdown
+    e.stopPropagation();  
+
     console.log(`Selected: ${song.title}`);
     setSearchQuery(song.title);
     setSelectedSong(song)
     setSearchResults(null)
   }
 
+  // Hides the search results dropdown. 
+  // Run when clicking outside the dropdown due to the useEffect 
+  const handleClickOutsideDropdown = () => {
+    setHideSearchResults(true);
+  }
 
   return (
     <div className='songSubmission'>      
         <div className='searchContainer'>
           
+          {/* The input field for searching for songs */}
           <input className='searchBar' data-testid="SearchBar"
             placeholder="Search for songs..."
-            value={searchQuery} 
-            onChange={handleSearchBarKeystroke}
+            value={searchQuery}
+            onClick={handleSearchBarClick}
+            onChange={handleSearchBarKeystroke} // Handling searching with each keystroke
+            onKeyDown={handleSearchBarKeyDown} // Handles if a song was selected but we want to re-search 
           />
 
-          {searchResults && 
+          {/* The conditionally rendering dropdown menu for selecting songs */}
+          {!hideSearchResults && searchResults && 
             <div className='dropdownContainer'>
               {searchResults.map((item, index) => (
                 <div className='dropdownItem' data-testid={"Result" + index}
-                  key={index} onClick={() => handleDropdownSelectSong(item)}>
+                  key={index} onClick={(e) => handleDropdownSelectSong(item, e)}>
                   <div className='itemTitle'>{item.title}</div>
                   <div className='itemSubtitle'>{item.artist} - {item.album}</div>
                 </div>
@@ -243,6 +286,7 @@ export function SongSubmission({ data }) {
             </div>
           }
 
+          {/* The button to submit the song that has been selected from the dropdown */}
           <button data-testid="SubmitButton" className='submitButton'
             onClick={() => submitSong(selectedSong)}>
             Submit Song
@@ -252,6 +296,7 @@ export function SongSubmission({ data }) {
 
         <div className='searchContainer'>
           
+          {/* The input field for submitting song URLs to be added to the queue */}
           <input
               className='searchBar'
               data-testid="URLTextBox"
@@ -259,22 +304,26 @@ export function SongSubmission({ data }) {
               onChange={(e) => setURLTextboxInput(e.target.value)}
             />
 
+          {/* The button to submit the song URL that was passed into the URL textbox */}
           <button data-testid="URLSubmitButton" className='submitButton'
             onClick={() => submitURLSong(URLTextboxInput)}>
             Submit URL
           </button>
 
         </div>
-      { searchBarError && 
-        <div data-testid="SearchBarError">
-          {searchBarError.response}
-        </div>
-      }
-      { submitButtonError && 
-        <div data-testid="SubmitButtonError">
-          {submitButtonError.response}
-        </div>
-      }
+        {/* The field where errors related to the search bar and URL textbox will be displayed */}
+        { searchBarError && 
+          <div data-testid="SearchBarError">
+            {searchBarError.response}
+          </div>
+        }
+
+        {/* The field where errors related to song submission will be displayed */}
+        { submitButtonError && 
+          <div data-testid="SubmitButtonError">
+            {submitButtonError.response}
+          </div>
+        }
     
       <p>{searchQuery}</p>
       <p>{URLTextboxInput}</p>
