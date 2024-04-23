@@ -4,8 +4,8 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS, cross_origin
 import json
 
-from auth import get_user_token
-from player import get_first_available_device
+from Spotify_Interface.auth import get_user_token
+from Spotify_Interface.player import get_first_available_device
 
 # from UniversalQueue.Song import Song
 
@@ -44,6 +44,7 @@ class Spotify_Interface_Class:
         print(track_id)
         self.spotify.playback_start_tracks(track_ids=[track_id], device_id=self.device_id) 
         current_track = self.spotify.playback_currently_playing()
+        # introduce a sleep call
         if current_track.item.id == track_id:
             return 0
         else: 
@@ -126,7 +127,7 @@ class Spotify_Interface_Class:
         track_id = response[1]
 
         track = self.spotify.track(track_id)
-        
+
         results = []
         json_data = {
                 'id': 0,
@@ -143,25 +144,25 @@ class Spotify_Interface_Class:
 
         return data 
 
-s = Spotify_Interface_Class()
+# s = Spotify_Interface_Class()
 
-@app.route('/return_results', methods=['GET', 'POST'])
-@cross_origin()
-def return_results():
-    search_string = request.args.get('search_string')
-    response = {'search_string': s.return_data(search_string)}
-    print(response)
-    return response
-
-
-@app.route('/return_results_from_url', methods=['GET', 'POST'])
-@cross_origin()
-def return_results_from_url():
-    url = request.args.get('spotify_url')
-    response = {'spotify_url': s.from_url(url)}
-    print(response)
-    return response
+# @app.route('/return_results', methods=['GET', 'POST'])
+# @cross_origin()
+# def return_results():
+    # search_string = request.args.get('search_string')
+    # response = {'search_string': s.return_data(search_string)}
+    # print(response)
+    # return response
 
 
-if __name__ == '__main__':
-    app.run(host = '0.0.0.0', port=8080) 
+# @app.route('/return_results_from_url', methods=['GET', 'POST'])
+# @cross_origin()
+# def return_results_from_url():
+    # url = request.args.get('spotify_url')
+    # response = {'spotify_url': s.from_url(url)}
+    # print(response)
+    # return response
+
+
+# if __name__ == '__main__':
+    # app.run(host = '0.0.0.0', port=8080) 

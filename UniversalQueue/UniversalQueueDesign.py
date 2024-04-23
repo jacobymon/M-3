@@ -1,8 +1,18 @@
 """ This module implements the Universal Queue class """
+from re import A
 from time import sleep
-
 """ This module allows us to log our errors"""
 import logging
+
+from flask import Flask, jsonify, request 
+from flask_cors import CORS, cross_origin
+ 
+import json
+from Spotify_Interface.spotify_interface_class import Spotify_Interface_Class
+from Song import Song
+
+app = Flask(__name__)
+CORS(app) 
 
 class UniversalQueue:
     """
@@ -33,6 +43,8 @@ class UniversalQueue:
         self.hostCookie = "host"
 
         self.idCount = 0
+
+        self.spotify = Spotify_Interface_Class()
 
     def insert(self, song): 
         """
@@ -66,6 +78,9 @@ class UniversalQueue:
         #when song is finished delete it from queue
         #call update_UI()
         #call write()
+        self.spotify.play(self.data[0].uri)
+        self.data = self.data[1:]
+
 
     def pause_queue(self):
         """
@@ -189,9 +204,6 @@ class UniversalQueue:
         sets the queue back to an empty list
         """
 
-    
-    
-
     def write(self, file):
         """
         Writes the queue to a file in json format on
@@ -214,3 +226,41 @@ class UniversalQueue:
         #read from the file
         #re insert all of the song objects back into a new queue
         #update_ui
+
+UQ = UniversalQueue()
+
+@app.route('/return_results', methods=['GET', 'POST'])
+@cross_origin()
+def return_results():
+    search_string = request.args.get('search_string')
+    response = {'search_string': UQ.spotify.return_data(search_string)}
+    print(response)
+    return response
+
+
+@app.route('/return_results_from_url', methods=['GET', 'POST'])
+@cross_origin()
+def return_results_from_url():
+    url = request.args.get('spotify_url')
+    response = {'spotify_url': UQ.spotify.from_url(url)}
+    print(response)
+    return response
+
+@app.route('/submit_song', methods=['GET', 'POST'])
+@cross_origin()
+def submit_song():
+
+    song_data = request.get_json()
+    # jsonify(song_data)
+    song_data = json.dumps(song_data)
+    print(song_data)
+    print("######TYPE#####", type(song_data))
+    song = Song(song_data)
+
+    UQ.insert(song)
+    UQ.flush_queue()
+    return song_data
+    
+if __name__ == '__main__':
+    app.run(host = '0.0.0.0', port=8080) 
+
