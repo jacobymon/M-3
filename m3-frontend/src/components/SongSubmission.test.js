@@ -237,21 +237,19 @@ describe('Submit Button', () => {
       status: 200,
     };
 
-    // const submit_song_response = {
-    //   status: 200,  // Status of the Axios call
-    //   data: {
-    //     submission: {
-    //       status: 200, // Status of what was actually returned
-    //     }
-    //   }
-    // };
+    const submit_song_response = {
+      status: 200,  // Status of the Axios call
+      data: {
+        status: 200, // Status of what was actually returned
+      }
+    };
 
     let expected_result = {
       status: 200,
-      response: null
+      response: "My success message (submitSong)"
     }
     
-    axios.post.mockResolvedValue(data); // Setup mock to resolve with `data`
+    axios.post.mockResolvedValue(submit_song_response); // Setup mock to resolve with `data`
 
     await expect(submitSong(selected_song)).resolves.toEqual(expected_result);
 
@@ -415,9 +413,7 @@ describe('Submit Button', () => {
     let bad_submit_song_response = {
       status: 200,  // Status of the Axios call
       data: {
-        search_string: {
-          status: 500, // Status of what was actually returned
-        }
+        status: 500, // Status of what was actually returned
       }
     };
 
@@ -436,7 +432,7 @@ describe('Submit Button', () => {
 
     let expected_error = {
       status: 500,
-      response: "A network error has occurred."
+      response: "A network error has occurred while submitting the song."
     }
 
     //Expect a network error from axios
@@ -453,16 +449,21 @@ describe('URL Textbox', () => {
   // URL Textbox Related Tests
   it('test-url-submit', async () => {
 
-    const data = {
+    const url_submit_response = {
       status: 200,
+      data: {
+        spotify_url: {
+          status: 200,
+        }
+      }
     };
 
     let expected_result = {
       status: 200,
-      response: null
+      response: "My Success Message (Submit URL Song)"
     }
     
-    axios.post.mockResolvedValue(data); // Setup mock to resolve with `data`
+    axios.post.mockResolvedValue(url_submit_response); // Setup mock to resolve with `data`
 
     await expect(submitURLSong(song_url)).resolves.toEqual(expected_result);
     
@@ -473,7 +474,7 @@ describe('URL Textbox', () => {
     let bad_submit_url_response = {
       status: 200,  // Status of the Axios call
       data: {
-        search_string: {
+        spotify_url: {
           status: 404, // Status of what was actually returned
         }
       }
@@ -544,7 +545,7 @@ describe('URL Textbox', () => {
     let bad_submit_url_response = {
       status: 200,  // Status of the Axios call
       data: {
-        search_string: {
+        spotify_url: {
           status: 500, // Status of what was actually returned
         }
       }
@@ -584,13 +585,13 @@ describe('URL Textbox', () => {
 
     let expected_error = {
       status: 500,
-      response: "A network error has occurred."
+      response: "A network error has occured while submitting the song URL."
     }
 
     //Expect a network error from axios
     axios.post.mockRejectedValue(axios_network_error);
 
-    await expect(submitSong(selected_song)).resolves.toEqual(expected_error);
+    await expect(submitURLSong(selected_song)).resolves.toEqual(expected_error);
   });
 
 });

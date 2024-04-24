@@ -100,27 +100,13 @@ export async function searchSongs(searchbar_query) {
   } catch (error) {
     console.log("Error response: ", error);
 
-    if (error.response !== undefined) {
-      // Check the status and return some error message
-    }else{
-      return {
-        status: 500,
-        response: "My Error Message",
-      };
-    }
+    return {
+      status: 500,
+      response: "A network error has occurred while searching songs.",
+    };
 
   }
 
-  // const response = await axios.get('https://jsonplaceholder.typicode.com/albums');
-  // console.log("searchSongs(\"" + searchbar_query + "\")");
-  // // console.log("status: " + response.status);
-
-  // let ret = {
-  //   status: response.status,
-  //   response: response.results,
-  // }
-  // return ret;
-  // return response.results[0].title;
 }
 
 export async function submitSong(selected_song) {
@@ -170,15 +156,15 @@ export async function submitSong(selected_song) {
     const response = await axios.post("http://172.28.99.52:8080/submit_song", post_data);
     console.log(response);
 
-    switch(response.data.search_string.status){
+    switch(response.data.status){
       case 200: 
         return {
-          status: response.data.search_string.status,
-          response: "",
+          status: response.data.status,
+          response: "My success message (submitSong)",
         };
       case 500:
         return {
-          status: response.data.search_string.status,
+          status: response.data.status,
           response: "An internal server error has occurred. Please try again."
         }
       default: 
@@ -192,16 +178,12 @@ export async function submitSong(selected_song) {
     // console.log("Error response: ", error);
     console.log(error);
 
-    console.log("Submit button error!!!")
+    // console.log("Submit button error!!!")
     return {
       status: 500,
-      response: "A network error has occurred.",
+      response: "A network error has occurred while submitting the song.",
     };
 
-    // return {
-    //   status: error.response ? error.response.status : 500,
-    //   response: "My Error Message",
-    // };
   }
 }
 
@@ -220,15 +202,20 @@ export async function submitURLSong(url_textbox_input) {
     const response = await axios.post("http://172.28.99.52:8080/return_results_from_url?spotify_url=" + url_textbox_input);
     console.log(response);
 
-    switch(response.data.search_string.status) {
+    switch(response.data.spotify_url.status) {
       case 200:
         return {
-          status: response.status,
-          response: "My Success Message",
+          status: response.data.spotify_url.status,
+          response: "My Success Message (Submit URL Song)",
+        };
+      case 404:
+        return {
+          status: response.data.spotify_url.status,
+          response: "No song was found for that URL.",
         };
       case 500:
         return {
-          status: 500,
+          status: response.data.spotify_url.status,
           response: "An internal server error has occurred. Please try again."
         };
       default:
@@ -240,11 +227,11 @@ export async function submitURLSong(url_textbox_input) {
     
   } catch (error) {
     console.log("Error response: ", error);
-    console.log(error);
+    // console.log(error);
 
     return {
-      status: error.response ? error.response.status : 500,
-      response: "My Error Message",
+      status: 500,
+      response: "A network error has occured while submitting the song URL.",
     };
   }
 
@@ -350,6 +337,9 @@ export function SongSubmission({ data }) {
     if (response_json.status === 200) {
       setSelectedSong(null);
       setSearchQuery("");
+
+      // Temporary
+      setSubmitButtonError(response_json.response)
     }else {
       setSubmitButtonError(response_json.response)
     }

@@ -17,9 +17,9 @@ function App() {
         <h1>M-3</h1>
       </header>
 
-      <body className="App-body">
+      <div className="App-body">
         <SongSubmission />
-      </body>
+      </div>
 
     </div>
   );
