@@ -46,6 +46,8 @@ class UniversalQueue:
 
         self.spotify = Spotify_Interface_Class()
 
+        self.queue_flag = True
+
     def insert(self, song): 
         """
         When queue not suspended
@@ -60,6 +62,9 @@ class UniversalQueue:
             self.idCount += 1 #update the next id to be unique for the next set
             self.data.append(song)
             #write() #NOT IMPLEMENTED YET
+
+            if len(self.data) == 1:
+                self.flush_queue()
         else:
             raise ValueError('can not insert')
 
@@ -78,8 +83,12 @@ class UniversalQueue:
         #when song is finished delete it from queue
         #call update_UI()
         #call write()
-        self.spotify.play(self.data[0].uri)
-        self.data = self.data[1:]
+        while len(self.data) != 0 and self.queue_flag:
+            self.spotify.play(self.data[0].uri)
+            sleep(self.data[0].s_len / 1000)
+            self.data = self.data[1:]
+
+        self.queue_flag = True
 
 
     def pause_queue(self):
@@ -137,6 +146,7 @@ class UniversalQueue:
         #of self.cookie
         #IMPORTANT removal of first song starts playing next song is checked manually
         #IMPORTANT this operation is curretnly O(n). Look into making it O(1) with dictionary
+        self.queue_flag = False
         if self.cookie_verifier(self.hostCookie):
             for s in self.data:
                 if s.id == id:
@@ -144,6 +154,7 @@ class UniversalQueue:
                         self.data.remove(s)
                         #play next song
                         #flush_queue
+                        self.flush_queue()
 
                     else:
                         self.data.remove(s)
@@ -258,7 +269,7 @@ def submit_song():
     song = Song(song_data)
 
     UQ.insert(song)
-    UQ.flush_queue()
+    print(UQ.data) 
     return song_data
     
 if __name__ == '__main__':

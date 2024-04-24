@@ -45,11 +45,12 @@ class Spotify_Interface_Class:
         self.spotify.playback_start_tracks(track_ids=[track_id], device_id=self.device_id) 
         current_track = self.spotify.playback_currently_playing()
         # introduce a sleep call
-        if current_track.item.id == track_id:
-            return 0
-        else: 
-            #Should raise an exception here later down the line
-            return 1
+        # if current_track.item.id == track_id:
+            # return 0
+        # else: 
+            # #Should raise an exception here later down the line
+            # return 1
+        return 0
 
     def pause(self): 
         """
