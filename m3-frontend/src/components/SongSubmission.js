@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import axios from "axios";
 import debounce from "lodash.debounce";
 import "./SongSubmission.css";
@@ -16,51 +16,51 @@ export async function searchSongs(searchbar_query) {
     };
   }
 
-  // return {
-  //   status: 200, // Status of what was actually returned
-  //   response: [
-  //     {
-  //       id: 1,
-  //       uri: "URI 1",
-  //       s_len: 11,
-  //       title: searchbar_query + " 1",
-  //       artist: "Artist 1",
-  //       album: "Album 1",
-  //     },
-  //     {
-  //       id: 2,
-  //       uri: "URI 2",
-  //       s_len: 22,
-  //       title: searchbar_query + " 2",
-  //       artist: "Artist 2",
-  //       album: "Album 2",
-  //     },
-  //     {
-  //       id: 3,
-  //       uri: "URI 3",
-  //       s_len: 33,
-  //       title: searchbar_query + " 3",
-  //       artist: "Artist 3",
-  //       album: "Album 3",
-  //     },
-  //     {
-  //       id: 4,
-  //       uri: "URI 4",
-  //       s_len: 44,
-  //       title: searchbar_query + " 4",
-  //       artist: "Artist 4",
-  //       album: "Album 4",
-  //     },
-  //     {
-  //       id: 5,
-  //       uri: "URI 5",
-  //       s_len: 55,
-  //       title: searchbar_query + " 5",
-  //       artist: "Artist 5",
-  //       album: "Album 5",
-  //     },
-  //   ],
-  // };
+  return {
+    status: 200, // Status of what was actually returned
+    response: [
+      {
+        id: 1,
+        uri: "URI 1",
+        s_len: 11,
+        title: searchbar_query + " 1",
+        artist: "Artist 1",
+        album: "Album 1",
+      },
+      {
+        id: 2,
+        uri: "URI 2",
+        s_len: 22,
+        title: searchbar_query + " 2",
+        artist: "Artist 2",
+        album: "Album 2",
+      },
+      {
+        id: 3,
+        uri: "URI 3",
+        s_len: 33,
+        title: searchbar_query + " 3",
+        artist: "Artist 3",
+        album: "Album 3",
+      },
+      {
+        id: 4,
+        uri: "URI 4",
+        s_len: 44,
+        title: searchbar_query + " 4",
+        artist: "Artist 4",
+        album: "Album 4",
+      },
+      {
+        id: 5,
+        uri: "URI 5",
+        s_len: 55,
+        title: searchbar_query + " 5",
+        artist: "Artist 5",
+        album: "Album 5",
+      },
+    ],
+  };
 
   // If there was no error, set_searchbar_error(false) and set_searchbar_error_message(“No error”)
   // If there was no error, process the results into something usable by the program (ie. trim the JSONs to only include song name, URI, artist, album).
@@ -246,18 +246,12 @@ export function SongSubmission({ data }) {
   const [submitButtonError, setSubmitButtonError] = useState("");   // Hold error messages related to song submission
   const [searchQuery, setSearchQuery] = useState("");                 // Represents and holds the value in the search bar
   const [URLTextboxInput, setURLTextboxInput] = useState("");         // Represents and holds the value in the URL text box
+  const [searchSongsResponse, setSearchSongsResponse] = useState(null);
   const [searchResults, setSearchResults] = useState("");             // Holds an array of songs for the dropdown
   const [hideSearchResults, setHideSearchResults] = useState(false);  // A toggle for hiding the dropdown if it is not clicked
   const [selectedSong, setSelectedSong] = useState(null);             // The song that has been selected from the dropdown
 
-  // A function wrapper for searchSongs that debounces the call.
-  // That means, if called multiple times in the time interval specified,
-  // it only returns the results of the most recent call of the function.
-  const searchSongs_debounced = useCallback(
-    () => debounce((searchInput) => searchSongs(searchInput), 500),
-    [] // Dependencies array is empty, so the debounced function is created only once
-  );
-
+  
   // A use effect to check if we are clicking outside the dropdown and run a function.
   useEffect(() => {
     document.addEventListener("click", handleClickOutsideDropdown);
@@ -278,31 +272,37 @@ export function SongSubmission({ data }) {
     }
   };
 
+  // A function wrapper for searchSongs that debounces the call.
+  // That means, if called multiple times in the time interval specified,
+  // it only returns the results of the most recent call of the function.
+  // It then sets the return value of searchSongs to searchSongsResponse
+  const searchSongs_debounced = useCallback(
+    debounce((searchInput) => 
+      searchSongs(searchInput).then(setSearchSongsResponse), 500),
+    [] // Dependencies array is empty, so the debounced function is created only once
+  );
+
   // Handles running a debounced searchSongs whenever the search bar is changed
   const handleSearchBarKeystroke = async (e) => {
     console.log("Doing key stroke");
     setSearchQuery(e.target.value);
 
-    // searchSongs_debounced(e.target.value);
-    let response_json = await searchSongs(e.target.value); // Comment out and replace with above when done
+    searchSongs_debounced(e.target.value);
+  };
 
-    console.log(response_json)
+  // Handles updaing variables after the searchSongsResponse is updated
+  // during searchSongs_debounced
+  React.useEffect(() => {
+    if (searchSongsResponse === null) return;
 
-    // if (response_json.status === 400) {
-      
-    //   // setSearchResults(null)
-    // }
-
-    if (response_json.status === 200) {
-      setSearchResults(response_json.response);
+    if (searchSongsResponse.status === 200) {
+      setSearchResults(searchSongsResponse.response);
       setSearchBarError("");
     } else {
       setSearchResults(null);
-      setSearchBarError(response_json.response);
+      setSearchBarError(searchSongsResponse.response);
     }
-    
-    
-  };
+  }, [searchSongsResponse]) // Run this useEffect whenever searchSongsResponse changes
 
   // Handles displaying the dropdown when clicking on the search bar,
   // if it was previously hidden
