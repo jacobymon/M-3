@@ -13,8 +13,10 @@ import winapps
 path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append( path + '/../UniversalQueue/Spotify_Interface')
 print(sys.path) 
-from UniversalQueue.Spotify_Interface.spotify_interface_class import Spotify_Interface_Class
 import spotify_interface_class
+from server import Server
+from UniversalQueue.Spotify_Interface.spotify_interface_class import \
+    Spotify_Interface_Class
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -29,27 +31,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class startup():
     def __init__(self):
         return
-    
-    
-    def _check_operating_system(self):
-        OS =  platform.system() 
-        if OS == 'Darwin': 
-            logging.info("OS successfully retrieved: %s", "Mac")
-            return "Mac"
-        elif OS == 'Windows' or OS == 'Linux':
-            logging.info("OS successfully retrieved: %s", str(OS))
-            return platform.system()
-        else:
-            logging.error("OS not supported is found: %s", str(OS))
-            return ""
-        
-        
         
     def _create_config_file(self):
         path = os.path.dirname(os.path.abspath(__file__))
         filename = path + '/creds.config'
-        if_file_exist = exists(filename)
-        if(if_file_exist):
+        if_config_exist = exists(filename)
+        if(if_config_exist):
             logging.info("Config file already exists")
             return
         try:
@@ -67,8 +54,8 @@ class startup():
     def is_refresh_token(self):
         path = os.path.dirname(os.path.abspath(__file__))
         CONFIG_FILE = path + '/creds.config'
-        if_file_exist = exists(CONFIG_FILE)
-        if(if_file_exist):
+        if_config_exist = exists(CONFIG_FILE)
+        if(if_config_exist):
             with open(CONFIG_FILE, 'r') as file:
                 for line in file:
                     if "SPOTIFY_USER_REFRESH" in line:
@@ -83,6 +70,9 @@ class startup():
     def create_refresh_token(self):   
         path = os.path.dirname(os.path.abspath(__file__))
         CONFIG_FILE = path +    '/creds.config'
+        if_config_exist = exists(CONFIG_FILE)
+        if(if_config_exist):
+            self._create_config_file()
         client_id, client_secret, redirect_uri = tk.config_from_file(CONFIG_FILE)
         conf = (client_id, client_secret, redirect_uri)
         token = tk.prompt_for_user_token(*conf, scope=tk.scope.every)
@@ -91,10 +81,9 @@ class startup():
         
         
     
-    def _is_account_premium(self):
+    def is_account_premium(self):
         spotify_interface = spotify_interface_class.Spotify_Interface_Class()
         cur_user = spotify_interface.get_current_user_info()
-        print(cur_user)
         if cur_user.product == 'premium':
             logging.info("The user account is premium")
             return True
@@ -102,8 +91,20 @@ class startup():
             logging.error('The user account is not premium')
             print("You have to upgrade your Spotify account to premium")
             return False
-        return
 
+    def _check_operating_system(self):
+        OS =  platform.system() 
+        if OS == 'Darwin': 
+            logging.info("OS successfully retrieved: %s", "Mac")
+            return "Mac"
+        elif OS == 'Windows' or OS == 'Linux':
+            logging.info("OS successfully retrieved: %s", str(OS))
+            return platform.system()
+        else:
+            logging.error("OS not supported is found: %s", str(OS))
+            return ""
+        
+        
 
     def _is_spotify_installed_windows(self):
         list_of_apps = subprocess.run(["powershell", "-Command", "get-StartApps"],  capture_output=True).stdout.splitlines()
@@ -126,11 +127,11 @@ class startup():
             print("You have to install Spotify on your computer first")
             return False
         
+        
     def _is_spotify_installed_mac(self):
         # TODO: implement this function 
         raise NotImplementedError("This function is not implemented yet")
-        
-    
+            
     
     def is_spotify_installed(self):
         OS = self._check_operating_system()
@@ -184,11 +185,25 @@ class startup():
             logging.error("OS not supported is found: %s", str(OS))
             
         return
-        
-
+    
+    
+    def main(self):
+        if not self.is_refresh_token():
+            self.create_refresh_token()
+        if not self.is_account_premium():
+            print("You have to upgrade your Spotify account to premium first")
+            return
+        if not self.is_spotify_installed():
+            print("You have to install Spotify on your computer first")
+            return
+        if not self.is_spotify_running():
+            self.start_spotify()
+        website_server = Server()
+        website_server.main()
 
 if __name__ == "__main__":
     s = startup()
-\
+    s.main()
+
     
 
