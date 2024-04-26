@@ -13,7 +13,7 @@ import winapps
 path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append( path + '/../UniversalQueue/Spotify_Interface')
 print(sys.path) 
-# from UniversalQueue.Spotify_Interface.spotify_interface_class import Spotify_Interface_Class
+from UniversalQueue.Spotify_Interface.spotify_interface_class import Spotify_Interface_Class
 import spotify_interface_class
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -28,8 +28,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 class startup():
     def __init__(self):
-        self.cookie = None
-        
+        return
+    
+    
     def _check_operating_system(self):
         OS =  platform.system() 
         if OS == 'Darwin': 
@@ -43,13 +44,13 @@ class startup():
             return ""
         
         
-    
         
     def _create_config_file(self):
         path = os.path.dirname(os.path.abspath(__file__))
-        filename = path + '/../UniversalQueue/Spotify_Interface/creds.config'
+        filename = path + '/creds.config'
         if_file_exist = exists(filename)
         if(if_file_exist):
+            logging.info("Config file already exists")
             return
         try:
             with open(filename, 'w') as file:
@@ -63,29 +64,45 @@ class startup():
 
     
     
-    def walk_user_authentication(self):   
+    def is_refresh_token(self):
         path = os.path.dirname(os.path.abspath(__file__))
-        CONFIG_FILE = path + '/../UniversalQueue/Spotify_Interface/creds.config'
-
-        print(CONFIG_FILE)
-                
+        CONFIG_FILE = path + '/creds.config'
+        if_file_exist = exists(CONFIG_FILE)
+        if(if_file_exist):
+            with open(CONFIG_FILE, 'r') as file:
+                for line in file:
+                    if "SPOTIFY_USER_REFRESH" in line:
+                        logging.info("Refresh token already exists")
+                        return True
+            return False
+        else:
+            return False
+    
+    
+    
+    def create_refresh_token(self):   
+        path = os.path.dirname(os.path.abspath(__file__))
+        CONFIG_FILE = path +    '/creds.config'
         client_id, client_secret, redirect_uri = tk.config_from_file(CONFIG_FILE)
         conf = (client_id, client_secret, redirect_uri)
-
         token = tk.prompt_for_user_token(*conf, scope=tk.scope.every)
         tk.config_to_file(CONFIG_FILE, conf + (token.refresh_token,))
+        logging.info("Token successfully created")
+        
         
     
-    
-    
-    def _is_account_preimum(self):
+    def _is_account_premium(self):
         spotify_interface = spotify_interface_class.Spotify_Interface_Class()
         cur_user = spotify_interface.get_current_user_info()
         print(cur_user)
         if cur_user.product == 'premium':
+            logging.info("The user account is premium")
             return True
         else:
+            logging.error('The user account is not premium')
+            print("You have to upgrade your Spotify account to premium")
             return False
+        return
 
 
     def _is_spotify_installed_windows(self):
@@ -172,7 +189,6 @@ class startup():
 
 if __name__ == "__main__":
     s = startup()
-    s.walk_user_authentication()
-
+\
     
 
