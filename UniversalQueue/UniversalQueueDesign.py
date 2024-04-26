@@ -1,15 +1,16 @@
 """ This module implements the Universal Queue class """
-from re import A
 from time import sleep
 """ This module allows us to log our errors"""
 import logging
 
-from flask import Flask, jsonify, request 
+from flask import Flask, request 
 from flask_cors import CORS, cross_origin
  
 import json
 from Spotify_Interface.spotify_interface_class import Spotify_Interface_Class
 from Song import Song
+
+import threading
 
 app = Flask(__name__)
 CORS(app) 
@@ -46,7 +47,7 @@ class UniversalQueue:
 
         self.spotify = Spotify_Interface_Class()
 
-        self.queue_flag = True
+        self.flush_exit = threading.Event()
 
     def insert(self, song): 
         """
@@ -83,13 +84,11 @@ class UniversalQueue:
         #when song is finished delete it from queue
         #call update_UI()
         #call write()
-        while len(self.data) != 0 and self.queue_flag:
+        while len(self.data) != 0:
             self.spotify.play(self.data[0].uri)
-            sleep(self.data[0].s_len / 1000)
+            self.flush_exit.wait((self.data[0].s_len / 1000))
+            print("WAIT ENDED")
             self.data = self.data[1:]
-
-        self.queue_flag = True
-
 
     def pause_queue(self):
         """
@@ -115,9 +114,6 @@ class UniversalQueue:
         """
         #loop through the users and send them the current state of the queu
         
-
-
-
     def request_update(self, user):
         """
         allows a specific user to request the current state of the queue to be displayed for them
@@ -146,16 +142,14 @@ class UniversalQueue:
         #of self.cookie
         #IMPORTANT removal of first song starts playing next song is checked manually
         #IMPORTANT this operation is curretnly O(n). Look into making it O(1) with dictionary
-        self.queue_flag = False
         if self.cookie_verifier(self.hostCookie):
             for s in self.data:
                 if s.id == id:
+                    #If we're removing the first item in the queue which is currently playing, just kill the
+                    #current wait call on flush queue as it will remove the first item 
                     if s.id == self.data[0].id:
-                        self.data.remove(s)
-                        #play next song
-                        #flush_queue
-                        self.flush_queue()
-
+                        self.flush_exit.set()
+                    #If we're removing anything else, just remove it from the queue
                     else:
                         self.data.remove(s)
                     #write()
@@ -262,13 +256,11 @@ def return_results_from_url():
 def submit_song():
 
     song_data = request.get_json()
-    # jsonify(song_data)
     song_data = json.dumps(song_data)
-    print(song_data)
-    print("######TYPE#####", type(song_data))
     song = Song(song_data)
 
     UQ.insert(song)
+
     print(UQ.data) 
     return song_data
     
