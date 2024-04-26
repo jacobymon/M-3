@@ -2,13 +2,17 @@ import logging
 import os
 import platform
 import subprocess
+import sys
 from os.path import exists
 
-#from M-3.Spotify_Interface.spotify_interface import Spotify_Interface
 import psutil
 import requests
 import tekore as tk
 import winapps
+
+path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(path+'/../UniversalQueue/Spotify_Interface')
+import spotify_interface_class
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -41,7 +45,7 @@ class startup():
         
     def _create_config_file(self):
         path = os.path.dirname(os.path.abspath(__file__))
-        filename = path + '\creds.config'
+        filename = path + '/creds.config'
         if_file_exist = exists(filename)
         if(if_file_exist):
             return
@@ -71,7 +75,8 @@ class startup():
     
     
     def _is_account_preimum(self):
-        return
+        spotify_interface = spotify_interface_class()
+        return spotify_interface_class.get_current_user_info()
             
         #import from spotify interaface
         
