@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import axios from "axios";
 import debounce from "lodash.debounce";
 import "./SongSubmission.css";
@@ -145,6 +145,8 @@ export async function submitSong(selected_song) {
     }
   }
 
+  console.log("here friend")
+
   let post_data =  {
     status: 200,
     search_results: selected_song,
@@ -196,8 +198,6 @@ export async function submitURLSong(url_textbox_input) {
     };
   }
 
-  console.log("Here" + url_textbox_input);
-
   try {
     const response = await axios.post("http://172.28.99.52:8080/return_results_from_url?spotify_url=" + url_textbox_input);
     console.log(response);
@@ -246,18 +246,12 @@ export function SongSubmission({ data }) {
   const [submitButtonError, setSubmitButtonError] = useState("");   // Hold error messages related to song submission
   const [searchQuery, setSearchQuery] = useState("");                 // Represents and holds the value in the search bar
   const [URLTextboxInput, setURLTextboxInput] = useState("");         // Represents and holds the value in the URL text box
+  const [searchSongsResponse, setSearchSongsResponse] = useState(null);
   const [searchResults, setSearchResults] = useState("");             // Holds an array of songs for the dropdown
   const [hideSearchResults, setHideSearchResults] = useState(false);  // A toggle for hiding the dropdown if it is not clicked
   const [selectedSong, setSelectedSong] = useState(null);             // The song that has been selected from the dropdown
 
-  // A function wrapper for searchSongs that debounces the call.
-  // That means, if called multiple times in the time interval specified,
-  // it only returns the results of the most recent call of the function.
-  const searchSongs_debounced = useCallback(
-    () => debounce((searchInput) => searchSongs(searchInput), 500),
-    [] // Dependencies array is empty, so the debounced function is created only once
-  );
-
+  
   // A use effect to check if we are clicking outside the dropdown and run a function.
   useEffect(() => {
     document.addEventListener("click", handleClickOutsideDropdown);
@@ -278,31 +272,38 @@ export function SongSubmission({ data }) {
     }
   };
 
+  // A function wrapper for searchSongs that debounces the call.
+  // That means, if called multiple times in the time interval specified,
+  // it only returns the results of the most recent call of the function.
+  // It then sets the return value of searchSongs to searchSongsResponse
+  const searchSongs_debounced = useCallback(
+    debounce((searchInput) => 
+      searchSongs(searchInput).then(setSearchSongsResponse), 500),
+    [] // Dependencies array is empty, so the debounced function is created only once
+  );
+
   // Handles running a debounced searchSongs whenever the search bar is changed
   const handleSearchBarKeystroke = async (e) => {
     console.log("Doing key stroke");
     setSearchQuery(e.target.value);
 
-    // searchSongs_debounced(e.target.value);
-    let response_json = await searchSongs(e.target.value); // Comment out and replace with above when done
+    searchSongs_debounced(e.target.value);
+    console.log(searchSongsResponse)
+  };
 
-    console.log(response_json)
+  // Handles updaing variables after the searchSongsResponse is updated
+  // during searchSongs_debounced
+  React.useEffect(() => {
+    if (searchSongsResponse === null) return;
 
-    // if (response_json.status === 400) {
-      
-    //   // setSearchResults(null)
-    // }
-
-    if (response_json.status === 200) {
-      setSearchResults(response_json.response);
+    if (searchSongsResponse.status === 200) {
+      setSearchResults(searchSongsResponse.response);
       setSearchBarError("");
     } else {
       setSearchResults(null);
-      setSearchBarError(response_json.response);
+      setSearchBarError(searchSongsResponse.response);
     }
-    
-    
-  };
+  }, [searchSongsResponse]) // Run this useEffect whenever searchSongsResponse changes
 
   // Handles displaying the dropdown when clicking on the search bar,
   // if it was previously hidden
@@ -337,9 +338,7 @@ export function SongSubmission({ data }) {
     if (response_json.status === 200) {
       setSelectedSong(null);
       setSearchQuery("");
-
-      // Temporary
-      setSubmitButtonError(response_json.response)
+      console.log("over here")
     }else {
       setSubmitButtonError(response_json.response)
     }
@@ -353,6 +352,7 @@ export function SongSubmission({ data }) {
 
     if (response_json.status === 200) {
       setSubmitButtonError("")
+      setURLTextboxInput("")
     }else {
       setSubmitButtonError(response_json.response);
     }
