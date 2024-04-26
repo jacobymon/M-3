@@ -149,6 +149,10 @@ class Spotify_Interface_Class:
         cur_user = self.spotify.current_user()
         return  cur_user
 
+    def get_current_playback_info(self):
+        cur_play = self.spotify.playback_currently_playing()
+        return  cur_play
+
 
 # s = Spotify_Interface_Class()
 

@@ -9,8 +9,10 @@ import psutil
 import tekore as tk
 import winapps
 from server import Server
+from server import Server
 
 path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(path + '/../UniversalQueue/Spotify_Interface')
 sys.path.append(path + '/../UniversalQueue/Spotify_Interface')
 import spotify_interface_class
 
@@ -22,9 +24,12 @@ class startup():
     def __init__(self):
         return
     
+    
     def _create_config_file(self):
         path = os.path.dirname(os.path.abspath(__file__))
         filename = path + '/creds.config'
+        if_config_exist = exists(filename)
+        if if_config_exist:
         if_config_exist = exists(filename)
         if if_config_exist:
             logging.info("Config file already exists")
@@ -36,8 +41,14 @@ class startup():
                 file.write('SPOTIFY_CLIENT_SECRET = xxxxx\n')
                 file.write(
                     'SPOTIFY_REDIRECT_URI = https://example.com/callback\n')
+                file.write('SPOTIFY_CLIENT_ID = xxxxx \n')
+                file.write('SPOTIFY_CLIENT_SECRET = xxxxx\n')
+                file.write(
+                    'SPOTIFY_REDIRECT_URI = https://example.com/callback\n')
             logging.info("Config file successfully created")
         except Exception as e:
+            logging.error(
+                "An error occurred while creating the config file: %s", e)
             logging.error(
                 "An error occurred while creating the config file: %s", e)
 
@@ -60,6 +71,8 @@ class startup():
         CONFIG_FILE = path + '/creds.config'
         if_config_exist = exists(CONFIG_FILE)
         if if_config_exist:
+        if_config_exist = exists(CONFIG_FILE)
+        if if_config_exist:
             with open(CONFIG_FILE, 'r') as file:
                 for line in file:
                     if "SPOTIFY_USER_REFRESH" in line:
@@ -68,6 +81,8 @@ class startup():
             return False
         else:
             return False
+
+    def create_refresh_token(self):
 
     def create_refresh_token(self):
         path = os.path.dirname(os.path.abspath(__file__))
@@ -84,6 +99,9 @@ class startup():
         token = tk.prompt_for_user_token(*conf, scope=tk.scope.every)
         tk.config_to_file(CONFIG_FILE, conf + (token.refresh_token,))
         logging.info("Token successfully created")
+        return True
+
+    def is_account_premium(self):
         return True
 
     def is_account_premium(self):
@@ -108,7 +126,21 @@ class startup():
             logging.error("OS not supported is found: %s", str(OS))
             return ""
 
+    def _check_operating_system(self):
+        OS = platform.system()
+        if OS == 'Darwin':
+            logging.info("OS successfully retrieved: %s", "Mac")
+            return "Mac"
+        elif OS == 'Windows' or OS == 'Linux':
+            logging.info("OS successfully retrieved: %s", str(OS))
+            return platform.system()
+        else:
+            logging.error("OS not supported is found: %s", str(OS))
+            return ""
+
     def _is_spotify_installed_windows(self):
+        list_of_apps = subprocess.run(
+            ["powershell", "-Command", "get-StartApps"],  capture_output=True).stdout.splitlines()
         list_of_apps = subprocess.run(
             ["powershell", "-Command", "get-StartApps"],  capture_output=True).stdout.splitlines()
         for app in list_of_apps:
@@ -118,7 +150,10 @@ class startup():
         logging.error("Spotify is not installed on Windows")
         return False
 
+
     def _is_spotify_installed_linux(self):
+        # 'which spotify' returns 1 if the application doesn't exist. And os.system() multiplies the output by 256
+        if (os.system('which spotify') != 256):
         # 'which spotify' returns 1 if the application doesn't exist. And os.system() multiplies the output by 256
         if (os.system('which spotify') != 256):
             logging.info("Spotify is installed on Linux")
@@ -126,6 +161,7 @@ class startup():
         else:
             logging.error("Spotify is not installed on Linux")
             return False
+
 
     def _is_spotify_installed_mac(self):
         list_of_apps = subprocess.run("mdfind", "KDMItemKind == \'Application\'", capture_output=True, text=True)
@@ -173,6 +209,9 @@ class startup():
                 logging.error(
                     "An error occurred while starting Spotify on Windows: %s", e)
 
+                logging.error(
+                    "An error occurred while starting Spotify on Windows: %s", e)
+
         elif OS == 'Linux':
             try:
                 subprocess.run(["spotify"])
@@ -181,11 +220,17 @@ class startup():
                 logging.error(
                     "An error occurred while starting Spotify on Linux: %s", e)
 
+                logging.error(
+                    "An error occurred while starting Spotify on Linux: %s", e)
+
         elif OS == 'Mac':
             try:
                 subprocess.run(["open", "spotify://"])
                 logging.info("Spotify started on Mac")
             except Exception as e:
+                logging.error(
+                    "An error occurred while starting Spotify on Mac: %s", e)
+
                 logging.error(
                     "An error occurred while starting Spotify on Mac: %s", e)
 
@@ -208,7 +253,23 @@ class startup():
         website_server = Server()
         website_server.main()
 
+    def main(self):
+        if not self.is_refresh_token():
+            if not self.create_refresh_token():
+                return
+        if not self.is_account_premium():
+            print("You have to upgrade your Spotify account to premium first")
+            return
+        if not self.is_spotify_installed():
+            print("You have to install Spotify on your computer first")
+            return
+        if not self.is_spotify_running():
+            self.start_spotify()
+        website_server = Server()
+        website_server.main()
+
 
 if __name__ == "__main__":
     s = startup()
+    s.main()
     s.main()
