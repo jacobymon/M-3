@@ -11,7 +11,9 @@ import tekore as tk
 import winapps
 
 path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(path+'/../UniversalQueue/Spotify_Interface')
+sys.path.append( path + '/../UniversalQueue/Spotify_Interface')
+print(sys.path) 
+# from UniversalQueue.Spotify_Interface.spotify_interface_class import Spotify_Interface_Class
 import spotify_interface_class
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -45,7 +47,7 @@ class startup():
         
     def _create_config_file(self):
         path = os.path.dirname(os.path.abspath(__file__))
-        filename = path + '/creds.config'
+        filename = path + '/../UniversalQueue/Spotify_Interface/creds.config'
         if_file_exist = exists(filename)
         if(if_file_exist):
             return
@@ -63,7 +65,9 @@ class startup():
     
     def walk_user_authentication(self):   
         path = os.path.dirname(os.path.abspath(__file__))
-        CONFIG_FILE = path + '/creds.config'
+        CONFIG_FILE = path + '/../UniversalQueue/Spotify_Interface/creds.config'
+
+        print(CONFIG_FILE)
                 
         client_id, client_secret, redirect_uri = tk.config_from_file(CONFIG_FILE)
         conf = (client_id, client_secret, redirect_uri)
@@ -75,11 +79,14 @@ class startup():
     
     
     def _is_account_preimum(self):
-        spotify_interface = spotify_interface_class()
-        return spotify_interface_class.get_current_user_info()
-            
-        #import from spotify interaface
-        
+        spotify_interface = spotify_interface_class.Spotify_Interface_Class()
+        cur_user = spotify_interface.get_current_user_info()
+        print(cur_user)
+        if cur_user.product == 'premium':
+            return True
+        else:
+            return False
+
 
     def _is_spotify_installed_windows(self):
         list_of_apps = subprocess.run(["powershell", "-Command", "get-StartApps"],  capture_output=True).stdout.splitlines()
@@ -166,5 +173,6 @@ class startup():
 if __name__ == "__main__":
     s = startup()
     s.walk_user_authentication()
+
     
 
