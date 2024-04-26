@@ -7,6 +7,12 @@ from flask import Flask, request
 from flask_cors import CORS, cross_origin
  
 import json
+import sys
+import os
+
+path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(path +"/Spotify_Interface")
+
 from Spotify_Interface.spotify_interface_class import Spotify_Interface_Class
 from Song import Song
 
