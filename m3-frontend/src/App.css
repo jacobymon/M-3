@@ -24,6 +24,10 @@
   font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif ;
 }
 
+.h1-mt {
+  margin-top: 30px;
+}
+
 .App-body {
   background-color: #666;
   min-height: 100vh;
@@ -32,6 +36,38 @@
   align-items: center;
 }
 
-.App-link {
-  color: #61dafb;
+.qr-code.small {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  height: 20%; 
+  width: auto;
+  z-index: 15;
+  transition: all 0.3s ease; /* Smooth transition for size and transformations */
+  transform: scale(0.75); /* Scale down the contents */
+  transform-origin: top right; /* Ensure scaling pivots from the top right */
+}
+
+.qr-code.large {
+  /* margin-right: 1rem; */
+  top: 7rem;
+  position: fixed;
+  align-items: center;
+  height: 30%; 
+  width: auto;
+  z-index: 15;
+  transition: all 0.3s ease;
+  transform: scale(2); /* Scale up the contents */
+  transform-origin: top right; /* Ensure scaling pivots from the top right */
+}
+
+.qr-code img {
+  height: 100%; /* Make image fill the container height */
+  width: auto; /* Maintain aspect ratio */
+}
+
+.join-the-party a {
+  font-size: 20; /* Set base font size, will scale with container */
+  color: blue;
+  margin: 10px; /* Remove margin for layout consistency */
 }

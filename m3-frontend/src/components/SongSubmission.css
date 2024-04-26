@@ -1,5 +1,7 @@
 .songSubmission {
-    margin-top: 20px;
+    margin-top: 35px;
+    min-width: 75%;
+    max-width: 100%;
 }
 
 .searchContainer {
@@ -26,7 +28,6 @@
     position: absolute;
     width: 71%;
     margin-top: 57px;
-    /* margin-left: 10px; */
     background-color: #ddd;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     border-radius: 0 0 4px 4px;
@@ -71,6 +72,7 @@
 .submitButton {
     width: 30%;
     padding: 10px 20px;
+    margin-right: 10px;
     background-color: #FFC20E; /* Harvey Mudd yellow */
     color: #333; /* Dark text for better contrast */
     font-size: 16px;
@@ -92,4 +94,14 @@
 
 .submitButton:focus {
     box-shadow: 0 0 0 2px rgba(255, 194, 14, 0.5); /* Focus ring around the button with a lighter yellow */
+}
+
+.errorMessage {
+    margin: 10px;
+    padding: 8px;
+    font-size: 18px;
+    color: #EE0000;
+    background-color: #282828;
+    text-wrap: wrap;
+    animation: fade-in 0.15s ease-out;
 }
