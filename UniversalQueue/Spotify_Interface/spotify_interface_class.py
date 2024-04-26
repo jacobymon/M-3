@@ -4,8 +4,8 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS, cross_origin
 import json
 
-from Spotify_Interface.auth import get_user_token
-from Spotify_Interface.player import get_first_available_device
+from auth import get_user_token
+from player import get_first_available_device
 
 # from UniversalQueue.Song import Song
 
