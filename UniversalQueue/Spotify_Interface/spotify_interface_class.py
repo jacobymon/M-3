@@ -145,6 +145,11 @@ class Spotify_Interface_Class:
 
         return data 
 
+    def get_current_user_info(self):
+        cur_user = self.spotify.current_user()
+        return  cur_user
+
+
 # s = Spotify_Interface_Class()
 
 # @app.route('/return_results', methods=['GET', 'POST'])
