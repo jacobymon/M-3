@@ -9,10 +9,8 @@ import psutil
 import tekore as tk
 import winapps
 from server import Server
-from server import Server
 
 path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(path + '/../UniversalQueue/Spotify_Interface')
 sys.path.append(path + '/../UniversalQueue/Spotify_Interface')
 import spotify_interface_class
 
@@ -30,8 +28,6 @@ class startup():
         filename = path + '/creds.config'
         if_config_exist = exists(filename)
         if if_config_exist:
-        if_config_exist = exists(filename)
-        if if_config_exist:
             logging.info("Config file already exists")
             return
         try:
@@ -41,16 +37,12 @@ class startup():
                 file.write('SPOTIFY_CLIENT_SECRET = xxxxx\n')
                 file.write(
                     'SPOTIFY_REDIRECT_URI = https://example.com/callback\n')
-                file.write('SPOTIFY_CLIENT_ID = xxxxx \n')
-                file.write('SPOTIFY_CLIENT_SECRET = xxxxx\n')
-                file.write(
-                    'SPOTIFY_REDIRECT_URI = https://example.com/callback\n')
+                file.write("DEVICE = ")
             logging.info("Config file successfully created")
         except Exception as e:
             logging.error(
                 "An error occurred while creating the config file: %s", e)
-            logging.error(
-                "An error occurred while creating the config file: %s", e)
+
 
     def _is_config_has_user_info(self):
         path = os.path.dirname(os.path.abspath(__file__))
@@ -71,8 +63,6 @@ class startup():
         CONFIG_FILE = path + '/creds.config'
         if_config_exist = exists(CONFIG_FILE)
         if if_config_exist:
-        if_config_exist = exists(CONFIG_FILE)
-        if if_config_exist:
             with open(CONFIG_FILE, 'r') as file:
                 for line in file:
                     if "SPOTIFY_USER_REFRESH" in line:
@@ -81,8 +71,6 @@ class startup():
             return False
         else:
             return False
-
-    def create_refresh_token(self):
 
     def create_refresh_token(self):
         path = os.path.dirname(os.path.abspath(__file__))
@@ -99,9 +87,6 @@ class startup():
         token = tk.prompt_for_user_token(*conf, scope=tk.scope.every)
         tk.config_to_file(CONFIG_FILE, conf + (token.refresh_token,))
         logging.info("Token successfully created")
-        return True
-
-    def is_account_premium(self):
         return True
 
     def is_account_premium(self):
@@ -152,8 +137,6 @@ class startup():
 
 
     def _is_spotify_installed_linux(self):
-        # 'which spotify' returns 1 if the application doesn't exist. And os.system() multiplies the output by 256
-        if (os.system('which spotify') != 256):
         # 'which spotify' returns 1 if the application doesn't exist. And os.system() multiplies the output by 256
         if (os.system('which spotify') != 256):
             logging.info("Spotify is installed on Linux")
