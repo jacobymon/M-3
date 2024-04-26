@@ -16,51 +16,51 @@ export async function searchSongs(searchbar_query) {
     };
   }
 
-  return {
-    status: 200, // Status of what was actually returned
-    response: [
-      {
-        id: 1,
-        uri: "URI 1",
-        s_len: 11,
-        title: searchbar_query + " 1",
-        artist: "Artist 1",
-        album: "Album 1",
-      },
-      {
-        id: 2,
-        uri: "URI 2",
-        s_len: 22,
-        title: searchbar_query + " 2",
-        artist: "Artist 2",
-        album: "Album 2",
-      },
-      {
-        id: 3,
-        uri: "URI 3",
-        s_len: 33,
-        title: searchbar_query + " 3",
-        artist: "Artist 3",
-        album: "Album 3",
-      },
-      {
-        id: 4,
-        uri: "URI 4",
-        s_len: 44,
-        title: searchbar_query + " 4",
-        artist: "Artist 4",
-        album: "Album 4",
-      },
-      {
-        id: 5,
-        uri: "URI 5",
-        s_len: 55,
-        title: searchbar_query + " 5",
-        artist: "Artist 5",
-        album: "Album 5",
-      },
-    ],
-  };
+  // return {
+  //   status: 200, // Status of what was actually returned
+  //   response: [
+  //     {
+  //       id: 1,
+  //       uri: "URI 1",
+  //       s_len: 11,
+  //       title: searchbar_query + " 1",
+  //       artist: "Artist 1",
+  //       album: "Album 1",
+  //     },
+  //     {
+  //       id: 2,
+  //       uri: "URI 2",
+  //       s_len: 22,
+  //       title: searchbar_query + " 2",
+  //       artist: "Artist 2",
+  //       album: "Album 2",
+  //     },
+  //     {
+  //       id: 3,
+  //       uri: "URI 3",
+  //       s_len: 33,
+  //       title: searchbar_query + " 3",
+  //       artist: "Artist 3",
+  //       album: "Album 3",
+  //     },
+  //     {
+  //       id: 4,
+  //       uri: "URI 4",
+  //       s_len: 44,
+  //       title: searchbar_query + " 4",
+  //       artist: "Artist 4",
+  //       album: "Album 4",
+  //     },
+  //     {
+  //       id: 5,
+  //       uri: "URI 5",
+  //       s_len: 55,
+  //       title: searchbar_query + " 5",
+  //       artist: "Artist 5",
+  //       album: "Album 5",
+  //     },
+  //   ],
+  // };
 
   // If there was no error, set_searchbar_error(false) and set_searchbar_error_message(“No error”)
   // If there was no error, process the results into something usable by the program (ie. trim the JSONs to only include song name, URI, artist, album).
@@ -145,6 +145,8 @@ export async function submitSong(selected_song) {
     }
   }
 
+  console.log("here friend")
+
   let post_data =  {
     status: 200,
     search_results: selected_song,
@@ -195,8 +197,6 @@ export async function submitURLSong(url_textbox_input) {
       response: "No URL was provided.",
     };
   }
-
-  console.log("Here" + url_textbox_input);
 
   try {
     const response = await axios.post("http://172.28.99.52:8080/return_results_from_url?spotify_url=" + url_textbox_input);
@@ -288,6 +288,7 @@ export function SongSubmission({ data }) {
     setSearchQuery(e.target.value);
 
     searchSongs_debounced(e.target.value);
+    console.log(searchSongsResponse)
   };
 
   // Handles updaing variables after the searchSongsResponse is updated
@@ -337,9 +338,7 @@ export function SongSubmission({ data }) {
     if (response_json.status === 200) {
       setSelectedSong(null);
       setSearchQuery("");
-
-      // Temporary
-      setSubmitButtonError(response_json.response)
+      console.log("over here")
     }else {
       setSubmitButtonError(response_json.response)
     }
@@ -353,6 +352,7 @@ export function SongSubmission({ data }) {
 
     if (response_json.status === 200) {
       setSubmitButtonError("")
+      setURLTextboxInput("")
     }else {
       setSubmitButtonError(response_json.response);
     }

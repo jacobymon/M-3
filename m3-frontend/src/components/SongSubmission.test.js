@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { searchSongs, submitSong, submitURLSong, SongSubmission } from "./SongSubmission";
 import axios from "axios";
@@ -56,6 +56,22 @@ const search_songs_response = {
           album: "Album 5",
         },
       ],
+    }
+  }
+};
+
+const submit_song_response = {
+  status: 200,  // Status of the Axios call
+  data: {
+    status: 200, // Status of what was actually returned
+  }
+};
+
+const url_submit_response = {
+  status: 200,
+  data: {
+    spotify_url: {
+      status: 200,
     }
   }
 };
@@ -232,17 +248,6 @@ describe('Submit Button', () => {
 
   // Submit Button Related Tests
   it('test-valid-song', async () => {
-
-    const data = {    // Still uncertain of how this data will be returned. I imagine something similar to search songs
-      status: 200,
-    };
-
-    const submit_song_response = {
-      status: 200,  // Status of the Axios call
-      data: {
-        status: 200, // Status of what was actually returned
-      }
-    };
 
     let expected_result = {
       status: 200,
@@ -449,14 +454,7 @@ describe('URL Textbox', () => {
   // URL Textbox Related Tests
   it('test-url-submit', async () => {
 
-    const url_submit_response = {
-      status: 200,
-      data: {
-        spotify_url: {
-          status: 200,
-        }
-      }
-    };
+    
 
     let expected_result = {
       status: 200,
@@ -596,18 +594,22 @@ describe('URL Textbox', () => {
 
 });
 
+// Timers to allow for waiting between operations
+jest.useFakeTimers(); 
+
 describe('Full System', () => {
 
+  // Setup: Set searchBar_query to an empty String, set selected_song to null, set search_results to an empty array, set all errors to null.
+  // Test: “Click” the search bar, enter “T,” then “h,” then “e,” then “click” the first entry in search_results to move it into selected_song, then “click” the submit button
+  // Results: Success (200) response from the backend/a mock. All errors are still null. Selected_song should be set to null, search_query an empty string, and search_results should be made an empty array.
+  // Notes: If this test is done correctly, it should only succeed if all other tests that expect success succeed. This can be used as a general warning light if something is wrong and that we should investigate specific test cases.
   it('test-search-and-submit', async () => {
     // const { screen.getByTestId } = 
     render(<SongSubmission />);
 
     // Expect no errors to start
-    let searchBarError = screen.queryByTestId("SearchBarError");
-    expect(searchBarError).not.toBeInTheDocument();
-
-    let submitButtonError = screen.queryByTestId("SubmitBarError");
-    expect(submitButtonError).not.toBeInTheDocument();
+    expect(screen.queryByTestId("SearchBarError")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("SubmitButtonError")).not.toBeInTheDocument();
 
     const searchBar = screen.getByTestId("SearchBar");
     expect(searchBar).toHaveValue('');
@@ -619,22 +621,49 @@ describe('Full System', () => {
       response: search_songs_response.data.search_string.results
     }
 
-    // Entering text into the textbox and simulating if we had gotten the data
-    fireEvent.change(searchBar, { target: { value: "T"}});
-    await expect(searchSongs("T")).resolves.toEqual(expected_search_result);
-    fireEvent.change(searchBar, { target: { value: "Th"}});
-    await expect(searchSongs("Th")).resolves.toEqual(expected_search_result);
-    fireEvent.change(searchBar, { target: { value: "The"}});
+    fireEvent.click(searchBar);
+
+    fireEvent.change(searchBar, { target: { value: "T" } });
+    await act(async () => {
+      await expect(searchSongs("T")).resolves.toEqual(expected_search_result);
+      jest.advanceTimersByTime(200); // Don't wait for debounce to resolve
+    });
+
+    expect(screen.queryByTestId("Result0")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("Result1")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("Result2")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("Result3")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("Result4")).not.toBeInTheDocument();
+
+
+    fireEvent.change(searchBar, { target: { value: "Th" } });
+    await act(async () => {
+      await expect(searchSongs("Th")).resolves.toEqual(expected_search_result);
+      jest.advanceTimersByTime(500); // Wait for debounce to resolve
+    });
+
+    expect(screen.queryByTestId("Result0")).toBeInTheDocument();
+    expect(screen.queryByTestId("Result1")).toBeInTheDocument();
+    expect(screen.queryByTestId("Result2")).toBeInTheDocument();
+    expect(screen.queryByTestId("Result3")).toBeInTheDocument();
+    expect(screen.queryByTestId("Result4")).toBeInTheDocument();
+
+
+    fireEvent.change(searchBar, { target: { value: "The" } });
+    await act(async () => {
+      await expect(searchSongs("The")).resolves.toEqual(expected_search_result);
+      jest.advanceTimersByTime(500); // Wait for debounce to resolve
+    });
+
+    expect(screen.queryByTestId("Result0")).toBeInTheDocument();
+    expect(screen.queryByTestId("Result1")).toBeInTheDocument();
+    expect(screen.queryByTestId("Result2")).toBeInTheDocument();
+    expect(screen.queryByTestId("Result3")).toBeInTheDocument();
+    expect(screen.queryByTestId("Result4")).toBeInTheDocument();
+
 
     let search_results = await searchSongs("The");
     expect(search_results).toEqual(expected_search_result);
-    
-    // Check that there are Result0 - Result4
-    expect(screen.getByTestId("Result0")).toBeInTheDocument();
-    expect(screen.getByTestId("Result1")).toBeInTheDocument();
-    expect(screen.getByTestId("Result2")).toBeInTheDocument();
-    expect(screen.getByTestId("Result3")).toBeInTheDocument();
-    expect(screen.getByTestId("Result4")).toBeInTheDocument();
 
 
     const firstResult = screen.getByTestId("Result0");
@@ -655,94 +684,72 @@ describe('Full System', () => {
 
     const submitButton = screen.getByTestId("SubmitButton");
 
-    const submit_data = {
-      status: 200,
-    };
-
     let expected_submit_result = {
       status: 200,
-      response: null
+      response: "My success message (submitSong)"
     }
     
-    axios.post.mockResolvedValue(submit_data); // Setup mock to resolve with `data`
+    axios.post.mockResolvedValue(submit_song_response); // Setup mock to resolve with `data`
 
     fireEvent.click(submitButton);
-    await expect(submitSong(selected_song)).resolves.toEqual(expected_submit_result);
+    await act(async () => {
+      jest.advanceTimersByTime(1000); // Wait for it to resolve
+      await expect(submitSong(selected_song)).resolves.toEqual(expected_submit_result);
+    });
     
-    
-    
+      
     // Check that the search bar is now empty
     expect(searchBar).toHaveValue('');
   
     // Check that there are no errors after everything is done
-    searchBarError = screen.queryByTestId("SearchBarError");
-    expect(searchBarError).not.toBeInTheDocument();
-
-    submitButtonError = screen.queryByTestId("SubmitBarError");
-    expect(submitButtonError).not.toBeInTheDocument();
-
-
-
-
-
-    // fireEvent.click(getByText("Clickable"));
-    // Setup: Set searchBar_query to an empty String, set selected_song to null, set search_results to an empty array, set all errors to null.
-    // Test: “Click” the search bar, enter “T,” then “h,” then “e,” then “click” the first entry in search_results to move it into selected_song, then “click” the submit button
-    // Results: Success (200) response from the backend/a mock. All errors are still null. Selected_song should be set to null, search_query an empty string, and search_results should be made an empty array.
-    // Notes: If this test is done correctly, it should only succeed if all other tests that expect success succeed. This can be used as a general warning light if something is wrong and that we should investigate specific test cases.
-
+    expect(screen.queryByTestId("SearchBarError")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("SubmitButtonError")).not.toBeInTheDocument();
+  
   });
+
+  // Setup: Set url_textbox_input to an empty String, set selected_song to null, set search_results to an empty array, set all errors to null.
+  // Test: “Click” the url text box bar, enter a valid Spotify song URL then “click” the URL submit button
+  // Results: Success (200) response from the backend/a mock. All errors are still null. url_textbox_input should be set to null.
+  // Notes: If this test is done correctly, it should only succeed if all other tests that expect success succeed. This can be used as a general warning light if something is wrong and that we should investigate specific test cases.
 
   it('test-URL-and-submit', async () => {
 
     render(<SongSubmission />);
 
     // Expect no errors to start
-    let searchBarError = screen.queryByTestId("SearchBarError");
-    expect(searchBarError).not.toBeInTheDocument();
+    expect(screen.queryByTestId("SearchBarError")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("SubmitBarError")).not.toBeInTheDocument();
 
-    let submitButtonError = screen.queryByTestId("SubmitBarError");
-    expect(submitButtonError).not.toBeInTheDocument();
-
-    const URLTestBox = screen.getByTestId("URLTextBox");
-    expect(URLTestBox).toHaveValue('');
+    const URLTextBox = screen.getByTestId("URLTextBox");
+    expect(URLTextBox).toHaveValue('');
 
     // Entering text into the textbox
-    fireEvent.change(URLTestBox, { target: { value: "Valid URL"}});
+    // Doesn't need an act(...) because it doesn't have an onChange
+    fireEvent.change(URLTextBox, { target: { value: "Valid URL"}});
 
     const URLSubmitButton = screen.getByTestId("URLSubmitButton");
 
-    const submit_data = {
-      status: 200,
-    };
-
     let expected_submit_result = {
       status: 200,
-      response: null
+      response: "My Success Message (Submit URL Song)"
     }
     
-    axios.post.mockResolvedValue(submit_data); // Setup mock to resolve with `data`
+    axios.post.mockResolvedValue(url_submit_response); // Setup mock to resolve with `data`
 
     fireEvent.click(URLSubmitButton);
-    await expect(submitURLSong(selected_song)).resolves.toEqual(expected_submit_result);
+    await act(async () => {
+      // await expect(searchSongs("Th")).resolves.toEqual(expected_search_result);
+      await expect(submitURLSong(selected_song)).resolves.toEqual(expected_submit_result);
+      jest.advanceTimersByTime(500); // Wait for debounce to resolve
+    });
     
     
     // Check that the search bar is now empty
-    expect(URLTestBox).toHaveValue('');
+    expect(URLTextBox).toHaveValue('');
   
     // Check that there are no errors after everything is done
-    searchBarError = screen.queryByTestId("SearchBarError");
-    expect(searchBarError).not.toBeInTheDocument();
-
-    submitButtonError = screen.queryByTestId("SubmitBarError");
-    expect(submitButtonError).not.toBeInTheDocument();
-
-
-
-    // Setup: Set url_textbox_input to an empty String, set selected_song to null, set search_results to an empty array, set all errors to null.
-    // Test: “Click” the url text box bar, enter a valid Spotify song URL then “click” the URL submit button
-    // Results: Success (200) response from the backend/a mock. All errors are still null. url_textbox_input should be set to null.
-    // Notes: If this test is done correctly, it should only succeed if all other tests that expect success succeed. This can be used as a general warning light if something is wrong and that we should investigate specific test cases.
+    expect(screen.queryByTestId("SearchBarError")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("SubmitBarError")).not.toBeInTheDocument();
 
   });
 
