@@ -6,13 +6,13 @@ import sys
 from os.path import exists
 
 import psutil
-import spotify_interface_class
 import tekore as tk
 import winapps
 from server import Server
 
 path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(path + '/../UniversalQueue/Spotify_Interface')
+import spotify_interface_class
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -26,19 +26,19 @@ logging.basicConfig(level=logging.INFO,
 class startup():
     def __init__(self):
         return
-
+    
     def _create_config_file(self):
         path = os.path.dirname(os.path.abspath(__file__))
         filename = path + '/creds.config'
         if_config_exist = exists(filename)
-        if (if_config_exist):
+        if if_config_exist:
             logging.info("Config file already exists")
             return
         try:
             with open(filename, 'w') as file:
                 file.write('[DEFAULT]\n')
-                file.write('SPOTIFY_CLIENT_ID = xxx \n')
-                file.write('SPOTIFY_CLIENT_SECRET = yyy\n')
+                file.write('SPOTIFY_CLIENT_ID = xxxxx \n')
+                file.write('SPOTIFY_CLIENT_SECRET = xxxxx\n')
                 file.write(
                     'SPOTIFY_REDIRECT_URI = https://example.com/callback\n')
             logging.info("Config file successfully created")
@@ -46,11 +46,25 @@ class startup():
             logging.error(
                 "An error occurred while creating the config file: %s", e)
 
+    def _is_config_has_user_info(self):
+        path = os.path.dirname(os.path.abspath(__file__))
+        CONFIG_FILE = path + '/creds.config'
+        if_config_exist = exists(CONFIG_FILE)
+        if not if_config_exist:
+            logging.error("Config file doesn't exist")
+            return False
+        with open(CONFIG_FILE, 'r') as file:
+                for line in file:
+                    if "xxxxx" in line or "https://example.com/callback" in line:
+                        logging.error("The user didn't add their Client ID, Client Secret, and Redirect URI")
+                        return False
+        return True
+        
     def is_refresh_token(self):
         path = os.path.dirname(os.path.abspath(__file__))
         CONFIG_FILE = path + '/creds.config'
         if_config_exist = exists(CONFIG_FILE)
-        if (if_config_exist):
+        if if_config_exist:
             with open(CONFIG_FILE, 'r') as file:
                 for line in file:
                     if "SPOTIFY_USER_REFRESH" in line:
@@ -64,15 +78,18 @@ class startup():
         path = os.path.dirname(os.path.abspath(__file__))
         CONFIG_FILE = path + '/creds.config'
         if_config_exist = exists(CONFIG_FILE)
-        if (if_config_exist):
+        if not if_config_exist:
             self._create_config_file()
+        if not self._is_config_has_user_info():
+            print("You have to add  client_id, client_secret, and redirect_uri to the config file first")
+            return False
         client_id, client_secret, redirect_uri = tk.config_from_file(
             CONFIG_FILE)
         conf = (client_id, client_secret, redirect_uri)
         token = tk.prompt_for_user_token(*conf, scope=tk.scope.every)
         tk.config_to_file(CONFIG_FILE, conf + (token.refresh_token,))
         logging.info("Token successfully created")
-        return
+        return True
 
     def is_account_premium(self):
         spotify_interface = spotify_interface_class.Spotify_Interface_Class()
@@ -82,7 +99,6 @@ class startup():
             return True
         else:
             logging.error('The user account is not premium')
-            print("You have to upgrade your Spotify account to premium")
             return False
 
     def _check_operating_system(self):
@@ -105,7 +121,6 @@ class startup():
                 logging.info("Spotify is installed on Windows")
                 return True
         logging.error("Spotify is not installed on Windows")
-        print("You have to install Spotify on your computer first")
         return False
 
     def _is_spotify_installed_linux(self):
@@ -115,7 +130,6 @@ class startup():
             return True
         else:
             logging.error("Spotify is not installed on Linux")
-            print("You have to install Spotify on your computer first")
             return False
 
     def _is_spotify_installed_mac(self):
@@ -176,7 +190,8 @@ class startup():
 
     def main(self):
         if not self.is_refresh_token():
-            self.create_refresh_token()
+            if not self.create_refresh_token():
+                return
         if not self.is_account_premium():
             print("You have to upgrade your Spotify account to premium first")
             return
