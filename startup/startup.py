@@ -5,14 +5,13 @@ import subprocess
 import sys
 from os.path import exists
 
+import AppOpener
 import psutil
 import tekore as tk
-import winapps
 from server import Server
 
 path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(path + '/../UniversalQueue/Spotify_Interface')
-import spotify_interface_class
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -22,10 +21,9 @@ class startup():
     def __init__(self):
         return
     
-    
     def _create_config_file(self):
         path = os.path.dirname(os.path.abspath(__file__))
-        filename = path + '/creds.config'
+        filename = path + '/../UniversalQueue/Spotify_Interface/creds.config'
         if_config_exist = exists(filename)
         if if_config_exist:
             logging.info("Config file already exists")
@@ -46,7 +44,7 @@ class startup():
 
     def _is_config_has_user_info(self):
         path = os.path.dirname(os.path.abspath(__file__))
-        CONFIG_FILE = path + '/creds.config'
+        CONFIG_FILE = path + '/../UniversalQueue/Spotify_Interface/creds.config'
         if_config_exist = exists(CONFIG_FILE)
         if not if_config_exist:
             logging.error("Config file doesn't exist")
@@ -60,7 +58,7 @@ class startup():
         
     def is_refresh_token(self):
         path = os.path.dirname(os.path.abspath(__file__))
-        CONFIG_FILE = path + '/creds.config'
+        CONFIG_FILE = path + '/../UniversalQueue/Spotify_Interface/creds.config'
         if_config_exist = exists(CONFIG_FILE)
         if if_config_exist:
             with open(CONFIG_FILE, 'r') as file:
@@ -74,7 +72,7 @@ class startup():
 
     def create_refresh_token(self):
         path = os.path.dirname(os.path.abspath(__file__))
-        CONFIG_FILE = path + '/creds.config'
+        CONFIG_FILE = path + '/../UniversalQueue/Spotify_Interface/creds.config'
         if_config_exist = exists(CONFIG_FILE)
         if not if_config_exist:
             self._create_config_file()
@@ -90,6 +88,8 @@ class startup():
         return True
 
     def is_account_premium(self):
+        # the import is inside the function because spotify_interface_class fails if config file was not set-up
+        import spotify_interface_class
         spotify_interface = spotify_interface_class.Spotify_Interface_Class()
         cur_user = spotify_interface.get_current_user_info()
         if cur_user.product == 'premium':
@@ -111,21 +111,7 @@ class startup():
             logging.error("OS not supported is found: %s", str(OS))
             return ""
 
-    def _check_operating_system(self):
-        OS = platform.system()
-        if OS == 'Darwin':
-            logging.info("OS successfully retrieved: %s", "Mac")
-            return "Mac"
-        elif OS == 'Windows' or OS == 'Linux':
-            logging.info("OS successfully retrieved: %s", str(OS))
-            return platform.system()
-        else:
-            logging.error("OS not supported is found: %s", str(OS))
-            return ""
-
     def _is_spotify_installed_windows(self):
-        list_of_apps = subprocess.run(
-            ["powershell", "-Command", "get-StartApps"],  capture_output=True).stdout.splitlines()
         list_of_apps = subprocess.run(
             ["powershell", "-Command", "get-StartApps"],  capture_output=True).stdout.splitlines()
         for app in list_of_apps:
@@ -186,12 +172,9 @@ class startup():
         OS = self._check_operating_system()
         if OS == 'Windows':
             try:
-                winapps.run("Spotify.exe")
+                AppOpener.open("spotify")
                 logging.info("Spotify started on Windows")
             except Exception as e:
-                logging.error(
-                    "An error occurred while starting Spotify on Windows: %s", e)
-
                 logging.error(
                     "An error occurred while starting Spotify on Windows: %s", e)
 
@@ -202,10 +185,7 @@ class startup():
             except Exception as e:
                 logging.error(
                     "An error occurred while starting Spotify on Linux: %s", e)
-
-                logging.error(
-                    "An error occurred while starting Spotify on Linux: %s", e)
-
+                
         elif OS == 'Mac':
             try:
                 subprocess.run(["open", "spotify://"])
@@ -213,10 +193,7 @@ class startup():
             except Exception as e:
                 logging.error(
                     "An error occurred while starting Spotify on Mac: %s", e)
-
-                logging.error(
-                    "An error occurred while starting Spotify on Mac: %s", e)
-
+                
         else:
             logging.error("OS not supported is found: %s", str(OS))
         return
@@ -225,22 +202,7 @@ class startup():
         if not self.is_refresh_token():
             if not self.create_refresh_token():
                 return
-        if not self.is_account_premium():
-            print("You have to upgrade your Spotify account to premium first")
-            return
-        if not self.is_spotify_installed():
-            print("You have to install Spotify on your computer first")
-            return
-        if not self.is_spotify_running():
-            self.start_spotify()
-        website_server = Server()
-        website_server.main()
-
-    def main(self):
-        if not self.is_refresh_token():
-            if not self.create_refresh_token():
-                return
-        if not self.is_account_premium():
+        if not self.is_spotify_premium():
             print("You have to upgrade your Spotify account to premium first")
             return
         if not self.is_spotify_installed():
@@ -254,5 +216,4 @@ class startup():
 
 if __name__ == "__main__":
     s = startup()
-    s.main()
     s.main()

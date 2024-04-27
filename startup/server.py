@@ -2,6 +2,7 @@ import logging
 import socket
 import threading
 import webbrowser
+
 import qrcode
 from flask import Flask
 
@@ -86,7 +87,6 @@ class Server(object):
         for port in range(startPort, endPort + 1):
             if self._check_port_availability(port):
                 selectedPort = port
-                logging.info("Port %s is available", selectedPort)
                 return selectedPort
 
         if selectedPort == 0:
