@@ -199,17 +199,17 @@ class startup():
         return
 
     def main(self):
+        if not self.is_spotify_installed():
+            print("You have to install Spotify on your computer first")
+            return
+        if not self.is_spotify_running():
+            self.start_spotify()
         if not self.is_refresh_token():
             if not self.create_refresh_token():
                 return
         if not self.is_account_premium():
             print("You have to upgrade your Spotify account to premium first")
             return
-        if not self.is_spotify_installed():
-            print("You have to install Spotify on your computer first")
-            return
-        if not self.is_spotify_running():
-            self.start_spotify()
         website_server = Server()
         website_server.main()
 
