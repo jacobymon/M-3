@@ -10,12 +10,15 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 //import './components.css' // eventually import a proper css file
 
+const MAX_QUEUE_RE_REQUESTS = 2;
+const REQUEST_QUEUE_CALL = "http://localhost:8080/request_update"
+const REQUEST_QUEUE_UPDATE_CALL = "http://localhost:8080/update_ui"
+
 
 var isHost = true; //Global variable to determine whether to render host-only elements. Should not be changed after startup.
 //const isHostContext = createContext();
 var cookie = "h"
-var queueError = 0;
-var hostToolsErrorCode = 0;
+var hostToolsError = 0;
 
 // External Interface Functions
 
@@ -26,103 +29,18 @@ var hostToolsErrorCode = 0;
  *
  * @return {Array} list of songs
  */
-function requestQueue() {
+async function requestQueue() {
 	// Send a request queue API call to the universal queue.
-	// If Successful:
-		// Returns the list of songs currently in the queue.
-	// ELse If Request Error but no response:
-		// Set the error code globally
-		// Return an empty queue
-	// Else If Server Returns an Error:
-		// Set the error code globally
-		// Return an empty queue
-	return []
-
+	try {
+		const response = await axios.get(REQUEST_QUEUE_CALL);
+		// If the request was successful, return the list of songs in the queue.
+		return response.data;
+	} catch (error) {
+		// Otherwise, set an error code.
+		// TODO set error code
+		return [];
+	}
 }
-
-/**
- * Sends a Remove from Queue API call to the Universal Queue. 
- * 
- * This will remove the specified instance of that song from the queue, and then result in the Universal Queue sending back an Update Queue call.
- *
- * @param {int} submissionID The ID of the song in the queue to remove
- * 
- * @return {int} status of api call
- */
-function removeSong(submissionID) {
-	// Send a remove song API call to the universal queue.
-	// If song already not there:
-		// Request queue
-	// If cookie wrong / any other failure:
-		// Set hostToolsErrorCode
-}
-
-/**
- * Sends a Suspend Queue API call to the Spotify class. 
- * 
- * This will cause every submitted song to automatically reject, regardless of the source.
- * 
- * @return {int} status of api call
- */
-function suspendQueue() {
-	// Send a suspend queue API call to the universal queue.
-	// If failed: set hostToolsErrorCode to error
-	// Return the status of the request
-	return 0;
-}
-
-/**
- * Sends a Resume Queue API call to the Spotify class. 
- * 
- * If the queue is currently suspended, it will be unsuspended.
- * 
- * @return {int} status of api call
- */
-function resumeQueue() {
-	// Send a resume queue API call to the universal queue.
-	// If failed: set hostToolsErrorCode to error
-	// Return the status of the request
-	return 0;
-}
-
-/**
- * Sends a Pause API call to the Spotify class. 
- * 
- * @return {int} status of api call
- */
-function pauseMusic() {
-	// Send a pause music API call to the universal queue.
-	// If failed: set hostToolsErrorCode to error
-	// Return the status of the request
-	return 0;
-}
-
-/**
- * Sends a Resume API call to the Spotify class. 
- * 
- * @return {int} status of api call
- */
-function resumeMusic() {
-	// Send a resume music API call to the universal queue.
-	// If failed: set hostToolsErrorCode to error
-	// Return the status of the request
-	return 0;
-}
-
-/**
- * Sends a Pause API call to the Spotify class. 
- * 
- * @param {int} vol The volume to set the music to.
- * 
- * @return {int} status of api call
- */
-function changeVolume(vol) {
-	// Send a change volume API call to the universal queue.
-	// If failed: set hostToolsErrorCode to error
-	// Return the status of the request
-	return 0;
-}
-
 
 /**
  * Sends a request to the Universal Queue to notify this website instance of any
@@ -132,7 +50,7 @@ function changeVolume(vol) {
  * @param {function} updateSongs The function from displayedQueue to change the data in
  * 									songs (and re-render the displayed queue)
  */
-const requestQueueUpdates = (updateSongs) => {
+async function requestQueueUpdates (songs, updateSongs) {
 	//Call Request Queue Updates
 	//If response is 201: we're given a new queue to use
 		// update songs to be that queue
@@ -148,6 +66,89 @@ const requestQueueUpdates = (updateSongs) => {
 	//Else if any other queue errors:
 		// set queueError	
 };
+
+/**
+ * Sends a Remove from Queue API call to the Universal Queue. 
+ * 
+ * This will remove the specified instance of that song from the queue, and then result in the Universal Queue sending back an Update Queue call.
+ *
+ * @param {int} submissionID The ID of the song in the queue to remove
+ * 
+ * @return {int} status of api call
+ */
+function removeSong(submissionID) {
+	// Send a remove song API call to the universal queue.
+	// If song already not there:
+		// Request queue
+	// If cookie wrong / any other failure:
+		// Set hostToolsError
+}
+
+/**
+ * Sends a Suspend Queue API call to the Spotify class. 
+ * 
+ * This will cause every submitted song to automatically reject, regardless of the source.
+ * 
+ * @return {int} status of api call
+ */
+function suspendQueue() {
+	// Send a suspend queue API call to the universal queue.
+	// If failed: set hostToolsError to error
+	// Return the status of the request
+	return 0;
+}
+
+/**
+ * Sends a Resume Queue API call to the Spotify class. 
+ * 
+ * If the queue is currently suspended, it will be unsuspended.
+ * 
+ * @return {int} status of api call
+ */
+function resumeQueue() {
+	// Send a resume queue API call to the universal queue.
+	// If failed: set hostToolsError to error
+	// Return the status of the request
+	return 0;
+}
+
+/**
+ * Sends a Pause API call to the Spotify class. 
+ * 
+ * @return {int} status of api call
+ */
+function pauseMusic() {
+	// Send a pause music API call to the universal queue.
+	// If failed: set hostToolsError to error
+	// Return the status of the request
+	return 0;
+}
+
+/**
+ * Sends a Resume API call to the Spotify class. 
+ * 
+ * @return {int} status of api call
+ */
+function resumeMusic() {
+	// Send a resume music API call to the universal queue.
+	// If failed: set hostToolsError to error
+	// Return the status of the request
+	return 0;
+}
+
+/**
+ * Sends a Pause API call to the Spotify class. 
+ * 
+ * @param {int} vol The volume to set the music to.
+ * 
+ * @return {int} status of api call
+ */
+function changeVolume(vol) {
+	// Send a change volume API call to the universal queue.
+	// If failed: set hostToolsError to error
+	// Return the status of the request
+	return 0;
+}
 
 // GUI functions
 
@@ -167,6 +168,8 @@ function Song(props) {
 	return ( 
 	 <>
 	  {/* Display the Name, album cover, Artist, etc*/}
+	  <p>{props.name}</p>
+	  <p>{props.artist}</p>
 	  <DeleteButton submissionID={props.submissionID}/>
 	 </>
 	);
@@ -198,7 +201,7 @@ function DeleteButton(props) {
  * 
  * @return HTML code for the current song queue.
  */
-function DisplayedQueue() {
+function DisplayedQueue(props) {
 
 	/**
    	 * songs: a list of song objects
@@ -211,19 +214,27 @@ function DisplayedQueue() {
    	 * @type {Array}
    	*/
 	const [songs, updateSongs] = useState([]);
+
+	/**
+	 * queueError: the most recent errorcode for updating the queue
+	 * @type {int}
+	 */
+	const [queueError, updateQueueError] = useState(0);
+	var failedRequests = 0;
 	
 	// On startup (aka using useEffect({},[])), initialize isHost using prop.isHost
 	// Note: may have to switch isHost to a context instead
 	useEffect( () => {
-		//isHost = prop.isHost
-		// cookie = prop.cookie
+		isHost = props.isHost
+		cookie = props.cookie
 	}, [])
 
 	/* On startup, call the requestQueue() function asynchronously with useEffect
 	 and use it to update songs */
 	useEffect( () => {
-		//call requestQueue()
-		//set songs to the result
+		updateSongs([]) // make sure Songs is intialized
+		var current_songs_in_queue = requestQueue()
+		updateSongs(current_songs_in_queue)
 	}, [])
 
 	
@@ -236,36 +247,45 @@ function DisplayedQueue() {
 		attempt to recover from the error and get an up-to-date queue.
 	*/
 	useEffect( () => {
-		// If queueError != 0:
-			//attempt to call request queue
-
-		// If too many requests fail in a row, notify the user
-			// (easiest: could empty out songs and replace it with a fake 'queue out of sync, please refresh' song
-			// (could also make the stack conditional)
-			// (could also make a separate 'queue out of sync' popup)
+		if (queueError == 0) {
+			failedRequests = 0
+		} else if (failedRequests <= MAX_QUEUE_RE_REQUESTS) {
+			// If queue update fails, re-request the queue.
+			failedRequests += 1
+			songs = requestQueue();
+		} else {
+			// If too many requests fail in a row, notify the user
+			// The simplest solution is to create a fake "queue out of sync, please refresh" song
+			songs = [ {
+					"id": "", "submission_id": 0,
+					"name": "QUEUE OUT OF SYNC",
+					"artist": "please refresh the page",
+					"albumcover": ""
+				} ]
+		}
 	}, [queueError])
 
-	//Handle any host tool errors
+	// When HostToolsError changes, attempt to recover.
 	useEffect( () => {
-		// Set hostToolsErrorCode to 0 after some time passes, 
+		// TODO Set hostToolsError to 0 after some time passes, 
 		// so that the error message dissapears
-	}, [hostToolsErrorCode]) 
+	}, [hostToolsError]) 
 	
 	
 	return (
 	 <>
 
-	  {/*If there's an error code, display that*/}
-	  {hostToolsErrorCode!=0 &&
+	  {/*If there's an error in the host tools, display an error message*/}
+	  {hostToolsError!=0 &&
 	   <>
-	    {/*Display the error message*/}
+	    {/*TODO Display the error message*/}
 	   </>
 	  }
 	
 	  {/*If you're a host, display the host controls*/}
 	  {isHost==true &&
 	   <>
-	    {/*Buttons to start/stop the queue and play/pause the music
+	    {/*TODO Buttons to start/stop the queue and play/pause the music
 		   and a slider to set volume*/}
 	   </>
 	  }
@@ -275,9 +295,10 @@ function DisplayedQueue() {
 
 	  <>
 	   {/* For each song in songs, generate an entry*/}
-	   {songs.map(
+	   {songs.content?.map(
 		(song) => <Song >
 		 {/*to optimize this: include a key that is unique to each entry*/}
+		 key={song.submissionID}
 		 id={song.id} 
 		 name={song.name} 
 		 albumcover={song.albumcover} 
@@ -293,4 +314,5 @@ function DisplayedQueue() {
 export default DisplayedQueue;
 
 // For testing only
-export {requestQueueUpdates};
+export {requestQueue, requestQueueUpdates};
+export {REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL};
