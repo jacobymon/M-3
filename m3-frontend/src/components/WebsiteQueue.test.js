@@ -1,8 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import axios from 'axios';
+import { act } from 'react-dom/test-utils';
 
-import DisplayedQueue, {requestQueue, requestQueueUpdates} from './WebsiteQueue';
-import {REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL} from './WebsiteQueue';
+import DisplayedQueue, {requestQueue, requestQueueUpdates,
+	REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL,
+	Song, DeleteButton
+} from './WebsiteQueue';
 
 jest.mock('axios');
 
@@ -33,36 +36,69 @@ const TESTSONG2 = {
 	"submissionID": 3
 }
 
+const AXIOS_RQ_RESPONSE_EMPTY = {
+	status: 200,
+	data: {
+		songs: []
+	}
+}
+const AXIOS_RQ_RESPONSE_1 = {
+	status: 200,
+	data: {
+		songs: [TESTSONG1]
+	}
+}
+const AXIOS_RQ_RESPONSE_12 = {
+	status: 200,
+	data: {
+		songs: [TESTSONG1, TESTSONG2]
+	}
+}
+const AXIOS_RQ_RESPONSE_11 = {
+	status: 200,
+	data: {
+		songs: [TESTSONG1, SECOND_TESTSONG1]
+	}
+}
+
 describe("testing RequestQueue functionality", () => {
 
 	jest.useFakeTimers();
 
-	it('requests queue on render', () => {
-		axios.get.mockResolvedValue([])
+	it('requests queue on render', async () => {
+		axios.get.mockResolvedValue(AXIOS_RQ_RESPONSE_EMPTY)
 	
-		render(<DisplayedQueue />);
+		// wrapping the render in this act function forces the test to wait for
+		// everything to finish rendering before making any assertions. 
+		await act(async () => {
+			render(<DisplayedQueue />)
+		});
 	
-		expect( axios.get.mock.calls.length ).toBeGreaterThanOrEqual(1)
-		// Check that first arg of first call is request queue
-		expect( axios.get.mock.calls[0][0]).toBe(REQUEST_QUEUE_CALL)
+		expect(axios.get).toBeCalledWith(REQUEST_QUEUE_CALL)
 	});
 
-	it('re-requests queue', () => {
+	it('re-requests queue', async () => {
 		axios.get.mockRejectedValueOnce({status: 500})
-		axios.get.mockResolvedValue([])
-		render(<DisplayedQueue />);
+		axios.get.mockResolvedValue(AXIOS_RQ_RESPONSE_EMPTY)
+
+		// wrapping the render in this act function forces the test to wait for
+		// everything to finish rendering before making any assertions. 
+		await act(async () => {
+			render(<DisplayedQueue />)
+		});
+		
 	
-		expect( axios.get.mock.calls.length ).toBeGreaterThanOrEqual(2)
-		// Check that first arg of first call is request queue
-		expect( axios.get.mock.calls[0][0]).toBe(REQUEST_QUEUE_CALL)
-		// Check that first arg of second call is request queue
-		expect( axios.get.mock.calls[1][0]).toBe(REQUEST_QUEUE_CALL)
+		// Find all calls with the first argument equal to REQUEST_QUEUE_CALL
+		var calls = axios.get.mock.calls.filter((call)=>call[0]==REQUEST_QUEUE_CALL)
+		expect(calls.length).toBe(2)
 	});
 
-	it('fills songs correctly', () => {
-		axios.get.mockResolvedValue([TESTSONG1, TESTSONG2])
+	it('fills songs correctly', async () => {
+		axios.get.mockResolvedValue(AXIOS_RQ_RESPONSE_12)
 
-		render(<DisplayedQueue />)
+		await act(async () => {
+			render(<DisplayedQueue />)
+		});
 
 		expect(screen.getByText(TESTSONG1.name)).toBeInTheDocument();
 		expect(screen.getByText(TESTSONG1.artist)).toBeInTheDocument();
@@ -72,14 +108,17 @@ describe("testing RequestQueue functionality", () => {
 	});
 
 
-	it('fills identical songs', () => {
-		axios.get.mockResolvedValue([
-			TESTSONG1, SECOND_TESTSONG1
-		])
-		render(<DisplayedQueue />);
+	it('fills identical songs', async () => {
+		axios.get.mockResolvedValue(AXIOS_RQ_RESPONSE_11)
+		
+		await act(async () => {
+			render(<DisplayedQueue />)
+		});
 	
-		expect(screen.getByText(TESTSONG1.name)).toBeInTheDocument();
-		expect(screen.getByText(TESTSONG1.artist)).toBeInTheDocument();
+		var times_name_showed_up = screen.queryAllByText(TESTSONG1.name).length
+		var times_artist_showed_up = screen.queryAllByText(TESTSONG1.artist).length
+		expect(times_name_showed_up).toBe(2)
+		expect(times_artist_showed_up).toBe(2)
 	});
 });
 
@@ -93,11 +132,12 @@ describe("testing RequestQueue functionality", () => {
 
 // 		requestQueueUpdates(mockUpdateSongs);
 // 		expect( axios.get.mock.calls.length ).toEqual(1)
-// 		// TODO: test that call is request queue (and not just request queue update)
+// 		// Test that the call is request_queue_update
+// 		expect( axios.get.mock.calls[0][0]).toBe(REQUEST_QUEUE_UPDATE_CALL)
 // 	});
 
 // 	it('requests queue update on render', () => {
-// 		axios.get.mockResolvedValue([])
+// 		axios.get.mockResolvedValue(AXIOS_RQ_RESPONSE_EMPTY)
 	
 // 		render(<DisplayedQueue />);
 	
@@ -108,7 +148,7 @@ describe("testing RequestQueue functionality", () => {
 
 // 	it('correctly updates songs', () => {
 // 		const mockUpdateSongs = jest.fn();
-// 		axios.get.mockResolvedValueOnce([TESTSONG1])
+// 		axios.get.mockResolvedValueOnce(AXIOS_RQ_RESPONSE_1)
 
 // 		requestQueueUpdates(mockUpdateSongs);
 	
@@ -119,7 +159,7 @@ describe("testing RequestQueue functionality", () => {
 // 	it('handles request timeout', () => {
 // 		const mockUpdateSongs = jest.fn();
 // 		axios.get.mockRejectedValueOnce({status: 408})
-// 		axios.get.mockResolvedValueOnce([TESTSONG1])
+// 		axios.get.mockResolvedValueOnce(AXIOS_RQ_RESPONSE_1)
 
 // 		requestQueueUpdates(mockUpdateSongs);
 
@@ -133,8 +173,37 @@ describe("testing RequestQueue functionality", () => {
 // 	});
 // });
 
-describe("general / full-way-through tests", () => {
-	it('renders', () => {
-		render(<DisplayedQueue />);
+
+describe("Song subcomponent testing", () => {
+	jest.useFakeTimers();
+
+	it('renders a Song', () => {
+		render(<Song></Song>)
+	});
+
+	it('includes the song name', () => {
+		render(<Song name = {TESTSONG1.name}></Song>)
+		expect(screen.getByText(TESTSONG1.name)).toBeInTheDocument();
+	});
+
+	it('includes the artist', () => {
+		render(<Song artist = {TESTSONG1.artist}></Song>)
+		expect(screen.getByText(TESTSONG1.artist)).toBeInTheDocument();
+	});
+
+	it('includes the album cover', () => {
+		render(<Song albumcover = {TESTSONG1.albumcover}></Song>)
+		expect(screen.getByText(TESTSONG1.albumcover)).toBeInTheDocument();
 	});
 });
+
+describe("full-way-through tests", () => {
+	jest.useFakeTimers();
+	
+	it('renders', async () => {
+		axios.get.mockResolvedValue(AXIOS_RQ_RESPONSE_EMPTY)
+		await act(async () => {
+			render(<DisplayedQueue />)
+		});
+	});
+})

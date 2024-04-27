@@ -7,7 +7,7 @@ songs, and suspending or unsuspending the queue. Finally, it will also include
 tools for the host to pause and play the music, and control the volume.*/
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+const axios = require('axios').default;
 //import './components.css' // eventually import a proper css file
 
 const MAX_QUEUE_RE_REQUESTS = 2;
@@ -27,19 +27,28 @@ var hostToolsError = 0;
  * 
  * The Universal Queue will send back the data of all songs in the queue, which the website queue can then use to show all songs currently in the queue.
  *
+ * @param {function} updateQueueError The function to set a new error code (and
+ * 										force the component to re-render)
+ * @param {function} updateSongs The function from displayedQueue to change the data in
+ * 									songs (and re-render the displayed queue)
  * @return {Array} list of songs
  */
-async function requestQueue() {
+async function requestQueue(updateQueueError, updateSongs) {
 	// Send a request queue API call to the universal queue.
-	try {
-		const response = await axios.get(REQUEST_QUEUE_CALL);
-		// If the request was successful, return the list of songs in the queue.
-		return response.data;
-	} catch (error) {
-		// Otherwise, set an error code.
-		// TODO set error code
-		return [];
-	}
+	axios.get(REQUEST_QUEUE_CALL)
+		.then(response => {
+			// If the request was successful, return the list of songs in the queue.
+			var current_songs_in_queue = response.data.songs 
+			updateSongs(current_songs_in_queue);
+		})
+		.catch(error => {
+			// Otherwise, set an error code.
+			if(error.response) {
+				updateQueueError(error.response.status)
+			} else {
+				updateQueueError(500)
+			}
+		})
 }
 
 /**
@@ -47,10 +56,12 @@ async function requestQueue() {
  * changes to the queue. If it gets a response, immedaitely set the displayed
  * queue to use the new up-to-date data.
  * 
+ * @param {function} updateQueueError The function to set a new error code (and
+ * 										force the component to re-render)
  * @param {function} updateSongs The function from displayedQueue to change the data in
  * 									songs (and re-render the displayed queue)
  */
-async function requestQueueUpdates (songs, updateSongs) {
+async function requestQueueUpdates (updateQueueError, updateSongs) {
 	//Call Request Queue Updates
 	//If response is 201: we're given a new queue to use
 		// update songs to be that queue
@@ -164,12 +175,14 @@ function changeVolume(vol) {
  * @return HTML code for one song entry
  */
 function Song(props) {
+
 	// Returns the HTML to display one song in the queue.
 	return ( 
 	 <>
 	  {/* Display the Name, album cover, Artist, etc*/}
 	  <p>{props.name}</p>
 	  <p>{props.artist}</p>
+	  <p>{props.albumcover}</p>
 	  <DeleteButton submissionID={props.submissionID}/>
 	 </>
 	);
@@ -187,7 +200,9 @@ function DeleteButton(props) {
 	// Returns the HTML to conditionally display a delete button
 	// props.submissionID - the song submission to remove
 	if (isHost) {
-		return <>({/* HTML containing a button that calls removeSong(submissionID)*/})</>
+		return <>
+		({/* HTML containing a button that calls removeSong(submissionID)*/})
+		</>
 	}
 	return <></>
 }
@@ -233,8 +248,7 @@ function DisplayedQueue(props) {
 	 and use it to update songs */
 	useEffect( () => {
 		updateSongs([]) // make sure Songs is intialized
-		var current_songs_in_queue = requestQueue()
-		updateSongs(current_songs_in_queue)
+		requestQueue(updateQueueError, updateSongs)
 	}, [])
 
 	
@@ -252,16 +266,16 @@ function DisplayedQueue(props) {
 		} else if (failedRequests <= MAX_QUEUE_RE_REQUESTS) {
 			// If queue update fails, re-request the queue.
 			failedRequests += 1
-			songs = requestQueue();
+			requestQueue(updateQueueError, updateSongs)
 		} else {
 			// If too many requests fail in a row, notify the user
 			// The simplest solution is to create a fake "queue out of sync, please refresh" song
-			songs = [ {
-					"id": "", "submission_id": 0,
-					"name": "QUEUE OUT OF SYNC",
-					"artist": "please refresh the page",
-					"albumcover": ""
-				} ]
+			updateSongs([{
+				"id": "", "submission_id": 0,
+				"name": "QUEUE OUT OF SYNC",
+				"artist": "please refresh the page",
+				"albumcover": ""
+			}])
 		}
 	}, [queueError])
 
@@ -292,20 +306,19 @@ function DisplayedQueue(props) {
 
 	  {/*Regardless of whether you're a host or not, 
 	  	display an array of songs in the queue*/}
-
 	  <>
 	   {/* For each song in songs, generate an entry*/}
-	   {songs.content?.map(
-		(song) => <Song >
-		 {/*to optimize this: include a key that is unique to each entry*/}
-		 key={song.submissionID}
+	   { songs?.map(
+		(song) => <Song
 		 id={song.id} 
 		 name={song.name} 
 		 albumcover={song.albumcover} 
 		 artist={song.artist}
-		 submissionID={song.submissionID}
+		 submissionID={song.submissionID} 
+		 key={song.submissionID}>
+		 {/*the key element used by react to better handle song objects */}
 		</Song>
-	   )} 
+	   )}
 	  </>
 
 	 </>
@@ -315,4 +328,5 @@ export default DisplayedQueue;
 
 // For testing only
 export {requestQueue, requestQueueUpdates};
+export {Song, DeleteButton};
 export {REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL};
