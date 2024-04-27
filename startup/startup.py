@@ -35,7 +35,7 @@ class startup():
                 file.write('SPOTIFY_CLIENT_SECRET = xxxxx\n')
                 file.write(
                     'SPOTIFY_REDIRECT_URI = https://example.com/callback\n')
-                file.write("DEVICE = ")
+                file.write("DEVICE =")
             logging.info("Config file successfully created")
         except Exception as e:
             logging.error(
@@ -202,7 +202,7 @@ class startup():
         if not self.is_refresh_token():
             if not self.create_refresh_token():
                 return
-        if not self.is_spotify_premium():
+        if not self.is_account_premium():
             print("You have to upgrade your Spotify account to premium first")
             return
         if not self.is_spotify_installed():
