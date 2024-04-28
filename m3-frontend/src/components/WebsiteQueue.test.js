@@ -4,8 +4,7 @@ import { act } from 'react-dom/test-utils';
 
 import DisplayedQueue, {requestQueue, requestQueueUpdates,
 	REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL,
-	Song, DeleteButton
-} from './WebsiteQueue';
+	Song } from './WebsiteQueue';
 
 jest.mock('axios');
 
@@ -36,147 +35,123 @@ const TESTSONG2 = {
 	"submissionID": 3
 }
 
-const AXIOS_RQ_RESPONSE_EMPTY = {
+const AXIOS_RESPONSE_EMPTY = {
 	status: 200,
 	data: {
 		songs: []
 	}
 }
-const AXIOS_RQ_RESPONSE_1 = {
+const AXIOS_RESPONSE_1 = {
 	status: 200,
 	data: {
 		songs: [TESTSONG1]
 	}
 }
-const AXIOS_RQ_RESPONSE_12 = {
+const AXIOS_RESPONSE_12 = {
 	status: 200,
 	data: {
 		songs: [TESTSONG1, TESTSONG2]
 	}
 }
-const AXIOS_RQ_RESPONSE_11 = {
+const AXIOS_RESPONSE_11 = {
 	status: 200,
 	data: {
 		songs: [TESTSONG1, SECOND_TESTSONG1]
 	}
 }
 
-describe("testing RequestQueue functionality", () => {
+const AXIOS_REJECT_408 = { status: 408 }
+const AXIOS_REJECT_500 = { status: 500 }
 
-	jest.useFakeTimers();
 
-	it('requests queue on render', async () => {
-		axios.get.mockResolvedValue(AXIOS_RQ_RESPONSE_EMPTY)
-	
-		// wrapping the render in this act function forces the test to wait for
-		// everything to finish rendering before making any assertions. 
-		await act(async () => {
-			render(<DisplayedQueue />)
-		});
+
+
+describe("RequestQueue helper function", () => {
+
+	it('sends request on call', async () => {
+		axios.get.mockResolvedValue(AXIOS_RESPONSE_EMPTY)
+		const mockUpdateQueueError = jest.fn();
+		const mockUpdateSongs = jest.fn();
+		
+		requestQueue(mockUpdateQueueError, mockUpdateSongs);
 	
 		expect(axios.get).toBeCalledWith(REQUEST_QUEUE_CALL)
 	});
 
-	it('re-requests queue', async () => {
-		axios.get.mockRejectedValueOnce({status: 500})
-		axios.get.mockResolvedValue(AXIOS_RQ_RESPONSE_EMPTY)
-
-		// wrapping the render in this act function forces the test to wait for
-		// everything to finish rendering before making any assertions. 
-		await act(async () => {
-			render(<DisplayedQueue />)
-		});
+	it('updates songs on call', async () => {
+		axios.get.mockResolvedValue(AXIOS_RESPONSE_12)
+		const mockUpdateQueueError = jest.fn();
+		const mockUpdateSongs = jest.fn();
 		
+		await requestQueue(mockUpdateQueueError, mockUpdateSongs);
 	
-		// Find all calls with the first argument equal to REQUEST_QUEUE_CALL
-		var calls = axios.get.mock.calls.filter((call)=>call[0]==REQUEST_QUEUE_CALL)
-		expect(calls.length).toBe(2)
+		expect(mockUpdateSongs).toBeCalledWith([TESTSONG1, TESTSONG2])
 	});
 
-	it('fills songs correctly', async () => {
-		axios.get.mockResolvedValue(AXIOS_RQ_RESPONSE_12)
+	it('updates error code on failure', async () => {
+		axios.get.mockRejectedValue(AXIOS_REJECT_500)
+		const mockUpdateQueueError = jest.fn();
+		const mockUpdateSongs = jest.fn();
 
-		await act(async () => {
-			render(<DisplayedQueue />)
-		});
-
-		expect(screen.getByText(TESTSONG1.name)).toBeInTheDocument();
-		expect(screen.getByText(TESTSONG1.artist)).toBeInTheDocument();
-		expect(screen.getByText(TESTSONG2.name)).toBeInTheDocument();
-		expect(screen.getByText(TESTSONG2.artist)).toBeInTheDocument();
-
-	});
-
-
-	it('fills identical songs', async () => {
-		axios.get.mockResolvedValue(AXIOS_RQ_RESPONSE_11)
+		await requestQueue(mockUpdateQueueError, mockUpdateSongs)
 		
-		await act(async () => {
-			render(<DisplayedQueue />)
-		});
-	
-		var times_name_showed_up = screen.queryAllByText(TESTSONG1.name).length
-		var times_artist_showed_up = screen.queryAllByText(TESTSONG1.artist).length
-		expect(times_name_showed_up).toBe(2)
-		expect(times_artist_showed_up).toBe(2)
+		expect(mockUpdateQueueError).toBeCalledWith(500)
 	});
 });
 
 
-// describe("testing Request Queue Updates functionality", () => {
-
-// 	jest.useFakeTimers();
-	
-// 	it('requests queue update on call', () => {
-// 		const mockUpdateSongs = jest.fn();
-
-// 		requestQueueUpdates(mockUpdateSongs);
-// 		expect( axios.get.mock.calls.length ).toEqual(1)
-// 		// Test that the call is request_queue_update
-// 		expect( axios.get.mock.calls[0][0]).toBe(REQUEST_QUEUE_UPDATE_CALL)
-// 	});
-
-// 	it('requests queue update on render', () => {
-// 		axios.get.mockResolvedValue(AXIOS_RQ_RESPONSE_EMPTY)
-	
-// 		render(<DisplayedQueue />);
-	
-// 		expect( axios.get.mock.calls.length ).toBeGreaterThanOrEqual(1)
-// 		// TODO: test that call is request queue update (and not just request queue)
-// 		expect(true).toEqual(false)
-// 	});
-
-// 	it('correctly updates songs', () => {
-// 		const mockUpdateSongs = jest.fn();
-// 		axios.get.mockResolvedValueOnce(AXIOS_RQ_RESPONSE_1)
-
-// 		requestQueueUpdates(mockUpdateSongs);
-	
-// 		// The first arg of the first call to mockUpdateSongs was TESTSONG1
-// 		expect(mockUpdateSongs.mock.calls[0][0]).toBe(TESTSONG1);
-// 	});
-
-// 	it('handles request timeout', () => {
-// 		const mockUpdateSongs = jest.fn();
-// 		axios.get.mockRejectedValueOnce({status: 408})
-// 		axios.get.mockResolvedValueOnce(AXIOS_RQ_RESPONSE_1)
-
-// 		requestQueueUpdates(mockUpdateSongs);
-
-		
-// 		expect( axios.get.mock.calls.length ).toEqual(3)
-// 		// TODO: test that call is request queue (and not just request queue update)
-// 		expect(true).toEqual(false)
-	
-// 		// The first arg of the first call to mockUpdateSongs was TESTSONG1
-// 		expect(mockUpdateSongs.mock.calls[0][0]).toBe(TESTSONG1);
-// 	});
-// });
-
-
-describe("Song subcomponent testing", () => {
+describe("Request Queue Updates helper function", () => {
 	jest.useFakeTimers();
+	afterEach(() => {    
+		jest.clearAllMocks();
+	});
+	
+	it('requests queue update on call', done => {
+		//Mock axios.get to end the test and run assertions the first time it's called.
+		axios.get.mockImplementation(() => {
+			expect(axios.get).toBeCalledWith(REQUEST_QUEUE_UPDATE_CALL);
+			done();
+		})
+		const mockUpdateQueueError = jest.fn();
+		const mockUpdateSongs = jest.fn();
 
+		requestQueueUpdates(mockUpdateQueueError, mockUpdateSongs);
+		
+	});
+
+	it('updates songs on call', done => {
+		// Resolve, then never return anything else
+		axios.get.mockResolvedValueOnce(AXIOS_RESPONSE_1)
+		axios.get.mockImplementation(() => {
+			expect(axios.get).toBeCalledTimes(2)
+			expect(mockUpdateSongs).toBeCalledWith([TESTSONG1])
+			done(); 
+		})
+		const mockUpdateQueueError = jest.fn();
+		const mockUpdateSongs = jest.fn();
+
+		requestQueueUpdates(mockUpdateQueueError, mockUpdateSongs);
+
+	});
+
+	it('re-requests after 408 response', done => {
+		// Reject, then resolve, then never return anything else
+		axios.get.mockRejectedValueOnce(AXIOS_REJECT_408)
+		axios.get.mockResolvedValueOnce(AXIOS_RESPONSE_1)
+		axios.get.mockImplementation(() => {
+			expect(axios.get).toBeCalledTimes(3);
+			expect(mockUpdateSongs).toBeCalledWith([TESTSONG1]);
+			done();
+		})
+		const mockUpdateQueueError = jest.fn();
+		const mockUpdateSongs = jest.fn();
+
+		requestQueueUpdates(mockUpdateQueueError, mockUpdateSongs);
+	});
+});
+
+
+describe("Song subcomponent", () => {
 	it('renders a Song', () => {
 		render(<Song></Song>)
 	});
@@ -197,13 +172,60 @@ describe("Song subcomponent testing", () => {
 	});
 });
 
-describe("full-way-through tests", () => {
+describe("DisplayedQueue as a whole", () => {
 	jest.useFakeTimers();
-	
-	it('renders', async () => {
-		axios.get.mockResolvedValue(AXIOS_RQ_RESPONSE_EMPTY)
+
+	it('calls both queue functions when rendered', async () => {
+		axios.get.mockImplementation((call) => {
+			// If you request queue, return songs.
+			if (call==REQUEST_QUEUE_CALL) return Promise.resolve(AXIOS_RESPONSE_EMPTY)
+			// Otherwise, return a promise that never resolves.
+			// (This way, the function never continues)
+			if (call==REQUEST_QUEUE_UPDATE_CALL) return new Promise( () => {} )
+		})
+
 		await act(async () => {
 			render(<DisplayedQueue />)
 		});
+
+		expect(axios.get).toBeCalledTimes(2)
+		expect(axios.get).toBeCalledWith(REQUEST_QUEUE_CALL)
+		expect(axios.get).toBeCalledWith(REQUEST_QUEUE_UPDATE_CALL)
+	});
+	
+	it('renders songs in the queue', async () => {
+
+		axios.get.mockImplementation((call) => {
+			if (call==REQUEST_QUEUE_CALL) return Promise.resolve(AXIOS_RESPONSE_12)
+			if (call==REQUEST_QUEUE_UPDATE_CALL) return new Promise( () => {} )
+		})
+
+		await act(async () => {
+			render(<DisplayedQueue />)
+		});
+
+		// Check that the songs are in the list.
+		expect(screen.getByText(TESTSONG1.name)).toBeInTheDocument();
+		expect(screen.getByText(TESTSONG1.artist)).toBeInTheDocument();
+		expect(screen.getByText(TESTSONG2.name)).toBeInTheDocument();
+		expect(screen.getByText(TESTSONG2.artist)).toBeInTheDocument();
+	});
+	
+	it('renders identical songs', async () => {
+
+		axios.get.mockImplementation((call) => {
+			if (call==REQUEST_QUEUE_CALL) return Promise.resolve(AXIOS_RESPONSE_11)
+			if (call==REQUEST_QUEUE_UPDATE_CALL) return new Promise( () => {} )
+		})
+
+		await act(async () => {
+			render(<DisplayedQueue />)
+		});
+
+		// Check that the songs are in the list.
+		var times_name_showed_up = screen.queryAllByText(TESTSONG1.name).length
+		var times_artist_showed_up = screen.queryAllByText(TESTSONG1.artist).length
+		expect(times_name_showed_up).toBe(2)
+		expect(times_artist_showed_up).toBe(2)
 	});
 })

@@ -11,6 +11,7 @@ const axios = require('axios').default;
 //import './components.css' // eventually import a proper css file
 
 const MAX_QUEUE_RE_REQUESTS = 2;
+const WAIT_AFTER_FAILED_RQU = 60*1000 //miliseconds
 const REQUEST_QUEUE_CALL = "http://localhost:8080/request_update"
 const REQUEST_QUEUE_UPDATE_CALL = "http://localhost:8080/update_ui"
 
@@ -31,24 +32,20 @@ var hostToolsError = 0;
  * 										force the component to re-render)
  * @param {function} updateSongs The function from displayedQueue to change the data in
  * 									songs (and re-render the displayed queue)
- * @return {Array} list of songs
  */
 async function requestQueue(updateQueueError, updateSongs) {
 	// Send a request queue API call to the universal queue.
-	axios.get(REQUEST_QUEUE_CALL)
-		.then(response => {
-			// If the request was successful, return the list of songs in the queue.
-			var current_songs_in_queue = response.data.songs 
-			updateSongs(current_songs_in_queue);
-		})
-		.catch(error => {
-			// Otherwise, set an error code.
-			if(error.response) {
-				updateQueueError(error.response.status)
-			} else {
-				updateQueueError(500)
-			}
-		})
+	try {
+		const response = await axios.get(REQUEST_QUEUE_CALL);
+		updateSongs(response.data.songs);
+		updateQueueError(0) // all is well
+	} catch (error) {
+		if(error.response) {
+			updateQueueError(error.response.status)
+		} else {
+			updateQueueError(500)
+		}
+	}
 }
 
 /**
@@ -62,20 +59,34 @@ async function requestQueue(updateQueueError, updateSongs) {
  * 									songs (and re-render the displayed queue)
  */
 async function requestQueueUpdates (updateQueueError, updateSongs) {
-	//Call Request Queue Updates
-	//If response is 201: we're given a new queue to use
-		// update songs to be that queue
-		// Call requestQueueUpdates again immediately
-	//Else If response is 408 (Request Timeout)
-		/* Our request timed out (too long without the Unversal Queue updating),
-	     * but we still want to be notified of updates, so request again 
-		 * immedaitely */
-		// Call requestQueueUpdates again immediately
-	//Else If response is 429 (Too Many Requests)
-		/* The server is under strain, so don't make a request for a while.*/
-		// Call requestQueueUpdates after a 1-min delay
-	//Else if any other queue errors:
-		// set queueError	
+	function sleep(ms) {return new Promise(resolve => setTimeout(resolve, ms))}
+
+	while(true) {
+		try {
+			// it could take minutes to get this response, since it 
+			// only gets returned once the queue changes.
+			const response = await axios.get(REQUEST_QUEUE_UPDATE_CALL);
+			updateSongs(response.data.songs);
+			updateQueueError(0) // all is well
+		} catch (error) {
+			if (error.status) var errorcode = error.status;
+			else var errorcode = 500;
+
+			if (errorcode == 408) { //Request Timeout
+				/* Our request timed out (too long without the Unversal Queue updating),
+				* but we still want to be notified of updates, so request again 
+				* immedaitely.*/
+				// do nothing and loop back
+			} else if (errorcode == 429 ) { //Too many requests
+				/* The server is under strain, so don't make a request for a while.*/
+				await sleep(WAIT_AFTER_FAILED_RQU)
+			} else {
+				updateQueueError(errorcode)
+				//Sleep for WAIT_AFTER_FAILED_RQU seconds
+				await sleep(WAIT_AFTER_FAILED_RQU)
+			}
+		}
+	}
 };
 
 /**
@@ -254,7 +265,7 @@ function DisplayedQueue(props) {
 	
 	// On startup, start an async function to request any updates to the queue
 	useEffect( () => {
-		// Asynchronously start requestQueueUpdates(), and pass it updateSongs
+		requestQueueUpdates(updateQueueError, updateSongs)
 	}, [])
 
 	/* When queueError changes (aka using useEffect({},[queueError])),
@@ -328,5 +339,5 @@ export default DisplayedQueue;
 
 // For testing only
 export {requestQueue, requestQueueUpdates};
-export {Song, DeleteButton};
+export {Song};
 export {REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL};
