@@ -16,6 +16,21 @@ const WAIT_AFTER_FAILED_RQU = 60*1000 //miliseconds
 const HOSTTOOLS_WARNING_TIME = 5*1000 //miliseconds
 const REQUEST_QUEUE_CALL = "http://localhost:8080/request_update"
 const REQUEST_QUEUE_UPDATE_CALL = "http://localhost:8080/update_ui"
+const TESTSONGS = [
+	{
+		"id": "3v66DjMBSdWY0jy5VVjHI2",
+		"name": "All I Want For Christmas Is You",
+		"artist": "Mariah Carey",
+		"albumcover": "https://m.media-amazon.com/images/I/71X9F2m7-kL._UF1000,1000_QL80_.jpg",
+		"submissionID": 2
+	}, {
+		"id": "xkcdykcd",
+		"name": "testsong",
+		"artist": "totaly real artist",
+		"albumcover": "https://m.media-amazon.com/images/I/71X9F2m7-kL._UF2000,1000_QL80_.jpg",
+		"submissionID": 3
+	}
+]
 
 
 var isHost = true; //Global variable to determine whether to render host-only elements. Should not be changed after startup.
@@ -191,11 +206,11 @@ function changeVolume(vol) {
 function Song(props) {
 	// Returns the HTML to display one song in the queue.
 	return ( 
-	 <div className="stackItem">
+	 <div className="songListItem">
 	  {/* Display the Name, album cover, Artist, etc*/}
-	  <div className="itemTitle">{props.name}</div>
-	  <div className="itemSubtitle">{props.artist}</div>
-	  <img src={props.albumcover} alt=""></img>
+	  <div className="songTitle">{props.name}</div>
+	  <div className="songArtist">{props.artist}</div>
+	  <img className="songCover" src={props.albumcover} alt=""></img>
 	  <DeleteButton submissionID={props.submissionID}/>
 	 </div>
 	);
@@ -333,7 +348,10 @@ function DisplayedQueue(props) {
 
 	  {/*Regardless of whether you're a host or not, 
 	  	display an array of songs in the queue*/}
-	  <div className="stackContainer">
+	  <div className="songListContainer">
+
+		<div className="songListTitle">Current Queue</div>
+
 	   {/* For each song in songs, generate an entry*/}
 	   { songs?.map(
 		(song) => <Song

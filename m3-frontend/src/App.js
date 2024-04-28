@@ -16,9 +16,10 @@ function App() {
       <header className="App-header">
         <h1>M-3</h1>
       </header>
-
+      
       <div className="App-body">
         <SongSubmission />
+        <DisplayedQueue isHost="false" cookie="" />
       </div>
 
     </div>
