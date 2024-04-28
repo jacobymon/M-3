@@ -6,12 +6,14 @@ functionality that the host can use to manage the Universal Queue- removing
 songs, and suspending or unsuspending the queue. Finally, it will also include 
 tools for the host to pause and play the music, and control the volume.*/
 
-import React, { useState, useEffect } from 'react';
-const axios = require('axios').default;
-//import './components.css' // eventually import a proper css file
+import React, { useState, useEffect, useRef} from 'react';
+import './WebsiteQueue.css' // eventually import a proper css file
+import axios from 'axios';
+//const axios = require('axios').default;
 
 const MAX_QUEUE_RE_REQUESTS = 2;
 const WAIT_AFTER_FAILED_RQU = 60*1000 //miliseconds
+const HOSTTOOLS_WARNING_TIME = 5*1000 //miliseconds
 const REQUEST_QUEUE_CALL = "http://localhost:8080/request_update"
 const REQUEST_QUEUE_UPDATE_CALL = "http://localhost:8080/update_ui"
 
@@ -19,7 +21,6 @@ const REQUEST_QUEUE_UPDATE_CALL = "http://localhost:8080/update_ui"
 var isHost = true; //Global variable to determine whether to render host-only elements. Should not be changed after startup.
 //const isHostContext = createContext();
 var cookie = "h"
-var hostToolsError = 0;
 
 // External Interface Functions
 
@@ -69,18 +70,20 @@ async function requestQueueUpdates (updateQueueError, updateSongs) {
 			updateSongs(response.data.songs);
 			updateQueueError(0) // all is well
 		} catch (error) {
-			if (error.status) var errorcode = error.status;
-			else var errorcode = 500;
+			var errorcode;
+			if (error.status) errorcode = error.status;
+			else errorcode = 500;
 
-			if (errorcode == 408) { //Request Timeout
+			if (errorcode === 408) { //Request Timeout
 				/* Our request timed out (too long without the Unversal Queue updating),
 				* but we still want to be notified of updates, so request again 
 				* immedaitely.*/
 				// do nothing and loop back
-			} else if (errorcode == 429 ) { //Too many requests
+			} else if (errorcode === 429 ) { //Too many requests
 				/* The server is under strain, so don't make a request for a while.*/
 				await sleep(WAIT_AFTER_FAILED_RQU)
 			} else {
+				/* Something unexpected has happened, set an actual error */
 				updateQueueError(errorcode)
 				//Sleep for WAIT_AFTER_FAILED_RQU seconds
 				await sleep(WAIT_AFTER_FAILED_RQU)
@@ -186,16 +189,15 @@ function changeVolume(vol) {
  * @return HTML code for one song entry
  */
 function Song(props) {
-
 	// Returns the HTML to display one song in the queue.
 	return ( 
-	 <>
+	 <div className="stackItem">
 	  {/* Display the Name, album cover, Artist, etc*/}
-	  <p>{props.name}</p>
-	  <p>{props.artist}</p>
-	  <p>{props.albumcover}</p>
+	  <div className="itemTitle">{props.name}</div>
+	  <div className="itemSubtitle">{props.artist}</div>
+	  <img src={props.albumcover} alt=""></img>
 	  <DeleteButton submissionID={props.submissionID}/>
-	 </>
+	 </div>
 	);
 }
 
@@ -212,7 +214,7 @@ function DeleteButton(props) {
 	// props.submissionID - the song submission to remove
 	if (isHost) {
 		return <>
-		({/* HTML containing a button that calls removeSong(submissionID)*/})
+		{/* HTML containing a button that calls removeSong(submissionID)*/}
 		</>
 	}
 	return <></>
@@ -246,21 +248,31 @@ function DisplayedQueue(props) {
 	 * @type {int}
 	 */
 	const [queueError, updateQueueError] = useState(0);
-	var failedRequests = 0;
+
+	/**
+	 * hostToolsError: the most recent errorcode for host tools
+	 * @type {int}
+	 */
+	const [hostToolsError, updateHostToolsError] = useState(0);
+
+	/**
+	 * failedRequests: counter for how many requests have failed in a row.
+	 * useRef preserves this between renders.
+	 */
+	const failedRequests = useRef(0);
+
+
+	/* On startup (aka using useEffect({},[])),call the requestQueue() function
+	 asynchronously with useEffect and use it to update songs */
+	 useEffect( () => {
+		requestQueue(updateQueueError, updateSongs)
+	}, [])
 	
-	// On startup (aka using useEffect({},[])), initialize isHost using prop.isHost
-	// Note: may have to switch isHost to a context instead
+	// Set isHost and cookie to match whatever is in props
 	useEffect( () => {
 		isHost = props.isHost
 		cookie = props.cookie
-	}, [])
-
-	/* On startup, call the requestQueue() function asynchronously with useEffect
-	 and use it to update songs */
-	useEffect( () => {
-		updateSongs([]) // make sure Songs is intialized
-		requestQueue(updateQueueError, updateSongs)
-	}, [])
+	}, [props])
 
 	
 	// On startup, start an async function to request any updates to the queue
@@ -272,11 +284,11 @@ function DisplayedQueue(props) {
 		attempt to recover from the error and get an up-to-date queue.
 	*/
 	useEffect( () => {
-		if (queueError == 0) {
-			failedRequests = 0
-		} else if (failedRequests <= MAX_QUEUE_RE_REQUESTS) {
+		if (queueError === 0) {
+			failedRequests.current = 0
+		} else if (failedRequests.current <= MAX_QUEUE_RE_REQUESTS) {
 			// If queue update fails, re-request the queue.
-			failedRequests += 1
+			failedRequests.current += 1
 			requestQueue(updateQueueError, updateSongs)
 		} else {
 			// If too many requests fail in a row, notify the user
@@ -292,8 +304,12 @@ function DisplayedQueue(props) {
 
 	// When HostToolsError changes, attempt to recover.
 	useEffect( () => {
-		// TODO Set hostToolsError to 0 after some time passes, 
-		// so that the error message dissapears
+		// Set hostToolsError to 0 after some time passes, 
+		// so the "submission failed" warning dissapears.
+		setTimeout(
+			() => {updateHostToolsError(0)},
+			HOSTTOOLS_WARNING_TIME
+		)
 	}, [hostToolsError]) 
 	
 	
@@ -301,14 +317,14 @@ function DisplayedQueue(props) {
 	 <>
 
 	  {/*If there's an error in the host tools, display an error message*/}
-	  {hostToolsError!=0 &&
+	  {hostToolsError!==0 &&
 	   <>
 	    {/*TODO Display the error message*/}
 	   </>
 	  }
 	
 	  {/*If you're a host, display the host controls*/}
-	  {isHost==true &&
+	  {isHost===true &&
 	   <>
 	    {/*TODO Buttons to start/stop the queue and play/pause the music
 		   and a slider to set volume*/}
@@ -317,7 +333,7 @@ function DisplayedQueue(props) {
 
 	  {/*Regardless of whether you're a host or not, 
 	  	display an array of songs in the queue*/}
-	  <>
+	  <div className="stackContainer">
 	   {/* For each song in songs, generate an entry*/}
 	   { songs?.map(
 		(song) => <Song
@@ -330,7 +346,7 @@ function DisplayedQueue(props) {
 		 {/*the key element used by react to better handle song objects */}
 		</Song>
 	   )}
-	  </>
+	  </div>
 
 	 </>
 	);

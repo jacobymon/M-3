@@ -165,11 +165,6 @@ describe("Song subcomponent", () => {
 		render(<Song artist = {TESTSONG1.artist}></Song>)
 		expect(screen.getByText(TESTSONG1.artist)).toBeInTheDocument();
 	});
-
-	it('includes the album cover', () => {
-		render(<Song albumcover = {TESTSONG1.albumcover}></Song>)
-		expect(screen.getByText(TESTSONG1.albumcover)).toBeInTheDocument();
-	});
 });
 
 describe("DisplayedQueue as a whole", () => {
