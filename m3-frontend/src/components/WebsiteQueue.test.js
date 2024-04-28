@@ -1,6 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, act} from '@testing-library/react';
 import axios from 'axios';
-import { act } from 'react-dom/test-utils';
 
 import DisplayedQueue, {requestQueue, requestQueueUpdates,
 	REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL,
@@ -58,6 +57,10 @@ const AXIOS_RESPONSE_11 = {
 	data: {
 		songs: [TESTSONG1, SECOND_TESTSONG1]
 	}
+}
+
+const AXIOS_POST_RESPONSE = {
+	status: 200
 }
 
 const AXIOS_REJECT_408 = { status: 408 }
@@ -150,7 +153,6 @@ describe("Request Queue Updates helper function", () => {
 	});
 });
 
-
 describe("Song subcomponent", () => {
 	it('renders a Song', () => {
 		render(<Song></Song>)
@@ -224,3 +226,25 @@ describe("DisplayedQueue as a whole", () => {
 		expect(times_artist_showed_up).toBe(2)
 	});
 })
+
+describe("Remove Song Button", () => {
+	it('can remove song', async () => {
+		axios.get.mockImplementation((call) => {
+			if (call==REQUEST_QUEUE_CALL) return Promise.resolve(AXIOS_RESPONSE_1)
+			if (call==REQUEST_QUEUE_UPDATE_CALL) return new Promise( () => {} )
+		})
+		axios.post.mockResolvedValue(AXIOS_POST_RESPONSE);
+		await act(async () => {
+			render(<DisplayedQueue isHost="true" cookie="123"/>)
+		});
+
+		const remove_button = screen.getByTestId("removeSongButton");
+		fireEvent.click(remove_button);
+
+		expect(axios.post).toBeCalledTimes(1)
+		expect(axios.post.mock.calls[0][1].submissionID).toBe(TESTSONG1.submissionID)
+
+	})
+})
+
+

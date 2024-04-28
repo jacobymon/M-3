@@ -50,11 +50,37 @@
     color: #666; /* Subdued color for artist */
 }
 
+.removeSongButton {
+    position:absolute;
+    right:2px;
+    top:2px;
+    width:48px;
+    height:48px;
+
+    cursor: pointer; 
+
+    background-color: #d00;
+    
+    outline-style: solid;
+    outline-color: #000;
+    outline-width: 4;
+
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif ;
+    text-align:center;
+    font-size: 40px;
+    color: #000;
+}
+.removeSongButton:hover {
+    background-color:#f00; /*lighter when hovering*/
+}
+.submitButton:active {
+    background-color: #d00; /*dark again when clicked*/
+}
+
 .songCover {
     position: absolute;
     right: 5px;
     top:5px;
     width: auto;
     max-height: 140px;
-
 }

@@ -14,8 +14,9 @@ import axios from 'axios';
 const MAX_QUEUE_RE_REQUESTS = 2;
 const WAIT_AFTER_FAILED_RQU = 60*1000 //miliseconds
 const HOSTTOOLS_WARNING_TIME = 5*1000 //miliseconds
-const REQUEST_QUEUE_CALL = "http://localhost:8080/request_update"
-const REQUEST_QUEUE_UPDATE_CALL = "http://localhost:8080/update_ui"
+const REQUEST_QUEUE_CALL = "http://localhost:8080/request_update" //TODO
+const REQUEST_QUEUE_UPDATE_CALL = "http://localhost:8080/update_ui" //TODO
+const DELETE_SONG_CALL = "http://localhost:8080/delete_song" //TODO
 const TESTSONGS = [
 	{
 		"id": "3v66DjMBSdWY0jy5VVjHI2",
@@ -116,12 +117,15 @@ async function requestQueueUpdates (updateQueueError, updateSongs) {
  * 
  * @return {int} status of api call
  */
-function removeSong(submissionID) {
-	// Send a remove song API call to the universal queue.
-	// If song already not there:
-		// Request queue
-	// If cookie wrong / any other failure:
-		// Set hostToolsError
+async function removeSong(submissionID) {
+	try {
+		const response = await axios.post(DELETE_SONG_CALL, {
+			submissionID, cookie
+		})
+		return response.status;
+	} catch (error) {
+		return error.response ? error.response : 500;
+	}
 }
 
 /**
@@ -228,9 +232,11 @@ function DeleteButton(props) {
 	// Returns the HTML to conditionally display a delete button
 	// props.submissionID - the song submission to remove
 	if (isHost) {
-		return <>
-		{/* HTML containing a button that calls removeSong(submissionID)*/}
-		</>
+		return <button 
+			data-testid="removeSongButton"
+			className="removeSongButton"
+			onClick={() => {removeSong(props.submissionID)}}
+		>X</button>
 	}
 	return <></>
 }
@@ -326,6 +332,12 @@ function DisplayedQueue(props) {
 			HOSTTOOLS_WARNING_TIME
 		)
 	}, [hostToolsError]) 
+
+	//DEBUG ONLY: populate songs
+	// useEffect( () => {
+	// 	isHost = true;
+	// 	updateSongs(TESTSONGS)
+	// }, [songs])
 	
 	
 	return (
