@@ -1,9 +1,11 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import axios from "axios";
 import debounce from "lodash.debounce";
 import "./SongSubmission.css";
 
 export async function searchSongs(searchbar_query) {
+
+  console.log("Attempting to search for songs...");
   // Do the API request to Backend, get the results
   // May be good to ensure that there is at least 1 character in the search_query string
 
@@ -71,7 +73,7 @@ export async function searchSongs(searchbar_query) {
 
   try {
     const response = await axios.get(
-      "http://172.28.99.52:8080/return_results?search_string=" + searchbar_query
+      "http://172.28.99.52:8080/return_results?search_string=" + searchbar_query, {timeout: 5000}
     );
 
     switch(response.data.search_string.status) {
@@ -145,17 +147,15 @@ export async function submitSong(selected_song) {
     }
   }
 
-  console.log("here friend")
+  console.log("Attempting to submit song...");
 
   let post_data =  {
     status: 200,
     search_results: selected_song,
   }
 
-  console.log(post_data)
-
   try {
-    const response = await axios.post("http://172.28.99.52:8080/submit_song", post_data);
+    const response = await axios.post("http://172.28.99.52:8080/submit_song", post_data, {timeout: 5000});
     console.log(response);
 
     switch(response.data.status){
@@ -198,8 +198,10 @@ export async function submitURLSong(url_textbox_input) {
     };
   }
 
+  console.log("Attempting to submit URL...");
+
   try {
-    const response = await axios.post("http://172.28.99.52:8080/return_results_from_url?spotify_url=" + url_textbox_input);
+    const response = await axios.post("http://172.28.99.52:8080/return_results_from_url?spotify_url=" + url_textbox_input, null, {timeout: 5000});
     console.log(response);
 
     switch(response.data.spotify_url.status) {
@@ -264,8 +266,7 @@ export function SongSubmission({ data }) {
   // Handles emptying the search bar if a song has been selected but the search query is backspaced
   // Meant to simulate deleting the selected song from the search bar
   const handleSearchBarKeyDown = (e) => {
-    console.log("Doing key down");
-    // console.log(e);
+
     if (selectedSong && e.key === "Backspace") {
       setSearchQuery("");
       setSelectedSong(null);
@@ -279,21 +280,26 @@ export function SongSubmission({ data }) {
   const searchSongs_debounced = useCallback(
     debounce((searchInput) => 
       searchSongs(searchInput).then(setSearchSongsResponse), 500),
-    [] // Dependencies array is empty, so the debounced function is created only once
+    [searchSongs, setSearchSongsResponse]
   );
 
   // Handles running a debounced searchSongs whenever the search bar is changed
   const handleSearchBarKeystroke = async (e) => {
-    console.log("Doing key stroke");
+
+    setSearchBarError("");
+    setSubmitButtonError("")
+
     setSearchQuery(e.target.value);
 
     searchSongs_debounced(e.target.value);
-    console.log(searchSongsResponse)
+
   };
 
   // Handles updaing variables after the searchSongsResponse is updated
   // during searchSongs_debounced
   React.useEffect(() => {
+    console.log(searchSongsResponse)
+
     if (searchSongsResponse === null) return;
 
     if (searchSongsResponse.status === 200) {
@@ -333,12 +339,15 @@ export function SongSubmission({ data }) {
   };
 
   const handleSubmitSong = async () => {
+
+    setSubmitButtonError("Submitting song...");
+
     let response_json = await submitSong(selectedSong);
 
     if (response_json.status === 200) {
       setSelectedSong(null);
       setSearchQuery("");
-      console.log("over here")
+      setSubmitButtonError("");
     }else {
       setSubmitButtonError(response_json.response)
     }
@@ -346,6 +355,9 @@ export function SongSubmission({ data }) {
   }
 
   const handleSubmitURL = async () => {
+
+    setSubmitButtonError("Submitting URL...");
+
     let response_json = await submitURLSong(URLTextboxInput);
 
     console.log(response_json)
@@ -423,16 +435,14 @@ export function SongSubmission({ data }) {
       </div>
       {/* The field where errors related to the search bar and URL textbox will be displayed */}
       {searchBarError && (
-        <div data-testid="SearchBarError">{searchBarError}</div>
+        <div className="errorMessage" data-testid="SearchBarError">{searchBarError}</div>
       )}
 
       {/* The field where errors related to song submission will be displayed */}
       {submitButtonError && (
-        <div data-testid="SubmitButtonError">{submitButtonError}</div>
+        <div className="errorMessage" data-testid="SubmitButtonError">{submitButtonError}</div>
       )}
 
-      {/* <p>{searchQuery}</p>
-      <p>{URLTextboxInput}</p> */}
     </div>
   );
 }
