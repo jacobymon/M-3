@@ -25,37 +25,27 @@ class startup():
         path = os.path.dirname(os.path.abspath(__file__))
         filename = path + '/../UniversalQueue/Spotify_Interface/creds.config'
         if_config_exist = exists(filename)
+        Client_ID = input("Please provide your Spotify Client ID: ")
+        Client_Secret = input("Please provide your Spotify Client Secret: ")
+        Redirect_URI = input("Please provide your Spotify Redirect URI: ")
         if if_config_exist:
             logging.info("Config file already exists")
             return
         try:
             with open(filename, 'w') as file:
                 file.write('[DEFAULT]\n')
-                file.write('SPOTIFY_CLIENT_ID = xxxxx \n')
-                file.write('SPOTIFY_CLIENT_SECRET = xxxxx\n')
+                file.write(f'SPOTIFY_CLIENT_ID = {Client_ID} \n', )
+                file.write(f'SPOTIFY_CLIENT_SECRET = {Client_Secret}\n')
                 file.write(
-                    'SPOTIFY_REDIRECT_URI = https://example.com/callback\n')
+                    f'SPOTIFY_REDIRECT_URI = {Redirect_URI}\n')
                 file.write("DEVICE =")
             logging.info("Config file successfully created")
         except Exception as e:
             logging.error(
                 "An error occurred while creating the config file: %s", e)
+            return
 
 
-    def _is_config_has_user_info(self):
-        path = os.path.dirname(os.path.abspath(__file__))
-        CONFIG_FILE = path + '/../UniversalQueue/Spotify_Interface/creds.config'
-        if_config_exist = exists(CONFIG_FILE)
-        if not if_config_exist:
-            logging.error("Config file doesn't exist")
-            return False
-        with open(CONFIG_FILE, 'r') as file:
-                for line in file:
-                    if "xxxxx" in line:
-                        logging.error("The user didn't add their Client ID, Client Secret, and Redirect URI")
-                        return False
-        return True
-        
     def is_refresh_token(self):
         path = os.path.dirname(os.path.abspath(__file__))
         CONFIG_FILE = path + '/../UniversalQueue/Spotify_Interface/creds.config'
@@ -76,9 +66,6 @@ class startup():
         if_config_exist = exists(CONFIG_FILE)
         if not if_config_exist:
             self._create_config_file()
-        if not self._is_config_has_user_info():
-            print("You have to add your client_id, client_secret, and redirect_uri to the config file first")
-            return False
         client_id, client_secret, redirect_uri = tk.config_from_file(
             CONFIG_FILE)
         conf = (client_id, client_secret, redirect_uri)
