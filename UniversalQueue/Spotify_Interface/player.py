@@ -1,16 +1,14 @@
-# This file anticipates the presence of a config yaml file containing the user token in the directory and will
-# fail if not provided 
-
-import yaml
+# This file anticipates the presence of creds.config and will fail otherwise
+import configparser
 import os
 
 path = os.path.dirname(os.path.abspath(__file__))
 
-with open(path + "/config.yaml") as f_obj:
-    content = f_obj.read() 
+config = configparser.RawConfigParser()   
+configFilePath = path + '/creds.config'
+config.read(configFilePath)
 
-creds = yaml.load(content, Loader=yaml.FullLoader) # making a yaml object with the proper credentials 
-device = creds["device"]
+device = config.get("DEFAULT", "DEVICE")
 
 def get_first_available_device(spotify):
     available_devices = spotify.playback_devices()

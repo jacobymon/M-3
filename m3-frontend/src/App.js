@@ -37,14 +37,11 @@ function App() {
               src={QRCode} 
               alt="QR Code"
               onClick={toggleQRSize}/>
-      
-
-      {/* <img className="qr-code" src={QRCode} alt="QR Code"/> */}
 
       <div className="App-body">
         
         <SongSubmission />
-        <DisplayedQueue />
+        <DisplayedQueue isHost="false" cookie="" />
       </div>
 
     </div>

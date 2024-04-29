@@ -55,6 +55,8 @@ class UniversalQueue:
 
         self.flush_exit = threading.Event()
 
+        self.pause_exit = threading.Event()
+
     def insert(self, song): 
         """
         When queue not suspended
@@ -94,6 +96,16 @@ class UniversalQueue:
             self.spotify.play(self.data[0].uri)
             self.flush_exit.wait((self.data[0].s_len / 1000))
             print("WAIT ENDED")
+
+            if self.pause_toggle == True:
+                remaining_time = self.data[0].s_len - self.spotify.get_current_playback_info().progress_ms
+                self.data[0].s_len = remaining_time
+                self.pause_exit.wait()
+                continue
+                
+
+
+
             self.data = self.data[1:]
 
     def pause_queue(self):
@@ -103,10 +115,33 @@ class UniversalQueue:
         @return bool: true when queue is paused, false when queue is unpaused
 
         """
-        # if self.pause_toggle == False:
-            #self.pause_toggle = True
-        # else:
-            #self.pause_toggle = False
+
+        if self.pause_toggle == False:
+            self.pause_toggle = True
+            
+            self.spotify.pause()
+            self.flush_exit.set()
+
+        else:
+            print("Queue is already paused")
+
+    def unpause_queue(self):
+        """
+        allows us to pause the queu and play the queue.
+
+        @return bool: true when queue is paused, false when queue is unpaused
+
+        """
+        if self.pause_toggle == True:
+            self.pause_toggle = False 
+            
+            self.spotify.unpause()
+            self.pause_exit.set()
+
+
+
+        else:
+            print("Queue is currently Playing")
 
 
     def update_ui(self):
@@ -266,6 +301,7 @@ def submit_song():
     song = Song(song_data)
 
     UQ.insert(song)
+
 
     print(UQ.data) 
     return song_data

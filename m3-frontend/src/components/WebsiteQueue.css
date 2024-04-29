@@ -1,0 +1,86 @@
+
+.songListContainer {
+
+    margin-top: 30px;
+    width: 600px;
+    min-height: 300px;
+    background-color: #ddd;
+    outline-style: solid;
+    outline-width: 2px;
+    outline-color: #111;
+
+    text-align:left;
+}
+
+.songListTitle {
+    background-color: #999;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif ;
+    color: #333;
+    padding: 4px;
+}
+  
+.songListItem {
+    position:relative;
+    height:150px;
+    width:100%;
+    background-color: #ddd; /* White background */
+    
+    outline-style: solid;
+    outline-width: 1px;
+    outline-color: #111;
+}
+
+.songTitle {
+    position:relative;
+    left:10px;
+    top:10px; 
+    max-width:400px;
+    font-size: 20px;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif ;
+    font-weight: bold; /* Make the title stand out */
+    color: #333;
+}
+
+.songArtist {
+    position:relative;
+    left:10px;
+    top:10px; 
+
+    font-size: 18px;
+    color: #666; /* Subdued color for artist */
+}
+
+.removeSongButton {
+    position:absolute;
+    right:2px;
+    top:2px;
+    width:48px;
+    height:48px;
+
+    cursor: pointer; 
+
+    background-color: #d00;
+    
+    outline-style: solid;
+    outline-color: #000;
+    outline-width: 4;
+
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif ;
+    text-align:center;
+    font-size: 40px;
+    color: #000;
+}
+.removeSongButton:hover {
+    background-color:#f00; /*lighter when hovering*/
+}
+.submitButton:active {
+    background-color: #d00; /*dark again when clicked*/
+}
+
+.songCover {
+    position: absolute;
+    right: 5px;
+    top:5px;
+    width: auto;
+    max-height: 140px;
+}

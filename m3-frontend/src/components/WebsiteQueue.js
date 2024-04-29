@@ -6,16 +6,37 @@ functionality that the host can use to manage the Universal Queue- removing
 songs, and suspending or unsuspending the queue. Finally, it will also include 
 tools for the host to pause and play the music, and control the volume.*/
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
+import './WebsiteQueue.css' // eventually import a proper css file
 import axios from 'axios';
-//import './components.css' // eventually import a proper css file
+//const axios = require('axios').default;
+
+const MAX_QUEUE_RE_REQUESTS = 2;
+const WAIT_AFTER_FAILED_RQU = 60*1000 //miliseconds
+const HOSTTOOLS_WARNING_TIME = 5*1000 //miliseconds
+const REQUEST_QUEUE_CALL = "http://localhost:8080/request_update" //TODO
+const REQUEST_QUEUE_UPDATE_CALL = "http://localhost:8080/update_ui" //TODO
+const DELETE_SONG_CALL = "http://localhost:8080/delete_song" //TODO
+const TESTSONGS = [
+	{
+		"id": "3v66DjMBSdWY0jy5VVjHI2",
+		"name": "All I Want For Christmas Is You",
+		"artist": "Mariah Carey",
+		"albumcover": "https://m.media-amazon.com/images/I/71X9F2m7-kL._UF1000,1000_QL80_.jpg",
+		"submissionID": 2
+	}, {
+		"id": "xkcdykcd",
+		"name": "testsong",
+		"artist": "totaly real artist",
+		"albumcover": "https://m.media-amazon.com/images/I/71X9F2m7-kL._UF2000,1000_QL80_.jpg",
+		"submissionID": 3
+	}
+]
 
 
 var isHost = true; //Global variable to determine whether to render host-only elements. Should not be changed after startup.
 //const isHostContext = createContext();
 var cookie = "h"
-var queueError = 0;
-var hostToolsErrorCode = 0;
 
 // External Interface Functions
 
@@ -24,21 +45,68 @@ var hostToolsErrorCode = 0;
  * 
  * The Universal Queue will send back the data of all songs in the queue, which the website queue can then use to show all songs currently in the queue.
  *
- * @return {Array} list of songs
+ * @param {function} updateQueueError The function to set a new error code (and
+ * 										force the component to re-render)
+ * @param {function} updateSongs The function from displayedQueue to change the data in
+ * 									songs (and re-render the displayed queue)
  */
-function requestQueue() {
+async function requestQueue(updateQueueError, updateSongs) {
 	// Send a request queue API call to the universal queue.
-	// If Successful:
-		// Returns the list of songs currently in the queue.
-	// ELse If Request Error but no response:
-		// Set the error code globally
-		// Return an empty queue
-	// Else If Server Returns an Error:
-		// Set the error code globally
-		// Return an empty queue
-	return []
-
+	try {
+		const response = await axios.get(REQUEST_QUEUE_CALL);
+		updateSongs(response.data.songs);
+		updateQueueError(0) // all is well
+	} catch (error) {
+		if(error.response) {
+			updateQueueError(error.response.status)
+		} else {
+			updateQueueError(500)
+		}
+	}
 }
+
+/**
+ * Sends a request to the Universal Queue to notify this website instance of any
+ * changes to the queue. If it gets a response, immedaitely set the displayed
+ * queue to use the new up-to-date data.
+ * 
+ * @param {function} updateQueueError The function to set a new error code (and
+ * 										force the component to re-render)
+ * @param {function} updateSongs The function from displayedQueue to change the data in
+ * 									songs (and re-render the displayed queue)
+ */
+async function requestQueueUpdates (updateQueueError, updateSongs) {
+	function sleep(ms) {return new Promise(resolve => setTimeout(resolve, ms))}
+
+	while(true) {
+		try {
+			// it could take minutes to get this response, since it 
+			// only gets returned once the queue changes.
+			const response = await axios.get(REQUEST_QUEUE_UPDATE_CALL);
+			updateSongs(response.data.songs);
+			updateQueueError(0) // all is well
+		} catch (error) {
+			var errorcode;
+			if (error.status) errorcode = error.status;
+			else errorcode = 500;
+
+			if (errorcode === 408) { //Request Timeout
+				/* Our request timed out (too long without the Unversal Queue updating),
+				* but we still want to be notified of updates, so request again 
+				* immedaitely.*/
+				// do nothing and loop back
+			} else if (errorcode === 429 ) { //Too many requests
+				/* The server is under strain, so don't make a request for a while.*/
+				await sleep(WAIT_AFTER_FAILED_RQU)
+			} else {
+				/* Something unexpected has happened, set an actual error */
+				updateQueueError(errorcode)
+				//Sleep for WAIT_AFTER_FAILED_RQU seconds
+				await sleep(WAIT_AFTER_FAILED_RQU)
+			}
+		}
+	}
+};
 
 /**
  * Sends a Remove from Queue API call to the Universal Queue. 
@@ -49,12 +117,15 @@ function requestQueue() {
  * 
  * @return {int} status of api call
  */
-function removeSong(submissionID) {
-	// Send a remove song API call to the universal queue.
-	// If song already not there:
-		// Request queue
-	// If cookie wrong / any other failure:
-		// Set hostToolsErrorCode
+async function removeSong(submissionID) {
+	try {
+		const response = await axios.post(DELETE_SONG_CALL, {
+			submissionID, cookie
+		})
+		return response.status;
+	} catch (error) {
+		return error.response ? error.response : 500;
+	}
 }
 
 /**
@@ -66,7 +137,7 @@ function removeSong(submissionID) {
  */
 function suspendQueue() {
 	// Send a suspend queue API call to the universal queue.
-	// If failed: set hostToolsErrorCode to error
+	// If failed: set hostToolsError to error
 	// Return the status of the request
 	return 0;
 }
@@ -80,7 +151,7 @@ function suspendQueue() {
  */
 function resumeQueue() {
 	// Send a resume queue API call to the universal queue.
-	// If failed: set hostToolsErrorCode to error
+	// If failed: set hostToolsError to error
 	// Return the status of the request
 	return 0;
 }
@@ -92,7 +163,7 @@ function resumeQueue() {
  */
 function pauseMusic() {
 	// Send a pause music API call to the universal queue.
-	// If failed: set hostToolsErrorCode to error
+	// If failed: set hostToolsError to error
 	// Return the status of the request
 	return 0;
 }
@@ -104,7 +175,7 @@ function pauseMusic() {
  */
 function resumeMusic() {
 	// Send a resume music API call to the universal queue.
-	// If failed: set hostToolsErrorCode to error
+	// If failed: set hostToolsError to error
 	// Return the status of the request
 	return 0;
 }
@@ -118,36 +189,10 @@ function resumeMusic() {
  */
 function changeVolume(vol) {
 	// Send a change volume API call to the universal queue.
-	// If failed: set hostToolsErrorCode to error
+	// If failed: set hostToolsError to error
 	// Return the status of the request
 	return 0;
 }
-
-
-/**
- * Sends a request to the Universal Queue to notify this website instance of any
- * changes to the queue. If it gets a response, immedaitely set the displayed
- * queue to use the new up-to-date data.
- * 
- * @param {function} updateSongs The function from displayedQueue to change the data in
- * 									songs (and re-render the displayed queue)
- */
-const requestQueueUpdates = (updateSongs) => {
-	//Call Request Queue Updates
-	//If response is 201: we're given a new queue to use
-		// update songs to be that queue
-		// Call requestQueueUpdates again immediately
-	//Else If response is 408 (Request Timeout)
-		/* Our request timed out (too long without the Unversal Queue updating),
-	     * but we still want to be notified of updates, so request again 
-		 * immedaitely */
-		// Call requestQueueUpdates again immediately
-	//Else If response is 429 (Too Many Requests)
-		/* The server is under strain, so don't make a request for a while.*/
-		// Call requestQueueUpdates after a 1-min delay
-	//Else if any other queue errors:
-		// set queueError	
-};
 
 // GUI functions
 
@@ -165,10 +210,13 @@ const requestQueueUpdates = (updateSongs) => {
 function Song(props) {
 	// Returns the HTML to display one song in the queue.
 	return ( 
-	 <>
+	 <div className="songListItem">
 	  {/* Display the Name, album cover, Artist, etc*/}
+	  <div className="songTitle">{props.name}</div>
+	  <div className="songArtist">{props.artist}</div>
+	  <img className="songCover" src={props.albumcover} alt=""></img>
 	  <DeleteButton submissionID={props.submissionID}/>
-	 </>
+	 </div>
 	);
 }
 
@@ -184,7 +232,11 @@ function DeleteButton(props) {
 	// Returns the HTML to conditionally display a delete button
 	// props.submissionID - the song submission to remove
 	if (isHost) {
-		return <>({/* HTML containing a button that calls removeSong(submissionID)*/})</>
+		return <button 
+			data-testid="removeSongButton"
+			className="removeSongButton"
+			onClick={() => {removeSong(props.submissionID)}}
+		>X</button>
 	}
 	return <></>
 }
@@ -198,7 +250,7 @@ function DeleteButton(props) {
  * 
  * @return HTML code for the current song queue.
  */
-function DisplayedQueue() {
+function DisplayedQueue(props) {
 
 	/**
    	 * songs: a list of song objects
@@ -211,81 +263,120 @@ function DisplayedQueue() {
    	 * @type {Array}
    	*/
 	const [songs, updateSongs] = useState([]);
-	
-	// On startup (aka using useEffect({},[])), initialize isHost using prop.isHost
-	// Note: may have to switch isHost to a context instead
-	useEffect( () => {
-		//isHost = prop.isHost
-		// cookie = prop.cookie
-	}, [])
 
-	/* On startup, call the requestQueue() function asynchronously with useEffect
-	 and use it to update songs */
-	useEffect( () => {
-		//call requestQueue()
-		//set songs to the result
+	/**
+	 * queueError: the most recent errorcode for updating the queue
+	 * @type {int}
+	 */
+	const [queueError, updateQueueError] = useState(0);
+
+	/**
+	 * hostToolsError: the most recent errorcode for host tools
+	 * @type {int}
+	 */
+	const [hostToolsError, updateHostToolsError] = useState(0);
+
+	/**
+	 * failedRequests: counter for how many requests have failed in a row.
+	 * useRef preserves this between renders.
+	 */
+	const failedRequests = useRef(0);
+
+
+	/* On startup (aka using useEffect({},[])),call the requestQueue() function
+	 asynchronously with useEffect and use it to update songs */
+	 useEffect( () => {
+		requestQueue(updateQueueError, updateSongs)
 	}, [])
+	
+	// Set isHost and cookie to match whatever is in props
+	useEffect( () => {
+		isHost = props.isHost
+		cookie = props.cookie
+	}, [props])
 
 	
 	// On startup, start an async function to request any updates to the queue
 	useEffect( () => {
-		// Asynchronously start requestQueueUpdates(), and pass it updateSongs
+		requestQueueUpdates(updateQueueError, updateSongs)
 	}, [])
 
 	/* When queueError changes (aka using useEffect({},[queueError])),
 		attempt to recover from the error and get an up-to-date queue.
 	*/
 	useEffect( () => {
-		// If queueError != 0:
-			//attempt to call request queue
-
-		// If too many requests fail in a row, notify the user
-			// (easiest: could empty out songs and replace it with a fake 'queue out of sync, please refresh' song
-			// (could also make the stack conditional)
-			// (could also make a separate 'queue out of sync' popup)
+		if (queueError === 0) {
+			failedRequests.current = 0
+		} else if (failedRequests.current <= MAX_QUEUE_RE_REQUESTS) {
+			// If queue update fails, re-request the queue.
+			failedRequests.current += 1
+			requestQueue(updateQueueError, updateSongs)
+		} else {
+			// If too many requests fail in a row, notify the user
+			// The simplest solution is to create a fake "queue out of sync, please refresh" song
+			updateSongs([{
+				"id": "", "submission_id": 0,
+				"name": "QUEUE OUT OF SYNC",
+				"artist": "please refresh the page",
+				"albumcover": ""
+			}])
+		}
 	}, [queueError])
 
-	//Handle any host tool errors
+	// When HostToolsError changes, attempt to recover.
 	useEffect( () => {
-		// Set hostToolsErrorCode to 0 after some time passes, 
-		// so that the error message dissapears
-	}, [hostToolsErrorCode]) 
+		// Set hostToolsError to 0 after some time passes, 
+		// so the "submission failed" warning dissapears.
+		setTimeout(
+			() => {updateHostToolsError(0)},
+			HOSTTOOLS_WARNING_TIME
+		)
+	}, [hostToolsError]) 
+
+	//DEBUG ONLY: populate songs
+	// useEffect( () => {
+	// 	isHost = true;
+	// 	updateSongs(TESTSONGS)
+	// }, [songs])
 	
 	
 	return (
 	 <>
 
-	  {/*If there's an error code, display that*/}
-	  {hostToolsErrorCode!=0 &&
+	  {/*If there's an error in the host tools, display an error message*/}
+	  {hostToolsError!==0 &&
 	   <>
-	    {/*Display the error message*/}
+	    {/*TODO Display the error message*/}
 	   </>
 	  }
 	
 	  {/*If you're a host, display the host controls*/}
-	  {isHost==true &&
+	  {isHost===true &&
 	   <>
-	    {/*Buttons to start/stop the queue and play/pause the music
+	    {/*TODO Buttons to start/stop the queue and play/pause the music
 		   and a slider to set volume*/}
 	   </>
 	  }
 
 	  {/*Regardless of whether you're a host or not, 
 	  	display an array of songs in the queue*/}
+	  <div className="songListContainer">
 
-	  <>
+		<div className="songListTitle">Current Queue</div>
+
 	   {/* For each song in songs, generate an entry*/}
-	   {songs.map(
-		(song) => <Song >
-		 {/*to optimize this: include a key that is unique to each entry*/}
+	   { songs?.map(
+		(song) => <Song
 		 id={song.id} 
 		 name={song.name} 
 		 albumcover={song.albumcover} 
 		 artist={song.artist}
-		 submissionID={song.submissionID}
+		 submissionID={song.submissionID} 
+		 key={song.submissionID}>
+		 {/*the key element used by react to better handle song objects */}
 		</Song>
-	   )} 
-	  </>
+	   )}
+	  </div>
 
 	 </>
 	);
@@ -293,4 +384,6 @@ function DisplayedQueue() {
 export default DisplayedQueue;
 
 // For testing only
-export {requestQueueUpdates};
+export {requestQueue, requestQueueUpdates};
+export {Song};
+export {REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL};
