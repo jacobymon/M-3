@@ -1,6 +1,15 @@
 import unittest
 import UniversalQueueDesign
 import json
+# import sys
+# import os
+
+# path = os.path.dirname(os.path.abspath(__file__))
+# sys.path.append(path +"/Spotify_Interface")
+
+# from Spotify_Interface.spotify_interface_class import Spotify_Interface_Class
+# from Song import Song
+
 from Song import Song
 
 class TestUniQueue(unittest.TestCase):

@@ -18,7 +18,7 @@ def get_first_available_device(spotify):
         # print(av_device.name)
 
     # if the device field isn't filled out, we default to checking if the first device is active and available
-    if device == None:  
+    if device == "":  
 
         # If we have no available devices, exit the program
         if len(available_devices) == 0:
