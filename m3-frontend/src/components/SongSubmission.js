@@ -75,7 +75,7 @@ export async function searchSongs(searchbar_query) {
 
   try {
     const response = await axios.get(
-      `http://${process.env.REACT_APP_BACKEND_IP}/return_results?search_string=${searchbar_query}`, {timeout: 5000}
+      `http://${process.env.REACT_APP_BACKEND_IP}:8080/return_results?search_string=${searchbar_query}`, {timeout: 5000}
     );
 
     switch(response.data.search_string.status) {
