@@ -18,6 +18,16 @@ from Song import Song
 
 import threading
 
+
+import socket
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.connect(("8.8.8.8", 80))
+local_ip = s.getsockname()[0]
+s.close()
+
+print(local_ip)
+
+
 app = Flask(__name__)
 CORS(app) 
 
@@ -307,5 +317,8 @@ def submit_song():
     return song_data
     
 if __name__ == '__main__':
+    with open('../m3-frontend/.env', 'w') as f_obj:
+        f_obj.write('REACT_APP_BACKEND_IP="'+local_ip+'"')
+
     app.run(host = '0.0.0.0', port=8080) 
 
