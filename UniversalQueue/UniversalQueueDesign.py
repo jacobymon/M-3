@@ -57,7 +57,7 @@ class UniversalQueue:
 
         self.pause_exit = threading.Event()
 
-    def insert(self, song): 
+    def insert(self, song, recover = False): 
         """
         When queue not suspended
         inserts a song into the queue with a unique id using the song classes set_id() method
@@ -66,16 +66,28 @@ class UniversalQueue:
         @param song: a song object that contains all of the attributes needed
         to display info to UI and playback
         """
-        if self.suspend_toggle == False:
-            song.set_id(self.idCount)
-            self.idCount += 1 #update the next id to be unique for the next set
-            self.data.append(song)
-            #write() #NOT IMPLEMENTED YET
+        if recover == False:
+            if self.suspend_toggle == False:
+                song.set_id(self.idCount)
+                self.idCount += 1 #update the next id to be unique for the next set
+                self.data.append(song)
+                self.write()
 
-            if len(self.data) == 1:
-                self.flush_queue()
-        else:
-            raise ValueError('can not insert')
+                if len(self.data) == 1:
+                    self.flush_queue()
+            else:
+                raise ValueError('can not insert')
+        else: #special recovery version (doesn't write())
+            if self.suspend_toggle == False:
+                song.set_id(self.idCount)
+                self.idCount += 1 #update the next id to be unique for the next set
+                self.data.append(song)
+
+                if len(self.data) == 1:
+                    self.flush_queue()
+            else:
+                raise ValueError('can not insert')
+            
 
 
     def flush_queue(self):
@@ -153,7 +165,7 @@ class UniversalQueue:
 
         @return the current state of the queue to all users
         """
-        #loop through the users and send them the current state of the queu
+        #loop through the users and send them the current state of the queue
         
     def request_update(self, user):
         """
@@ -250,19 +262,36 @@ class UniversalQueue:
         sets the queue back to an empty list
         """
 
-    def write(self, file):
+    def write(self):
         """
         Writes the queue to a file in json format on
         the hosts local machine
-        
+        O(n) complexity, where n is len(self.data)
 
         @param file: the file we are writing to, created during startup 
         """ 
 
         #break down the song objects into jsonifiable data
         #write to the file
+        for i in range(len(self.data)):
+            data = {
+                    "uri": self.data[i].uri,
+                    "s_len": self.data[i].s_len,
+                    "name" : self.data[i].name,
+                    "album": self.data[i].album,
+                    "artist": self.data[i].album
+                }
+            with open("Write.json", "w") as json_file:
+                json_file.write('[')
+                json.dump(data, json_file)
+                if i < len(self.data) - 1:
+                    json_file.write(',')
+                else:
+                    json_file.write(']')      
 
-    def recover(self, file):
+          
+
+    def recover(instance):
         """
         recovers the current state of the queue. in case of a system crash.
 
@@ -272,6 +301,26 @@ class UniversalQueue:
         #read from the file
         #re insert all of the song objects back into a new queue
         #update_ui
+
+        #initialize a new queue
+        newUniQueue = instance()
+
+        try:
+            with open("Write.json", "rec") as json_file:
+                json_file_data = json_file.read()
+                myDict = json.load(json_file_data)
+                for s in myDict:
+                    Song(s, True) #need special version of song initializer that takes in just the song data snippet
+                    newUniQueue.insert(s, True) #need special version of insert since it originally rewrites Write.json
+                
+                #call update_ui when it's written
+
+                return newUniQueue
+
+        except FileNotFoundError:
+            print(f"Error: File 'Write.json' not found.")   
+
+
 
 UQ = UniversalQueue()
 

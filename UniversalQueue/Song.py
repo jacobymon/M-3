@@ -2,7 +2,7 @@
 import json
 class Song:
 
-    def __init__(self, json_data):
+    def __init__(self, json_data, recover = False):
         """
         creates a song object
 
@@ -20,45 +20,52 @@ class Song:
 
         """
 
+        if recover == False:
+            # Loading JSON data into a Python dictionary
+            dict = json.loads(json_data)
 
-        # Loading JSON data into a Python dictionary
-        dict = json.loads(json_data)
+            # Accessing the JSON attributes to initialize Song attributes
+            status = dict.get('status')
 
-        # Accessing the JSON attributes to initialize Song attributes
-        status = dict.get('status')
+            if status == 200:
 
-        if status == 200:
+                #***********Need to check this error logic with Max**********
+                # try:
+                #     dict.get('search_results')
+                # except:
+                #     raise ValueError('search_result field missing in json')
+                
 
-            #***********Need to check this error logic with Max**********
-            # try:
-            #     dict.get('search_results')
-            # except:
-            #     raise ValueError('search_result field missing in json')
-            
-
-            # try:
-            #     dict.get('search_results').get('uri')
-            # except:
-            #     raise ValueError('search_result key missing in json')
-            
-            
-            # if dict.get('search_results').get('uri') == None:
-            #     raise ValueError('search_result value is null')
-            
-            # else:
-            #     self.uri = dict.get('search_results').get('uri')
-            #***********Need to check this error logic with Max**********
+                # try:
+                #     dict.get('search_results').get('uri')
+                # except:
+                #     raise ValueError('search_result key missing in json')
+                
+                
+                # if dict.get('search_results').get('uri') == None:
+                #     raise ValueError('search_result value is null')
+                
+                # else:
+                #     self.uri = dict.get('search_results').get('uri')
+                #***********Need to check this error logic with Max**********
 
 
-            self.uri = dict.get('search_results').get('uri')   
-            self.s_len = dict.get('search_results').get('s_len')
-            self.name = dict.get('search_results').get('name')
-            self.album = dict.get('search_results').get('album')
-            self.artist = dict.get('search_results').get('artist')
-            self.id = None
+                self.uri = dict.get('search_results').get('uri')   
+                self.s_len = dict.get('search_results').get('s_len')
+                self.name = dict.get('search_results').get('name')
+                self.album = dict.get('search_results').get('album')
+                self.artist = dict.get('search_results').get('artist')
+                self.id = None
 
+            else:
+                raise ValueError('status of json not acceptable')
         else:
-            raise ValueError('status of json not acceptable')
+            self.uri = dict.get('uri')   
+            self.s_len = dict.get('s_len')
+            self.name = dict.get('name')
+            self.album = dict.get('album')
+            self.artist = dict.get('artist')
+            self.id = None
 
 
     def set_id(self, id):
