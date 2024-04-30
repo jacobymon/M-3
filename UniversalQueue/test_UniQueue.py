@@ -127,94 +127,90 @@ class TestUniQueue(unittest.TestCase):
 
     def test_write_and_recover(self):
 
+        #note that insert() and remove_from_queue have write() in them.
+        self.uniQueue.insert(self.song1)
 
-        # self.uniQueue.insert(self.song1)
+        with open('Write.json', 'r') as file:
+            self.Write_data = file.read()
 
-        # with open('WriteTest.txt', 'r') as file:
-        #     self.WriteTest_data = file.read()
+        with open('WriteTest.json', 'r') as file:
+            self.WriteTest_data = file.read()
 
-        # self.assertEqual(self.WriteTest_data, self.uniQueue.data)
+        self.assertEqual(self.Write_data, self.WriteTest_data)
 
-        # self.uniQueue.insert(self.song3)
+        self.uniQueue.insert(self.song3)
 
-        # with open('WriteTest.txt', 'r') as file:
-        #     self.WriteTest_data = file.read()
+        with open('Write.json', 'r') as file:
+            self.Write_data = file.read()
+        
+        with open('WriteTest2.json', 'r') as file:
+            self.WriteTest2_data = file.read()
 
-        # self.assertEqual(self.WriteTest_data, self.uniQueue.data)
 
-        # self.uniQueue.insert(self.song6)
+        self.assertEqual(self.Write_data, self.WriteTest2_data)
 
-        # with open('WriteTest.txt', 'r') as file:
-        #     self.WriteTest_data = file.read()
 
-        # self.assertEqual(self.WriteTest_data, self.uniQueue.data)
+        self.uniQueue.insert(self.song6)
 
-        #the code above needs to be changed so that we are checking that write() puts parsible json data that can be recovered into a queue.
+        with open('Write.json', 'r') as file:
+            self.Write_data = file.read()
+
+        with open('WriteTest3.json', 'r') as file:
+            self.WriteTest3_data = file.read()
+
+        self.assertEqual(self.Write_data, self.WriteTest3_data)
+
 
 
         formerState= self.uniQueue.data
 
         #**** simulated crash 1
-        self.uniQueue.data = []
+        self.uniQueue.data = None
 
-        self.uniQueue.recover("WriteTest.txt")
+        self.uniQueue = UniversalQueueDesign.recover('Write.json')
 
-        self.assertEqual(self.WriteTest_data, formerState)
-
-        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
-
+        self.assertEqual(self.uniQueue.data, formerState)
 
     
-        self.uniQueue.remove_from_queue(0)
-
-        with open('WriteTest.txt', 'r') as file:
-            self.WriteTest_data = file.read()
-
-        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
-
         self.uniQueue.remove_from_queue(2)
 
-        with open('WriteTest.txt', 'r') as file:
-            self.WriteTest_data = file.read()
+        with open('Write.json', 'r') as file:
+            self.Write_data = file.read()
 
-        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
+        self.assertEqual(self.Write_data, self.WriteTest2_data)
 
-        formerState= self.uniQueue.data
 
-        #**** simulated crash 2
-        self.uniQueue.data = []
-
-        self.uniQueue.recover("WriteTest.txt")
-
-        self.assertEqual(self.WriteTest_data, formerState)
-
-        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
 
         self.uniQueue.remove_from_queue(1)
 
-        with open('WriteTest.txt', 'r') as file:
+        formerState = self.uniQueue.data
+        #simulated crash 2
+        self.uniQueue.data = None
+
+        with open('Write.json', 'r') as file:
             self.WriteTest_data = file.read()
 
-        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
+        self.assertEqual(self.Write_data, self.WriteTest_data)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        self.newUniQueue = UniversalQueueDesign.recover('Write.json')
 
         
+        self.assertEqual(formerState, self.newUniQueue.data)
+
+
+        self.newUniQueue.remove_from_queue(0)
+
+        self.assertEqual(self.newUniQueue, [])
+
+        formerState = self.newUniQueue.data
+
+        #**** simulated crash 2
+        self.newUniQueue.data = None
+
+        self.newUniQueue2 = UniversalQueueDesign.recover("WriteTest.txt")
+
+        self.assertEqual(self.newUniQueue2, formerState)
+
 
 
 if __name__ == "__main__":
