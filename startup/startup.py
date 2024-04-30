@@ -25,12 +25,12 @@ class startup():
         path = os.path.dirname(os.path.abspath(__file__))
         filename = path + '/../UniversalQueue/Spotify_Interface/creds.config'
         if_config_exist = exists(filename)
-        Client_ID = input("Please provide your Spotify Client ID: ")
-        Client_Secret = input("Please provide your Spotify Client Secret: ")
-        Redirect_URI = input("Please provide your Spotify Redirect URI: ")
         if if_config_exist:
             logging.info("Config file already exists")
             return
+        Client_ID = input("Please provide your Spotify Client ID: ")
+        Client_Secret = input("Please provide your Spotify Client Secret: ")
+        Redirect_URI = input("Please provide your Spotify Redirect URI: ")
         try:
             with open(filename, 'w') as file:
                 file.write('[DEFAULT]\n')
