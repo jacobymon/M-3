@@ -2,7 +2,9 @@
 .songListContainer {
 
     margin-top: 30px;
-    width: 600px;
+    /* width: 600px; */
+    min-width: 75%; /* For mobile development, we don't want fixed width */
+    max-width: 100%;
     min-height: 300px;
     background-color: #ddd;
     outline-style: solid;
