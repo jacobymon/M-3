@@ -146,7 +146,7 @@ class Server(object):
 
     def main(self):
         server = Server()
-        port = server.select_available_port()
+        port = 3000 # server.select_available_port()
         ip = server._get_local_ip()
         server.url = "http://" + ip + ":" + str(port)
         server.generate_qr_code()
