@@ -258,7 +258,7 @@ async function changeVolume(vol) {
 	// Return the status of the request
 
 	try {
-		const response = await axios.post(PAUSE_SONG_CALL, { vol, cookie }, {timeout:5000})
+		const response = await axios.post(CHANGE_VOLUME_CALL, { vol, cookie }, {timeout:5000})
 
 		// Handle the response from here
 
