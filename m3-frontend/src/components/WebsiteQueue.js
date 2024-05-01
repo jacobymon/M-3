@@ -108,7 +108,7 @@ async function requestQueueUpdates (updateQueueError, updateSongs) {
 
 			// Handle response here
 
-			updateSongs(response.data.songs);
+			updateSongs(response.data);
 			updateQueueError(0) // all is well
 		} catch (error) {
 			var errorcode;

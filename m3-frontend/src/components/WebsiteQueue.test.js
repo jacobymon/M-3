@@ -36,27 +36,19 @@ const TESTSONG2 = {
 
 const AXIOS_RESPONSE_EMPTY = {
 	status: 200,
-	data: {
-		songs: []
-	}
+	data: []
 }
 const AXIOS_RESPONSE_1 = {
 	status: 200,
-	data: {
-		songs: [TESTSONG1]
-	}
+	data: [TESTSONG1]
 }
 const AXIOS_RESPONSE_12 = {
 	status: 200,
-	data: {
-		songs: [TESTSONG1, TESTSONG2]
-	}
+	data: [TESTSONG1, TESTSONG2]
 }
 const AXIOS_RESPONSE_11 = {
 	status: 200,
-	data: {
-		songs: [TESTSONG1, SECOND_TESTSONG1]
-	}
+	data: [TESTSONG1, SECOND_TESTSONG1]
 }
 
 const AXIOS_POST_RESPONSE = {
