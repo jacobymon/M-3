@@ -14,9 +14,21 @@ import axios from 'axios';
 const MAX_QUEUE_RE_REQUESTS = 2;
 const WAIT_AFTER_FAILED_RQU = 60*1000 //miliseconds
 const HOSTTOOLS_WARNING_TIME = 5*1000 //miliseconds
-const REQUEST_QUEUE_CALL = "http://localhost:8080/request_update" //TODO
-const REQUEST_QUEUE_UPDATE_CALL = "http://localhost:8080/update_ui" //TODO
-const DELETE_SONG_CALL = "http://localhost:8080/delete_song" //TODO
+
+const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_update` //TODO
+const REQUEST_QUEUE_UPDATE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/update_ui` //TODO
+
+const DELETE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/delete_song` //TODO
+
+// BACK BURNER
+const CHANGE_VOLUME_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/change_volume` //TODO
+
+const PAUSE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/pause` //TODO
+const RESUME_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unpause` //TODO
+
+const SUSPEND_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/suspend_queue` //TODO
+const RESUME_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unsuspend_queue` //TODO
+
 const TESTSONGS = [
 	{
 		"id": "3v66DjMBSdWY0jy5VVjHI2",
@@ -51,10 +63,19 @@ var cookie = "h"
  * 									songs (and re-render the displayed queue)
  */
 async function requestQueue(updateQueueError, updateSongs) {
+
+	console.log("here")
 	// Send a request queue API call to the universal queue.
 	try {
-		const response = await axios.get(REQUEST_QUEUE_CALL);
-		updateSongs(response.data.songs);
+		console.log("here2")
+		const response = await axios.get(REQUEST_QUEUE_CALL, {timeout: 5000});
+
+		console.log(response)
+
+		console.log("here3")
+		// Handle the response here
+
+		updateSongs(response.data);
 		updateQueueError(0) // all is well
 	} catch (error) {
 		if(error.response) {
@@ -82,8 +103,12 @@ async function requestQueueUpdates (updateQueueError, updateSongs) {
 		try {
 			// it could take minutes to get this response, since it 
 			// only gets returned once the queue changes.
+
 			const response = await axios.get(REQUEST_QUEUE_UPDATE_CALL);
-			updateSongs(response.data.songs);
+
+			// Handle response here
+
+			updateSongs(response.data);
 			updateQueueError(0) // all is well
 		} catch (error) {
 			var errorcode;
@@ -121,7 +146,10 @@ async function removeSong(submissionID) {
 	try {
 		const response = await axios.post(DELETE_SONG_CALL, {
 			submissionID, cookie
-		})
+		}, {timeout:5000})
+
+		// Handle the response from here
+
 		return response.status;
 	} catch (error) {
 		return error.response ? error.response : 500;
@@ -135,10 +163,21 @@ async function removeSong(submissionID) {
  * 
  * @return {int} status of api call
  */
-function suspendQueue() {
+async function suspendQueue() {
 	// Send a suspend queue API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
+
+	try {
+		const response = await axios.post(SUSPEND_QUEUE_CALL, { cookie }, {timeout:5000})
+
+		// Handle the response from here
+
+		return response.status;
+	} catch (error) {
+		return error.response ? error.response : 500;
+	}
+
 	return 0;
 }
 
@@ -149,10 +188,21 @@ function suspendQueue() {
  * 
  * @return {int} status of api call
  */
-function resumeQueue() {
+async function resumeQueue() {
 	// Send a resume queue API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
+
+	try {
+		const response = await axios.post(RESUME_QUEUE_CALL, { cookie }, {timeout:5000})
+
+		// Handle the response from here
+
+		return response.status;
+	} catch (error) {
+		return error.response ? error.response : 500;
+	}
+
 	return 0;
 }
 
@@ -161,10 +211,21 @@ function resumeQueue() {
  * 
  * @return {int} status of api call
  */
-function pauseMusic() {
+async function pauseMusic() {
 	// Send a pause music API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
+
+	try {
+		const response = await axios.post(PAUSE_SONG_CALL, { cookie }, {timeout:5000})
+
+		// Handle the response from here
+
+		return response.status;
+	} catch (error) {
+		return error.response ? error.response : 500;
+	}
+
 	return 0;
 }
 
@@ -173,10 +234,21 @@ function pauseMusic() {
  * 
  * @return {int} status of api call
  */
-function resumeMusic() {
+async function resumeMusic() {
 	// Send a resume music API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
+
+	try {
+		const response = await axios.post(RESUME_SONG_CALL, { cookie }, {timeout:5000})
+
+		// Handle the response from here
+
+		return response.status;
+	} catch (error) {
+		return error.response ? error.response : 500;
+	}
+
 	return 0;
 }
 
@@ -187,10 +259,20 @@ function resumeMusic() {
  * 
  * @return {int} status of api call
  */
-function changeVolume(vol) {
+async function changeVolume(vol) {
 	// Send a change volume API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
+
+	try {
+		const response = await axios.post(CHANGE_VOLUME_CALL, { vol, cookie }, {timeout:5000})
+
+		// Handle the response from here
+
+		return response.status;
+	} catch (error) {
+		return error.response ? error.response : 500;
+	}
 	return 0;
 }
 
@@ -343,6 +425,7 @@ function DisplayedQueue(props) {
 	return (
 	 <>
 
+		<button onClick={() => requestQueue(updateQueueError, updateSongs)}>Refresh</button>
 	  {/*If there's an error in the host tools, display an error message*/}
 	  {hostToolsError!==0 &&
 	   <>

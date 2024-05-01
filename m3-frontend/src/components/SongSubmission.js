@@ -157,7 +157,7 @@ export async function submitSong(selected_song) {
   }
 
   try {
-    const response = await axios.post(`http://${process.env.REACT_APP_BACKEND_IP}:8080/submit_song`, post_data, {timeout: 5000});
+    const response = await axios.post(`http://${process.env.REACT_APP_BACKEND_IP}:8080/submit_song`, post_data, {timeout: 7000});
     console.log(response);
 
     switch(response.data.status){
