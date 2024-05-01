@@ -63,10 +63,16 @@ var cookie = "h"
  * 									songs (and re-render the displayed queue)
  */
 async function requestQueue(updateQueueError, updateSongs) {
+
+	console.log("here")
 	// Send a request queue API call to the universal queue.
 	try {
+		console.log("here2")
 		const response = await axios.get(REQUEST_QUEUE_CALL, {timeout: 5000});
 
+		console.log(response)
+
+		console.log("here3")
 		// Handle the response here
 
 		updateSongs(response.data.songs);
@@ -419,6 +425,7 @@ function DisplayedQueue(props) {
 	return (
 	 <>
 
+		<button onClick={() => requestQueue(updateQueueError, updateSongs)}>Refresh</button>
 	  {/*If there's an error in the host tools, display an error message*/}
 	  {hostToolsError!==0 &&
 	   <>
