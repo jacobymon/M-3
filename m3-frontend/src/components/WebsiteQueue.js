@@ -75,7 +75,7 @@ async function requestQueue(updateQueueError, updateSongs) {
 		console.log("here3")
 		// Handle the response here
 
-		updateSongs(response.data.songs);
+		updateSongs(response.data);
 		updateQueueError(0) // all is well
 	} catch (error) {
 		if(error.response) {
