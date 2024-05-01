@@ -20,13 +20,14 @@ const REQUEST_QUEUE_UPDATE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:80
 
 const DELETE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/delete_song` //TODO
 
+// BACK BURNER
 const CHANGE_VOLUME_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/change_volume` //TODO
 
-const PAUSE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/pause_song` //TODO
-const RESUME_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/resume_song` //TODO
+const PAUSE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/pause` //TODO
+const RESUME_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unpause` //TODO
 
 const SUSPEND_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/suspend_queue` //TODO
-const RESUME_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/resume_queue` //TODO
+const RESUME_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unsuspend_queue` //TODO
 
 const TESTSONGS = [
 	{
