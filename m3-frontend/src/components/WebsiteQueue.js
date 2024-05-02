@@ -17,31 +17,28 @@ const MAX_QUEUE_RE_REQUESTS = 2;
 const WAIT_AFTER_FAILED_RQU = 60*1000 //miliseconds
 const HOSTTOOLS_WARNING_TIME = 5*1000 //miliseconds
 
-const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_update` //TODO
+const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_update`
 const REQUEST_QUEUE_UPDATE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/update_ui` //TODO
 
 const DELETE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/delete_song` //TODO
 
-// BACK BURNER
-const CHANGE_VOLUME_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/change_volume` //TODO
-
 const PAUSE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/pause` //TODO
 const RESUME_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unpause` //TODO
-
 const SUSPEND_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/suspend_queue` //TODO
 const RESUME_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unsuspend_queue` //TODO
+const CHANGE_VOLUME_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/change_volume` //TODO
 
 const TESTSONGS = [
 	{
-		"id": "3v66DjMBSdWY0jy5VVjHI2",
 		"name": "All I Want For Christmas Is You",
 		"artist": "Mariah Carey",
+		"albumname": "Mariah Carey's Best Hits",
 		"albumcover": "https://m.media-amazon.com/images/I/71X9F2m7-kL._UF1000,1000_QL80_.jpg",
 		"submissionID": 2
 	}, {
-		"id": "xkcdykcd",
 		"name": "testsong",
 		"artist": "totaly real artist",
+		"albumname": "100% real album",
 		"albumcover": "https://m.media-amazon.com/images/I/71X9F2m7-kL._UF2000,1000_QL80_.jpg",
 		"submissionID": 3
 	}
@@ -262,6 +259,8 @@ async function resumeMusic() {
  * @return {int} status of api call
  */
 async function changeVolume(vol) {
+	// TODO: no actual use for this until superusers
+
 	// Send a change volume API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
@@ -284,10 +283,10 @@ async function changeVolume(vol) {
 /**
  * React component to display the data of a single song in the queue
  * 
- * @param {String} props.id id of song in Spotify
  * @param {String} props.name name of song
- * @param {String} props.albumcover link to an image of the song's album cover
- * @param {String} props.artist the artist
+ * @param {String} props.albumname name of album the song is on
+ * @param {String} props.albumcover link to an image of the song's album coversong's album cover
+ * @param {String} props.artist name of song's artist
  * @param {int} props.submissionID unique ID for each song entry in the queue
  * 
  * @return HTML code for one song entry
@@ -299,6 +298,7 @@ function Song(props) {
 	  {/* Display the Name, album cover, Artist, etc*/}
 	  <div className="songTitle">{props.name}</div>
 	  <div className="songArtist">{props.artist}</div>
+	  <div className="songAlbum">{props.albumname}</div>
 	  <img className="songCover" src={props.albumcover} alt=""></img>
 	  <DeleteButton submissionID={props.submissionID}/>
 	 </div>
@@ -340,9 +340,9 @@ function DisplayedQueue(props) {
 	/**
    	 * songs: a list of song objects
 	 * Each song has the following attributes:
-	 * 	id {int} the song's Spotify ID
 	 *  name {String} 
 	 *  artist {String} 
+	 *  albumname {String} 
 	 *  albumcover {String} A link to an image of the song's cover
 	 *  submissionID {int} ID for each song submission
    	 * @type {Array}
@@ -400,7 +400,7 @@ function DisplayedQueue(props) {
 			// If too many requests fail in a row, notify the user
 			// The simplest solution is to create a fake "queue out of sync, please refresh" song
 			updateSongs([{
-				"id": "", "submission_id": 0,
+				"submission_id": 0,
 				"name": "QUEUE OUT OF SYNC",
 				"artist": "please refresh the page",
 				"albumcover": ""
@@ -485,8 +485,8 @@ function DisplayedQueue(props) {
 	   {/* For each song in songs, generate an entry*/}
 	   { songs?.map(
 		(song) => <Song
-		 id={song.id} 
 		 name={song.name} 
+		 albumname={song.albumname} 
 		 albumcover={song.albumcover} 
 		 artist={song.artist}
 		 submissionID={song.submissionID} 

@@ -43,6 +43,15 @@
     color: #333;
 }
 
+.songAlbum {
+    position:relative;
+    left:10px;
+    top:10px; 
+
+    font-size: 18px;
+    color: #666; /* Subdued color for artist */
+}
+
 .songArtist {
     position:relative;
     left:10px;
