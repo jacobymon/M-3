@@ -358,6 +358,16 @@ def update_visual_queue():
     # print('#################' + jsonData + '#################')
     return jsonData
 
+@app.route('/verify_host', methods=['GET', 'POST'])
+@cross_origin()
+def verify_host():
+    if request.method == 'POST':
+        incomingIP = request.remote_addr
+        if incomingIP == local_ip:
+            return [True, UQ.hostCookie]
+        else:
+            return [False, ""]
+
 if __name__ == '__main__':
     with open('../m3-frontend/.env', 'w') as f_obj:
         f_obj.write('REACT_APP_BACKEND_IP="'+local_ip+'"')
