@@ -33,11 +33,13 @@ const TESTSONGS = [
 	{
 		"name": "All I Want For Christmas Is You",
 		"artist": "Mariah Carey",
+		"albumname": "Mariah Carey's Best Hits",
 		"albumcover": "https://m.media-amazon.com/images/I/71X9F2m7-kL._UF1000,1000_QL80_.jpg",
 		"submissionID": 2
 	}, {
 		"name": "testsong",
 		"artist": "totaly real artist",
+		"albumname": "100% real album",
 		"albumcover": "https://m.media-amazon.com/images/I/71X9F2m7-kL._UF2000,1000_QL80_.jpg",
 		"submissionID": 3
 	}
@@ -280,8 +282,9 @@ async function changeVolume(vol) {
  * React component to display the data of a single song in the queue
  * 
  * @param {String} props.name name of song
- * @param {String} props.albumcover link to an image of the song's album cover
- * @param {String} props.artist the artist
+ * @param {String} props.albumname name of album the song is on
+ * @param {String} props.albumcover link to an image of the song's album coversong's album cover
+ * @param {String} props.artist name of song's artist
  * @param {int} props.submissionID unique ID for each song entry in the queue
  * 
  * @return HTML code for one song entry
@@ -293,6 +296,7 @@ function Song(props) {
 	  {/* Display the Name, album cover, Artist, etc*/}
 	  <div className="songTitle">{props.name}</div>
 	  <div className="songArtist">{props.artist}</div>
+	  <div className="songAlbum">{props.albumname}</div>
 	  <img className="songCover" src={props.albumcover} alt=""></img>
 	  <DeleteButton submissionID={props.submissionID}/>
 	 </div>
@@ -336,6 +340,7 @@ function DisplayedQueue(props) {
 	 * Each song has the following attributes:
 	 *  name {String} 
 	 *  artist {String} 
+	 *  albumname {String} 
 	 *  albumcover {String} A link to an image of the song's cover
 	 *  submissionID {int} ID for each song submission
    	 * @type {Array}
@@ -420,7 +425,6 @@ function DisplayedQueue(props) {
 	
 	return (
 	 <>
-
 		<button onClick={() => requestQueue(updateQueueError, updateSongs)}>Refresh</button>
 	  {/*If there's an error in the host tools, display an error message*/}
 	  {hostToolsError!==0 &&
@@ -447,6 +451,7 @@ function DisplayedQueue(props) {
 	   { songs?.map(
 		(song) => <Song
 		 name={song.name} 
+		 albumname={song.albumname} 
 		 albumcover={song.albumcover} 
 		 artist={song.artist}
 		 submissionID={song.submissionID} 

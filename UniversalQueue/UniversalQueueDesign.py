@@ -330,6 +330,7 @@ def update_visual_queue():
         songObject = {
                 'name': UQ.data[i].name,
                 'artist': UQ.data[i].artist,
+                'albumname': UQ.data[i].album,
                 'albumcover': "",
                 'submissionID': 1,
                 'id': ""
