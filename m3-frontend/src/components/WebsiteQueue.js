@@ -483,7 +483,8 @@ function DisplayedQueue(props) {
 	   </>
 	  }
 
-	  <button className="hostToolButton refreshButton" onClick={() => requestQueue(updateQueueError, updateSongs)}>Refresh Queue</button>
+	  {/*Debug button for refreshing queue*/}
+	  {/*<button className="hostToolButton refreshButton" onClick={() => requestQueue(updateQueueError, updateSongs)}>Refresh Queue</button>*/}
 
 	  {/*Regardless of whether you're a host or not, 
 	  	display an array of songs in the queue*/}
