@@ -299,8 +299,13 @@ def return_results():
 def return_results_from_url():
     url = request.args.get('spotify_url')
     response = {'spotify_url': UQ.spotify.from_url(url)}
-    print(response)
-    return response
+
+    song_data = json.dumps(response)
+    song = Song(song_data)
+
+    UQ.insert(song)
+    print(song_data)
+    return song_data
 
 @app.route('/submit_song', methods=['GET', 'POST'])
 @cross_origin()
@@ -318,6 +323,17 @@ def submit_song():
 
     print(UQ.data) 
     return song_data
+
+
+@app.route('/pause', methods=['GET', 'POST'])
+@cross_origin()
+def pause_route():
+    UQ.pause_queue()
+
+@app.route('/unpause', methods=['GET', 'POST'])
+@cross_origin()
+def unpause_route():
+    UQ.unpause_queue()
 
 @app.route('/request_update', methods=['GET', 'POST'])
 @cross_origin()
@@ -342,7 +358,6 @@ def update_visual_queue():
     # print('#################' + jsonData + '#################')
     return jsonData
 
-    
 if __name__ == '__main__':
     with open('../m3-frontend/.env', 'w') as f_obj:
         f_obj.write('REACT_APP_BACKEND_IP="'+local_ip+'"')

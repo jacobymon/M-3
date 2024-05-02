@@ -116,7 +116,7 @@ describe.skip("Request Queue Updates helper function", () => {
 	});
 
 	it('updates songs on call', done => {
-		// Resolve, then never return anything else
+		// Resolve once, then end the test on the second call
 		axios.get.mockResolvedValueOnce(AXIOS_RESPONSE_1)
 		axios.get.mockImplementation(() => {
 			expect(axios.get).toBeCalledTimes(2)
@@ -131,7 +131,7 @@ describe.skip("Request Queue Updates helper function", () => {
 	});
 
 	it('re-requests after 408 response', done => {
-		// Reject, then resolve, then never return anything else
+		// reject, then resolve, then end the test on the third call
 		axios.get.mockRejectedValueOnce(AXIOS_REJECT_408)
 		axios.get.mockResolvedValueOnce(AXIOS_RESPONSE_1)
 		axios.get.mockImplementation(() => {
@@ -166,6 +166,10 @@ describe("Song subcomponent", () => {
 		expect(screen.getByText(TESTSONG1.albumname)).toBeInTheDocument();
 	});
 });
+
+describe("Host tools menu", () => {
+	// TODO 
+})
 
 describe("DisplayedQueue as a whole", () => {
 	jest.useFakeTimers();

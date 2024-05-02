@@ -6,7 +6,8 @@ functionality that the host can use to manage the Universal Queue- removing
 songs, and suspending or unsuspending the queue. Finally, it will also include 
 tools for the host to pause and play the music, and control the volume.*/
 
-import React, { useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef, 
+				createContext, useContext} from 'react';
 import './WebsiteQueue.css' // eventually import a proper css file
 import axios from 'axios';
 import volume_down from "../content/volume_down.png"
@@ -16,6 +17,7 @@ import volume_up from "../content/volume_up.png"
 const MAX_QUEUE_RE_REQUESTS = 2;
 const WAIT_AFTER_FAILED_RQU = 60*1000 //miliseconds
 const HOSTTOOLS_WARNING_TIME = 5*1000 //miliseconds
+
 
 const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_update`
 const REQUEST_QUEUE_UPDATE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/update_ui` //TODO
@@ -48,6 +50,7 @@ const TESTSONGS = [
 var isHost = true; //Global variable to determine whether to render host-only elements. Should not be changed after startup.
 //const isHostContext = createContext();
 var cookie = "h"
+const HostToolsContext = createContext(); // context to share updateHostToolsError with other functions
 
 // External Interface Functions
 
@@ -292,7 +295,6 @@ async function changeVolume(vol) {
  * @return HTML code for one song entry
  */
 function Song(props) {
-	// Returns the HTML to display one song in the queue.
 	return ( 
 	 <div className="songListItem">
 	  {/* Display the Name, album cover, Artist, etc*/}
@@ -314,8 +316,8 @@ function Song(props) {
  * @return HTML code for the button
  */
 function DeleteButton(props) {
-	// Returns the HTML to conditionally display a delete button
-	// props.submissionID - the song submission to remove
+	const updateHostToolsError = useContext(HostToolsContext);
+
 	if (isHost) {
 		return <button 
 			data-testid="removeSongButton"
@@ -326,6 +328,59 @@ function DeleteButton(props) {
 	return <></>
 }
 
+/**
+ * React component to conditionally display the host tools menu.
+ * 
+ * @return HTML code for the menu
+ */ 
+function HostToolsMenu(props) {
+	const updateHostToolsError = useContext(HostToolsContext);
+	
+	/**
+	 * state to track whether music is playing, used to show play
+	 * button and pause button
+	 * @type {boolean}
+	 */
+	const [musicPlaying, updateMusicPlaying] = useState(true)
+
+	/**
+	 * state to track whether the queue is accepting submissions or not
+	 * button and pause button
+	 * @type {boolean}
+	 */
+	const [queueOpen, updateQueueOpen] = useState(true)
+
+	// TOOD: buttons!
+	return <div className="hostToolsMenu">
+	 {musicPlaying &&
+	  <button 
+	   data-testid="pauseButton"
+	   className = "pauseButton"
+	   onClick={() => {pauseMusic()}}
+	  >Pause Music</button>
+	 } {!musicPlaying &&
+	  <button 
+	   data-testid="resumeButton"
+	   className = "resumeButton"
+	   onClick={() => {resumeMusic()}}
+	  >Play Music</button>
+	 }
+
+	 {queueOpen &&
+	  <button 
+	   data-testid="suspendQueueButton"
+	   className = "suspendQueueButton"
+	   onClick={() => {suspendQueue()}}
+	  >Ban New Song Submissions</button>
+	 } {!queueOpen &&
+		<button 
+		 data-testid="unsuspendQueueButton"
+		 className = "unsuspendQueueButton"
+		 onClick={() => {resumeQueue()}}
+		>Allow New Song Submissions</button>
+	 }
+	</div>
+}
 
 /**
  * React component to display the current queue of songs.
@@ -350,10 +405,12 @@ function DisplayedQueue(props) {
 	const [songs, updateSongs] = useState([]);
 
 	/**
-	 * queueError: the most recent errorcode for updating the queue
+	 * queueError: the most recent errorcode for updating the queue.
+	 * 0 if the most recent call succeeded.
+	 * -1 if no recent queue error.
 	 * @type {int}
 	 */
-	const [queueError, updateQueueError] = useState(0);
+	const [queueError, updateQueueError] = useState(-1);
 
 	/**
 	 * hostToolsError: the most recent errorcode for host tools
@@ -376,7 +433,7 @@ function DisplayedQueue(props) {
 	
 	// Set isHost and cookie to match whatever is in props
 	useEffect( () => {
-		isHost = props.isHost
+		isHost = true // props.isHost
 		cookie = props.cookie
 	}, [props])
 
@@ -391,8 +448,16 @@ function DisplayedQueue(props) {
 	*/
 	useEffect( () => {
 		if (queueError === 0) {
+			//If queueError changes to 0 (all is well), reset the counter
 			failedRequests.current = 0
+		} else if (queueError === -1) {
+			// do nothing
 		} else if (failedRequests.current <= MAX_QUEUE_RE_REQUESTS) {
+			// If requestQueue returns 408 twice, queueError will not change,
+			// so the hook will not fire. To fix this, set the most recent error to -1,
+			// so that queueError will update no matter what.
+			updateQueueError(-1)
+
 			// If queue update fails, re-request the queue.
 			failedRequests.current += 1
 			requestQueue(updateQueueError, updateSongs)
@@ -418,7 +483,7 @@ function DisplayedQueue(props) {
 		)
 	}, [hostToolsError]) 
 
-	//DEBUG ONLY: populate songs
+	// /* DEBUG ONLY: whenever songs changes, change it back to test songs. */
 	// useEffect( () => {
 	// 	isHost = true;
 	// 	updateSongs(TESTSONGS)
@@ -434,6 +499,7 @@ function DisplayedQueue(props) {
 	    {/*TODO Display the error message*/}
 	   </>
 	  }
+
 	
 	  {/*If you're a host, display the host controls*/}
 
@@ -480,7 +546,18 @@ function DisplayedQueue(props) {
 	  	display an array of songs in the queue*/}
 	  <div className="songListContainer">
 
+	  {/*Let both the queue and the host tools menue notify the displayedqueue
+	  	 of any host tool error*/}
+	  <HostToolsContext.Provider value={updateHostToolsError}>
+	
+	   {/*If you're a host, display the host controls*/}
+	   {isHost===true && <HostToolsMenu></HostToolsMenu>}
+	  
+	   {/*Regardless of whether you're a host or not, 
+	      display an array of songs in the queue*/}
+	   <div className="songListContainer">
 		<div className="songListTitle">Current Queue</div>
+
 
 	   {/* For each song in songs, generate an entry*/}
 	   { songs?.map(
