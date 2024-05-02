@@ -15,19 +15,16 @@ const MAX_QUEUE_RE_REQUESTS = 2;
 const WAIT_AFTER_FAILED_RQU = 60*1000 //miliseconds
 const HOSTTOOLS_WARNING_TIME = 5*1000 //miliseconds
 
-const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_update` //TODO
+const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_update`
 const REQUEST_QUEUE_UPDATE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/update_ui` //TODO
 
 const DELETE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/delete_song` //TODO
 
-// BACK BURNER
-const CHANGE_VOLUME_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/change_volume` //TODO
-
 const PAUSE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/pause` //TODO
 const RESUME_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unpause` //TODO
-
 const SUSPEND_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/suspend_queue` //TODO
 const RESUME_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unsuspend_queue` //TODO
+const CHANGE_VOLUME_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/change_volume` //TODO
 
 const TESTSONGS = [
 	{
@@ -260,6 +257,8 @@ async function resumeMusic() {
  * @return {int} status of api call
  */
 async function changeVolume(vol) {
+	// TODO: no actual use for this until superusers
+
 	// Send a change volume API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
