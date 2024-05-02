@@ -31,13 +31,11 @@ const RESUME_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unsus
 
 const TESTSONGS = [
 	{
-		"id": "3v66DjMBSdWY0jy5VVjHI2",
 		"name": "All I Want For Christmas Is You",
 		"artist": "Mariah Carey",
 		"albumcover": "https://m.media-amazon.com/images/I/71X9F2m7-kL._UF1000,1000_QL80_.jpg",
 		"submissionID": 2
 	}, {
-		"id": "xkcdykcd",
 		"name": "testsong",
 		"artist": "totaly real artist",
 		"albumcover": "https://m.media-amazon.com/images/I/71X9F2m7-kL._UF2000,1000_QL80_.jpg",
@@ -281,7 +279,6 @@ async function changeVolume(vol) {
 /**
  * React component to display the data of a single song in the queue
  * 
- * @param {String} props.id id of song in Spotify
  * @param {String} props.name name of song
  * @param {String} props.albumcover link to an image of the song's album cover
  * @param {String} props.artist the artist
@@ -337,7 +334,6 @@ function DisplayedQueue(props) {
 	/**
    	 * songs: a list of song objects
 	 * Each song has the following attributes:
-	 * 	id {int} the song's Spotify ID
 	 *  name {String} 
 	 *  artist {String} 
 	 *  albumcover {String} A link to an image of the song's cover
@@ -397,7 +393,7 @@ function DisplayedQueue(props) {
 			// If too many requests fail in a row, notify the user
 			// The simplest solution is to create a fake "queue out of sync, please refresh" song
 			updateSongs([{
-				"id": "", "submission_id": 0,
+				"submission_id": 0,
 				"name": "QUEUE OUT OF SYNC",
 				"artist": "please refresh the page",
 				"albumcover": ""
@@ -450,7 +446,6 @@ function DisplayedQueue(props) {
 	   {/* For each song in songs, generate an entry*/}
 	   { songs?.map(
 		(song) => <Song
-		 id={song.id} 
 		 name={song.name} 
 		 albumcover={song.albumcover} 
 		 artist={song.artist}
