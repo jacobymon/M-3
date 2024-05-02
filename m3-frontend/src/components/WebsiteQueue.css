@@ -1,7 +1,7 @@
 
 .songListContainer {
 
-    margin-top: 30px;
+    margin-top: 10px;
     /* width: 600px; */
     min-width: 75%; /* For mobile development, we don't want fixed width */
     max-width: 100%;
@@ -72,11 +72,84 @@
     font-size: 40px;
     color: #000;
 }
+
 .removeSongButton:hover {
     background-color:#f00; /*lighter when hovering*/
 }
 .submitButton:active {
     background-color: #d00; /*dark again when clicked*/
+}
+
+.hostToolbar {
+    margin-top: 10px;
+    background-color: #282828;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    outline-style: solid;
+    outline-color: #000;
+    outline-width: 4;
+}
+
+.hostToolButton {
+    /* position:absolute; */
+    /* right:2px;
+    top:2px;
+    width:48px;
+    height:48px; */
+    margin: 5px;
+
+    cursor: pointer; 
+
+    background-color: #FFC20E;
+    
+    outline-style: solid;
+    outline-color: #000;
+    outline-width: 4;
+
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif ;
+    text-align:center;
+    font-size: 18px;
+    color: #000;
+}
+
+.hostToolButton:hover {
+    background-color:#FFD31F; /*lighter when hovering*/
+}
+.hostToolButton:active {
+    background-color: #FFB10D; /*dark again when clicked*/
+}
+
+.volumeSliderContainer {
+    background-color: #555;
+    margin-right: 5px;
+    margin-left: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    outline-style: solid;
+    outline-color: #000;
+    outline-width: 4;
+    
+}
+
+.volumeSlider {
+    margin: 5px;
+
+    cursor: pointer; 
+    
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif ;
+    text-align:center;
+    font-size: 18px;
+    color: #000;
+}
+
+.volumeImage {
+    align-items: center;
+    height: 27px; 
+    width: auto;
 }
 
 .songCover {
