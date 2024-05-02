@@ -361,7 +361,7 @@ def update_visual_queue():
 @app.route('/verify_host', methods=['GET', 'POST'])
 @cross_origin()
 def verify_host():
-    if request.method == 'POST':
+    if request.method == 'GET':
         incomingIP = request.remote_addr
         if incomingIP == local_ip:
             return [True, UQ.hostCookie]
