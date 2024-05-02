@@ -1,12 +1,17 @@
 import logging
 import os
 import socket
+import sys
 import threading
 import webbrowser
 
 import qrcode
 from flask import Flask
 from pynpm import NPMPackage
+
+path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(path + '/../UniversalQueue')
+import UniversalQueueDesign
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -157,6 +162,7 @@ class Server(object):
         ip = server._get_local_ip()
         server.url = "http://" + ip + ":" + str(port)
         server.generate_qr_code()
+        UniversalQueueDesign.main()
         server._react_run()
         server.open_website()
 
