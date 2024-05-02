@@ -116,7 +116,7 @@ class Server(object):
             logging.info("Saving QR code image to 'qr_code.png'")
             img = qr.make_image(fill_color="black", back_color="white")
             current_path = os.path.dirname(__file__)
-            full_image_path = os.path.join(current_path, "..\m3-frontend\src\content\qr_code.png")
+            full_image_path = os.path.join(current_path, "..\m3-frontend\src\content\qr-code.png")
             img.save(full_image_path)
             logging.info("QR code image saved successfully.")
 
