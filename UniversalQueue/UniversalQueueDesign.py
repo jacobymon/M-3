@@ -331,7 +331,7 @@ def update_visual_queue():
                 'name': UQ.data[i].name,
                 'artist': UQ.data[i].artist,
                 'albumname': UQ.data[i].album,
-                'albumcover': "",
+                'albumcover': UQ.data[i].image,
                 'submissionID': 1,
                 'id': ""
                     }
