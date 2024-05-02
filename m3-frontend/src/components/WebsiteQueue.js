@@ -385,9 +385,9 @@ function DisplayedQueue(props) {
 
 	
 	// On startup, start an async function to request any updates to the queue
-	useEffect( () => {
-		requestQueueUpdates(updateQueueError, updateSongs)
-	}, [])
+	// useEffect( () => {
+	// 	requestQueueUpdates(updateQueueError, updateSongs)
+	// }, [])
 
 	/* When queueError changes (aka using useEffect({},[queueError])),
 		attempt to recover from the error and get an up-to-date queue.
