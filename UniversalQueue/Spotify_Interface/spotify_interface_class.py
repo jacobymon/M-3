@@ -113,7 +113,8 @@ class Spotify_Interface_Class:
                     's_len' : track.duration_ms,
                     'title' : track.name,
                     'artist': track.artists[0].name,
-                    'album' : track.album.name
+                    'album' : track.album.name,
+                    'image' : track.album.images[0].url
                     }
 
             results.append(json_data)

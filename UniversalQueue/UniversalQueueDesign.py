@@ -312,7 +312,10 @@ def return_results_from_url():
 def submit_song():
 
     song_data = request.get_json()
+    print("SONGDATA SONGDATA BEFORE", song_data)
+    song_data['search_results']['name'] = song_data['search_results']['title']
     song_data = json.dumps(song_data)
+    print("SONGDATA SONGDATA", song_data)
     song = Song(song_data)
 
     UQ.insert(song)
@@ -331,6 +334,29 @@ def pause_route():
 @cross_origin()
 def unpause_route():
     UQ.unpause_queue()
+
+@app.route('/request_update', methods=['GET', 'POST'])
+@cross_origin()
+def update_visual_queue():
+
+    # current_queue_data = UQ.datak
+    # current_queue_data = json.dumps(current_queue_data)
+    data = []
+    for i in range(len(UQ.data)):
+        songObject = {
+                'name': UQ.data[i].name,
+                'artist': UQ.data[i].artist,
+                'albumname': UQ.data[i].album,
+                'albumcover': UQ.data[i].image,
+                'submissionID': 1,
+                'id': ""
+                    }
+        # print( "NAMENAMENAMENAMENAMENANEMEANE " + UQ.data[i].name, songObject['name'])
+        data.append(songObject)
+
+    jsonData = json.dumps(data)
+    # print('#################' + jsonData + '#################')
+    return jsonData
 
 if __name__ == '__main__':
     with open('../m3-frontend/.env', 'w') as f_obj:
