@@ -130,8 +130,9 @@ class Server(object):
      #   self.flask_app.run(**kwargs)
      #   return
      #   
-    def _react_run():
-        pkg = NPMPackage('../m3-frontend/package.json', shell=True)
+    def _react_run(self):
+        current_path = os.path.dirname(__file__)
+        pkg = NPMPackage(os.path.join(current_path, '../m3-frontend/package.json'), shell=True)
         pkg.run_script('start')
     
     def threaded_react_run(self, **kwargs):
@@ -156,7 +157,7 @@ class Server(object):
         ip = server._get_local_ip()
         server.url = "http://" + ip + ":" + str(port)
         server.generate_qr_code()
-        server.threaded_react_run()
+        server._react_run()
         server.open_website()
 
 
