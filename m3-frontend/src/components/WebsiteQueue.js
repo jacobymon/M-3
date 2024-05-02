@@ -271,13 +271,13 @@ function HostToolsMenu(props) {
 	   data-testid="pauseButton"
 	   className = "pauseButton"
 	   onClick={() => {pauseMusic()}}
-	  ></button>
+	  >Pause Music</button>
 	 } {!musicPlaying &&
 	  <button 
 	   data-testid="resumeButton"
 	   className = "resumeButton"
 	   onClick={() => {resumeMusic()}}
-	  ></button>
+	  >Play Music</button>
 	 }
 
 	 {queueOpen &&
@@ -285,13 +285,13 @@ function HostToolsMenu(props) {
 	   data-testid="suspendQueueButton"
 	   className = "suspendQueueButton"
 	   onClick={() => {suspendQueue()}}
-	  ></button>
+	  >Ban New Song Submissions</button>
 	 } {!queueOpen &&
 		<button 
 		 data-testid="unsuspendQueueButton"
 		 className = "unsuspendQueueButton"
 		 onClick={() => {resumeQueue()}}
-		></button>
+		>Allow New Song Submissions</button>
 	 }
 	</div>
 }
@@ -347,7 +347,7 @@ function DisplayedQueue(props) {
 	
 	// Set isHost and cookie to match whatever is in props
 	useEffect( () => {
-		isHost = props.isHost
+		isHost = true // props.isHost
 		cookie = props.cookie
 	}, [props])
 
