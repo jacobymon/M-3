@@ -329,60 +329,6 @@ function DeleteButton(props) {
 }
 
 /**
- * React component to conditionally display the host tools menu.
- * 
- * @return HTML code for the menu
- */ 
-function HostToolsMenu(props) {
-	const updateHostToolsError = useContext(HostToolsContext);
-	
-	/**
-	 * state to track whether music is playing, used to show play
-	 * button and pause button
-	 * @type {boolean}
-	 */
-	const [musicPlaying, updateMusicPlaying] = useState(true)
-
-	/**
-	 * state to track whether the queue is accepting submissions or not
-	 * button and pause button
-	 * @type {boolean}
-	 */
-	const [queueOpen, updateQueueOpen] = useState(true)
-
-	// TOOD: buttons!
-	return <div className="hostToolsMenu">
-	 {musicPlaying &&
-	  <button 
-	   data-testid="pauseButton"
-	   className = "pauseButton"
-	   onClick={() => {pauseMusic()}}
-	  >Pause Music</button>
-	 } {!musicPlaying &&
-	  <button 
-	   data-testid="resumeButton"
-	   className = "resumeButton"
-	   onClick={() => {resumeMusic()}}
-	  >Play Music</button>
-	 }
-
-	 {queueOpen &&
-	  <button 
-	   data-testid="suspendQueueButton"
-	   className = "suspendQueueButton"
-	   onClick={() => {suspendQueue()}}
-	  >Ban New Song Submissions</button>
-	 } {!queueOpen &&
-		<button 
-		 data-testid="unsuspendQueueButton"
-		 className = "unsuspendQueueButton"
-		 onClick={() => {resumeQueue()}}
-		>Allow New Song Submissions</button>
-	 }
-	</div>
-}
-
-/**
  * React component to display the current queue of songs.
  * 
  * @param {Boolean} props.isHost
@@ -493,72 +439,36 @@ function DisplayedQueue(props) {
 	return (
 	 <>
 
-	  {/*If there's an error in the host tools, display an error message*/}
 	  {hostToolsError!==0 &&
 	   <>
 	    {/*TODO Display the error message*/}
 	   </>
 	  }
 
-	
 	  {/*If you're a host, display the host controls*/}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	  {/* REMOVE || true TO ACTUALLY ONLY MAKE IT DISPLAY WHEN YOU ARE THE HOST*/}
-
-
-	  {isHost===true || true &&
+	  {isHost===true &&
 	   <>
 	    {/*TODO Buttons to start/stop the queue and play/pause the music
 		   and a slider to set volume*/}
-		   <div className='hostToolbar'>
-				<button className="hostToolButton" onClick={() => pauseMusic()}>Pause</button>
-				<button className="hostToolButton" onClick={() => resumeMusic()}>Resume</button>
-				<button className="hostToolButton" onClick={() => suspendQueue()}>Suspend Queue</button>
-				<button className="hostToolButton" onClick={() => resumeQueue()}>Resume Queue</button>
-				<div className='volumeSliderContainer'>
-					<img className="volumeImage" src={volume_down} alt='Lower Volume'/>
-					<input className="volumeSlider" title="Change Volume" type="range" onMouseUp={(e) => changeVolume(e.target.value)}/>
-					<img className="volumeImage" src={volume_up} alt='Raise Volume'/>
-				</div>
-			</div>
+		<div className='hostToolbar'>
+		 <button className="hostToolButton" onClick={() => pauseMusic()}>Pause</button>
+		 <button className="hostToolButton" onClick={() => resumeMusic()}>Resume</button>
+		 <button className="hostToolButton" onClick={() => suspendQueue()}>Suspend Queue</button>
+		 <button className="hostToolButton" onClick={() => resumeQueue()}>Resume Queue</button>
+		 <div className='volumeSliderContainer'>
+		  <img className="volumeImage" src={volume_down} alt='Lower Volume'/>
+		  <input className="volumeSlider" title="Change Volume" type="range" onMouseUp={(e) => changeVolume(e.target.value)}/>
+		  <img className="volumeImage" src={volume_up} alt='Raise Volume'/>
+		 </div>
+		</div>
 	   </>
 	  }
 
-		<button className="hostToolButton refreshButton" onClick={() => requestQueue(updateQueueError, updateSongs)}>Refresh Queue</button>
+	  <button className="hostToolButton refreshButton" onClick={() => requestQueue(updateQueueError, updateSongs)}>Refresh Queue</button>
 
 	  {/*Regardless of whether you're a host or not, 
 	  	display an array of songs in the queue*/}
 	  <div className="songListContainer">
-
-	  {/*Let both the queue and the host tools menue notify the displayedqueue
-	  	 of any host tool error*/}
-	  <HostToolsContext.Provider value={updateHostToolsError}>
-	
-	   {/*If you're a host, display the host controls*/}
-	   {isHost===true && <HostToolsMenu></HostToolsMenu>}
-	  
-	   {/*Regardless of whether you're a host or not, 
-	      display an array of songs in the queue*/}
-	   <div className="songListContainer">
-		<div className="songListTitle">Current Queue</div>
-
-
 	   {/* For each song in songs, generate an entry*/}
 	   { songs?.map(
 		(song) => <Song
