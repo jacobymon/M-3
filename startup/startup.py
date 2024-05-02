@@ -5,7 +5,6 @@ import subprocess
 import sys
 from os.path import exists
 
-import AppOpener
 import psutil
 import tekore as tk
 from server import Server
@@ -159,6 +158,7 @@ class startup():
         OS = self._check_operating_system()
         if OS == 'Windows':
             try:
+                import AppOpener
                 AppOpener.open("spotify")
                 logging.info("Spotify started on Windows")
             except Exception as e:
