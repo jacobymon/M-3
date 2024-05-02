@@ -1,5 +1,6 @@
 import logging
 import os
+import platform
 import socket
 import sys
 import threading
@@ -124,21 +125,27 @@ class Server(object):
             logging.error("An error occurred: %s", e)
     
 
-    #def flask_configs(self, **configs):
-    #    for config, value in configs:
-    #        self.flask_app.config[config.upper()] = value
+    def _check_operating_system(self):
+        OS = platform.system()
+        if OS == 'Darwin':
+            logging.info("OS successfully retrieved: %s", "Mac")
+            return "Mac"
+        elif OS == 'Windows' or OS == 'Linux':
+            logging.info("OS successfully retrieved: %s", str(OS))
+            return platform.system()
+        else:
+            logging.error("OS not supported is found: %s", str(OS))
+            return ""
 
-    #def flask_add_endpoint(self, endpoint=None, endpoint_name=None, handler=None, methods=['GET'], *args, **kwargs):
-    #    self.flask_app.add_url_rule(endpoint, endpoint_name, handler, methods=methods, *args, **kwargs)
-
-    #def _flask_run(self, **kwargs):
-     #   self.flask_app.run(**kwargs)
-     #   return
-     #   
     def _react_run(self):
+        operating_system = self._check_operating_system()
         current_path = os.path.dirname(__file__)
-        pkg = NPMPackage(os.path.join(current_path, '../m3-frontend/package.json'), shell=True)
+        if operating_system == 'Windows':
+            pkg = NPMPackage(os.path.join(current_path, '../m3-frontend/package.json'), shell=True)
+        else:
+            pkg = NPMPackage(os.path.join(current_path, '../m3-frontend/package.json'))
         pkg.run_script('start')
+
     
     def threaded_react_run(self, **kwargs):
         thread = threading.Thread(target=self._react_run, kwargs=kwargs)
