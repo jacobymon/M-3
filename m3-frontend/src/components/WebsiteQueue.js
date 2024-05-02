@@ -471,7 +471,7 @@ function DisplayedQueue() {
 	  
 	  {/* share isHost and cookie through the whole program*/}
 	  <IsHostContext.Provider value={isHost}>
-	  <CookieContext.Provider value={isHost}>
+	  <CookieContext.Provider value={cookie}>
 
 	  {hostToolsError!==0 &&
 	   <>
