@@ -19,6 +19,7 @@ const WAIT_AFTER_FAILED_RQU = 60*1000 //miliseconds
 const HOSTTOOLS_WARNING_TIME = 5*1000 //miliseconds
 const QUEUE_POLLING_TIME = 1*1000 //miliseconds
 
+const VERIFY_HOST_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/verify_host`
 
 const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_update`
 const REQUEST_QUEUE_UPDATE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/update_ui` //TODO
@@ -47,13 +48,26 @@ const TESTSONGS = [
 	}
 ]
 
-
-var isHost = true; //Global variable to determine whether to render host-only elements. Should not be changed after startup.
-//const isHostContext = createContext();
-var cookie = "h"
+const IsHostContext = createContext(); // context to share whether you're the host or not
+const CookieContext = createContext(); // context to share the cookie
 const HostToolsContext = createContext(); // context to share updateHostToolsError with other functions
 
 // External Interface Functions
+
+/**
+ * Function to check whether you're the host or not,
+ * Then call the hooks to update this 
+ */
+async function verify_host(updateIsHost, updateCookie) {
+	try {
+		const response = await axios.get(VERIFY_HOST_CALL, {timeout: 5000});
+
+		updateIsHost(response.data[0]);
+		updateCookie(response.data[1]);
+	} catch (error) {
+		throw new Error("Host site is offline or not funcitoning.")
+	}
+}
 
 /**
  * Request Queue API call to the Universal Queue. 
@@ -67,16 +81,11 @@ const HostToolsContext = createContext(); // context to share updateHostToolsErr
  */
 async function requestQueue(updateQueueError, updateSongs) {
 
-	console.log("here")
 	// Send a request queue API call to the universal queue.
 	try {
-		console.log("here2")
 		const response = await axios.get(REQUEST_QUEUE_CALL, {timeout: 5000});
 
 		console.log(response)
-
-		console.log("here3")
-		// Handle the response here
 
 		updateSongs(response.data);
 		updateQueueError(0) // all is well
@@ -161,7 +170,8 @@ async function requestQueueUpdates (updateQueueError, updateSongs) {
  * 
  * @return {int} status of api call
  */
-async function removeSong(submissionID) {
+async function removeSong(submissionID, cookie) {
+
 	try {
 		const response = await axios.post(DELETE_SONG_CALL, {
 			submissionID, cookie
@@ -182,7 +192,7 @@ async function removeSong(submissionID) {
  * 
  * @return {int} status of api call
  */
-async function suspendQueue() {
+async function suspendQueue(cookie) {
 	// Send a suspend queue API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
@@ -207,7 +217,7 @@ async function suspendQueue() {
  * 
  * @return {int} status of api call
  */
-async function resumeQueue() {
+async function resumeQueue(cookie) {
 	// Send a resume queue API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
@@ -230,7 +240,7 @@ async function resumeQueue() {
  * 
  * @return {int} status of api call
  */
-async function pauseMusic() {
+async function pauseMusic(cookie) {
 	// Send a pause music API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
@@ -253,7 +263,7 @@ async function pauseMusic() {
  * 
  * @return {int} status of api call
  */
-async function resumeMusic() {
+async function resumeMusic(cookie) {
 	// Send a resume music API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
@@ -278,7 +288,7 @@ async function resumeMusic() {
  * 
  * @return {int} status of api call
  */
-async function changeVolume(vol) {
+async function changeVolume(vol, cookie) {
 	// TODO: no actual use for this until superusers
 
 	// Send a change volume API call to the universal queue.
@@ -333,13 +343,15 @@ function Song(props) {
  * @return HTML code for the button
  */
 function DeleteButton(props) {
+	const isHost = useContext(IsHostContext)
+	const cookie = useContext(CookieContext)
 	const updateHostToolsError = useContext(HostToolsContext);
 
 	if (isHost) {
 		return <button 
 			data-testid="removeSongButton"
 			className="removeSongButton"
-			onClick={() => {removeSong(props.submissionID)}}
+			onClick={() => {removeSong(props.submissionID, cookie)}}
 		>X</button>
 	}
 	return <></>
@@ -348,12 +360,9 @@ function DeleteButton(props) {
 /**
  * React component to display the current queue of songs.
  * 
- * @param {Boolean} props.isHost
- * @param {String} props.cookie the host cookie is sent along with any host-only API request
- * 
  * @return HTML code for the current song queue.
  */
-function DisplayedQueue(props) {
+function DisplayedQueue() {
 
 	/**
    	 * songs: a list of song objects
@@ -375,10 +384,7 @@ function DisplayedQueue(props) {
 	 */
 	const [queueError, updateQueueError] = useState(-1);
 
-	/**
-	 * hostToolsError: the most recent errorcode for host tools
-	 * @type {int}
-	 */
+	/** hostToolsError: the most recent errorcode for host tools @type {int} */
 	const [hostToolsError, updateHostToolsError] = useState(0);
 
 	/**
@@ -387,6 +393,12 @@ function DisplayedQueue(props) {
 	 */
 	const failedRequests = useRef(0);
 
+	const [isHost, updateIsHost] = useState(false);
+
+	/** cookie to be sent with any host-only api calls @type {string} */
+	const [cookie, updateCookie] = useState("");
+
+
 
 	/* On startup (aka using useEffect({},[])),call the requestQueue() function
 	 asynchronously with useEffect and use it to update songs */
@@ -394,11 +406,10 @@ function DisplayedQueue(props) {
 		requestQueue(updateQueueError, updateSongs)
 	}, [])
 	
-	// Set isHost and cookie to match whatever is in props
-	useEffect( () => {
-		isHost = true // props.isHost
-		cookie = props.cookie
-	}, [props])
+	// Check for whether you're the host or not
+	useEffect(() => {
+		verify_host(updateIsHost, updateCookie)
+	}, [])
 
 	
 	// On startup, start an async function to request any updates to the queue
@@ -457,6 +468,10 @@ function DisplayedQueue(props) {
 	
 	return (
 	 <>
+	  
+	  {/* share isHost and cookie through the whole program*/}
+	  <IsHostContext.Provider value={isHost}>
+	  <CookieContext.Provider value={isHost}>
 
 	  {hostToolsError!==0 &&
 	   <>
@@ -470,13 +485,13 @@ function DisplayedQueue(props) {
 	    {/*TODO Buttons to start/stop the queue and play/pause the music
 		   and a slider to set volume*/}
 		<div className='hostToolbar'>
-		 <button className="hostToolButton" onClick={() => pauseMusic()}>Pause</button>
-		 <button className="hostToolButton" onClick={() => resumeMusic()}>Resume</button>
-		 <button className="hostToolButton" onClick={() => suspendQueue()}>Suspend Queue</button>
-		 <button className="hostToolButton" onClick={() => resumeQueue()}>Resume Queue</button>
+		 <button className="hostToolButton" onClick={() => pauseMusic(cookie)}>Pause</button>
+		 <button className="hostToolButton" onClick={() => resumeMusic(cookie)}>Resume</button>
+		 <button className="hostToolButton" onClick={() => suspendQueue(cookie)}>Suspend Queue</button>
+		 <button className="hostToolButton" onClick={() => resumeQueue(cookie)}>Resume Queue</button>
 		 <div className='volumeSliderContainer'>
 		  <img className="volumeImage" src={volume_down} alt='Lower Volume'/>
-		  <input className="volumeSlider" title="Change Volume" type="range" onMouseUp={(e) => changeVolume(e.target.value)}/>
+		  <input className="volumeSlider" title="Change Volume" type="range" onMouseUp={(e) => changeVolume(e.target.value, cookie)}/>
 		  <img className="volumeImage" src={volume_up} alt='Raise Volume'/>
 		 </div>
 		</div>
@@ -503,6 +518,9 @@ function DisplayedQueue(props) {
 	   )}
 	  </div>
 
+	  </CookieContext.Provider>
+	  </IsHostContext.Provider>
+
 	 </>
 	);
 }
@@ -511,4 +529,4 @@ export default DisplayedQueue;
 // For testing only
 export {requestQueue, requestQueueUpdates};
 export {Song};
-export {REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL};
+export {VERIFY_HOST_CALL, REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL};

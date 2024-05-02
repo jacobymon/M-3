@@ -2,7 +2,7 @@ import { render, screen, fireEvent, act} from '@testing-library/react';
 import axios from 'axios';
 
 import DisplayedQueue, {requestQueue, requestQueueUpdates,
-	REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL,
+	REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL, VERIFY_HOST_CALL,
 	Song } from './WebsiteQueue';
 
 jest.mock('axios');
@@ -34,6 +34,14 @@ const TESTSONG2 = {
 	"submissionID": 3
 }
 
+const AXIOS_ISHOST = {
+	status: 200,
+	data: [true, "chocolate chip"]
+}
+const AXIOS_ISNOTHOST = {
+	status: 200,
+	data: [false, ""]
+}
 const AXIOS_RESPONSE_EMPTY = {
 	status: 200,
 	data: []
@@ -178,6 +186,8 @@ describe("DisplayedQueue as a whole", () => {
 		axios.get.mockImplementation((call) => {
 			// If you request queue, return songs.
 			if (call==REQUEST_QUEUE_CALL) return Promise.resolve(AXIOS_RESPONSE_EMPTY)
+			// if you're asking if you're the host, return that you are
+			if (call==VERIFY_HOST_CALL) return Promise.resolve(AXIOS_ISHOST)
 			// Otherwise, return a promise that never resolves.
 			// (This way, the function never continues)
 			if (call==REQUEST_QUEUE_UPDATE_CALL) return new Promise( () => {} )
@@ -196,6 +206,7 @@ describe("DisplayedQueue as a whole", () => {
 
 		axios.get.mockImplementation((call) => {
 			if (call==REQUEST_QUEUE_CALL) return Promise.resolve(AXIOS_RESPONSE_12)
+			if (call==VERIFY_HOST_CALL) return Promise.resolve(AXIOS_ISHOST)
 			if (call==REQUEST_QUEUE_UPDATE_CALL) return new Promise( () => {} )
 		})
 
@@ -214,6 +225,7 @@ describe("DisplayedQueue as a whole", () => {
 
 		axios.get.mockImplementation((call) => {
 			if (call==REQUEST_QUEUE_CALL) return Promise.resolve(AXIOS_RESPONSE_11)
+			if (call==VERIFY_HOST_CALL) return Promise.resolve(AXIOS_ISHOST)
 			if (call==REQUEST_QUEUE_UPDATE_CALL) return new Promise( () => {} )
 		})
 
@@ -233,6 +245,7 @@ describe("Remove Song Button", () => {
 	it('can remove song', async () => {
 		axios.get.mockImplementation((call) => {
 			if (call==REQUEST_QUEUE_CALL) return Promise.resolve(AXIOS_RESPONSE_1)
+			if (call==VERIFY_HOST_CALL) return Promise.resolve(AXIOS_ISHOST)
 			if (call==REQUEST_QUEUE_UPDATE_CALL) return new Promise( () => {} )
 		})
 		axios.post.mockResolvedValue(AXIOS_POST_RESPONSE);

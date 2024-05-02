@@ -43,7 +43,7 @@ function App() {
       <div className="App-body">
         
         <SongSubmission />
-        <DisplayedQueue isHost="false" cookie="" />
+        <DisplayedQueue />
       </div>
 
     </div>
