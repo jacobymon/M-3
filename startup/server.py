@@ -1,10 +1,12 @@
 import logging
+import os
 import socket
 import threading
 import webbrowser
 
 import qrcode
 from flask import Flask
+from pynpm import NPMPackage
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -15,8 +17,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class Server(object):
 
     def __init__(self, app = Flask(__name__), **configs):
-        self.flask_app = app
-        self.flask_configs(**configs)
         self.url = None
         
     def _get_local_ip(self): 
@@ -110,26 +110,32 @@ class Server(object):
             
             logging.info("Saving QR code image to 'qr_code.png'")
             img = qr.make_image(fill_color="black", back_color="white")
-            img.save("qr_code.png")
+            current_path = os.path.dirname(__file__)
+            full_image_path = os.path.join(current_path, "..\m3-frontend\src\content\qr_code.png")
+            img.save(full_image_path)
             logging.info("QR code image saved successfully.")
 
         except Exception as e:
             logging.error("An error occurred: %s", e)
     
 
-    def flask_configs(self, **configs):
-        for config, value in configs:
-            self.flask_app.config[config.upper()] = value
+    #def flask_configs(self, **configs):
+    #    for config, value in configs:
+    #        self.flask_app.config[config.upper()] = value
 
-    def flask_add_endpoint(self, endpoint=None, endpoint_name=None, handler=None, methods=['GET'], *args, **kwargs):
-        self.flask_app.add_url_rule(endpoint, endpoint_name, handler, methods=methods, *args, **kwargs)
+    #def flask_add_endpoint(self, endpoint=None, endpoint_name=None, handler=None, methods=['GET'], *args, **kwargs):
+    #    self.flask_app.add_url_rule(endpoint, endpoint_name, handler, methods=methods, *args, **kwargs)
 
-    def _flask_run(self, **kwargs):
-        self.flask_app.run(**kwargs)
-        return
-        
-    def threaded_flask_run(self, **kwargs):
-        thread = threading.Thread(target=self._flask_run, kwargs=kwargs)
+    #def _flask_run(self, **kwargs):
+     #   self.flask_app.run(**kwargs)
+     #   return
+     #   
+    def _react_run():
+        pkg = NPMPackage('../m3-frontend/package.json', shell=True)
+        pkg.run_script('start')
+    
+    def threaded_react_run(self, **kwargs):
+        thread = threading.Thread(target=self._react_run, kwargs=kwargs)
         thread.start()
         
     
@@ -150,8 +156,7 @@ class Server(object):
         ip = server._get_local_ip()
         server.url = "http://" + ip + ":" + str(port)
         server.generate_qr_code()
-        server.flask_add_endpoint('/', 'hello_world', self.hello_world)
-        server.threaded_flask_run(host = ip, port = port)
+        server.threaded_react_run()
         server.open_website()
 
 
