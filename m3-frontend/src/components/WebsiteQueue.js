@@ -17,6 +17,7 @@ import volume_up from "../content/volume_up.png"
 const MAX_QUEUE_RE_REQUESTS = 2;
 const WAIT_AFTER_FAILED_RQU = 60*1000 //miliseconds
 const HOSTTOOLS_WARNING_TIME = 5*1000 //miliseconds
+const QUEUE_POLLING_TIME = 1*1000 //miliseconds
 
 
 const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_update`
@@ -85,6 +86,22 @@ async function requestQueue(updateQueueError, updateSongs) {
 		} else {
 			updateQueueError(500)
 		}
+	}
+}
+
+/**
+ * Short Polling - poll the server every so often to update the queue
+ * 
+ * @param {function} updateQueueError The function to set a new error code (and
+ * 										force the component to re-render)
+ * @param {function} updateSongs The function from displayedQueue to change the data in
+ * 									songs (and re-render the displayed queue)
+ */
+async function autoCallRequestQueue(updateQueueError, updateSongs) {
+	function sleep(ms) {return new Promise(resolve => setTimeout(resolve, ms))}
+	while (true) {
+		await sleep(QUEUE_POLLING_TIME)
+		requestQueue(updateQueueError, updateSongs)
 	}
 }
 
@@ -385,9 +402,11 @@ function DisplayedQueue(props) {
 
 	
 	// On startup, start an async function to request any updates to the queue
-	// useEffect( () => {
-	// 	requestQueueUpdates(updateQueueError, updateSongs)
-	// }, [])
+	useEffect( () => {
+		// TEMP - long polling won't work on backend, so just short polling
+		// requestQueueUpdates(updateQueueError, updateSongs)
+		autoCallRequestQueue(updateQueueError, updateSongs)
+	}, [])
 
 	/* When queueError changes (aka using useEffect({},[queueError])),
 		attempt to recover from the error and get an up-to-date queue.
