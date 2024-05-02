@@ -428,21 +428,6 @@ function DisplayedQueue(props) {
 	return (
 	 <>
 
-		<div className='hostToolbar'>
-			<button className="hostToolButton" onClick={() => requestQueue(updateQueueError, updateSongs)}>Refresh</button>
-			<button className="hostToolButton" onClick={() => pauseMusic()}>Pause</button>
-			<button className="hostToolButton" onClick={() => resumeMusic()}>Resume</button>
-			<button className="hostToolButton" onClick={() => suspendQueue()}>Suspend Queue</button>
-			<button className="hostToolButton" onClick={() => resumeQueue()}>Resume Queue</button>
-			<div className='volumeSliderContainer'>
-				<img className="volumeImage" src={volume_down} alt='Lower Volume'/>
-				<input className="volumeSlider" title="Change Volume" type="range" onMouseUp={(e) => changeVolume(e.target.value)}/>
-				<img className="volumeImage" src={volume_up} alt='Raise Volume'/>
-			</div>
-			
-
-		</div>
-
 	  {/*If there's an error in the host tools, display an error message*/}
 	  {hostToolsError!==0 &&
 	   <>
@@ -451,12 +436,45 @@ function DisplayedQueue(props) {
 	  }
 	
 	  {/*If you're a host, display the host controls*/}
-	  {isHost===true &&
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	  {/* REMOVE || true TO ACTUALLY ONLY MAKE IT DISPLAY WHEN YOU ARE THE HOST*/}
+
+
+	  {isHost===true || true &&
 	   <>
 	    {/*TODO Buttons to start/stop the queue and play/pause the music
 		   and a slider to set volume*/}
+		   <div className='hostToolbar'>
+				<button className="hostToolButton" onClick={() => pauseMusic()}>Pause</button>
+				<button className="hostToolButton" onClick={() => resumeMusic()}>Resume</button>
+				<button className="hostToolButton" onClick={() => suspendQueue()}>Suspend Queue</button>
+				<button className="hostToolButton" onClick={() => resumeQueue()}>Resume Queue</button>
+				<div className='volumeSliderContainer'>
+					<img className="volumeImage" src={volume_down} alt='Lower Volume'/>
+					<input className="volumeSlider" title="Change Volume" type="range" onMouseUp={(e) => changeVolume(e.target.value)}/>
+					<img className="volumeImage" src={volume_up} alt='Raise Volume'/>
+				</div>
+			</div>
 	   </>
 	  }
+
+		<button className="hostToolButton refreshButton" onClick={() => requestQueue(updateQueueError, updateSongs)}>Refresh Queue</button>
 
 	  {/*Regardless of whether you're a host or not, 
 	  	display an array of songs in the queue*/}

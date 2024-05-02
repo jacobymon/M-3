@@ -114,6 +114,10 @@
     color: #000;
 }
 
+.refreshButton {
+    margin-top: 15px;
+}
+
 .hostToolButton:hover {
     background-color:#FFD31F; /*lighter when hovering*/
 }
