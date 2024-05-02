@@ -162,7 +162,6 @@ class Server(object):
         ip = server._get_local_ip()
         server.url = "http://" + ip + ":" + str(port)
         server.generate_qr_code()
-        UniversalQueueDesign.main()
         server._react_run()
         server.open_website()
 
