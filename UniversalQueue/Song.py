@@ -55,6 +55,7 @@ class Song:
             self.name = dict.get('search_results').get('name')
             self.album = dict.get('search_results').get('album')
             self.artist = dict.get('search_results').get('artist')
+            self.image = dict.get('search_results').get('image')
             self.id = None
 
         else:
