@@ -182,6 +182,12 @@ describe("Host tools menu", () => {
 describe("DisplayedQueue as a whole", () => {
 	jest.useFakeTimers();
 
+	it('can render', async () => {
+		await act(async () => {
+			render(<DisplayedQueue />)
+		});
+	})
+
 	it.skip('calls both queue functions when rendered', async () => {
 		axios.get.mockImplementation((call) => {
 			// If you request queue, return songs.
@@ -242,7 +248,7 @@ describe("DisplayedQueue as a whole", () => {
 })
 
 describe("Remove Song Button", () => {
-	it('can remove song', async () => {
+	it('sends remove song api call when clicked', async () => {
 		axios.get.mockImplementation((call) => {
 			if (call==REQUEST_QUEUE_CALL) return Promise.resolve(AXIOS_RESPONSE_1)
 			if (call==VERIFY_HOST_CALL) return Promise.resolve(AXIOS_ISHOST)

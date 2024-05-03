@@ -356,8 +356,10 @@ function DeleteButton(props) {
 			className="removeSongButton"
 			onClick={() => {removeSong(props.submissionID, cookie, updateHostToolsError)}}
 		>X</button>
+	} else {
+		return <></>
 	}
-	return <></>
+	
 }
 
 /**
@@ -366,22 +368,27 @@ function DeleteButton(props) {
  * @return HTML code for host tools.
  */
 function HostToolsMenu() {
+	const isHost = useContext(IsHostContext)
 	const cookie = useContext(CookieContext)
 	const updateHostToolsError = useContext(HostToolsContext)
 
-	return (
-	 <div className='hostToolbar'>
-		 <button className="hostToolButton" onClick={() => pauseMusic(cookie, updateHostToolsError)}>Pause</button>
-		 <button className="hostToolButton" onClick={() => resumeMusic(cookie, updateHostToolsError)}>Resume</button>
-		 <button className="hostToolButton" onClick={() => suspendQueue(cookie, updateHostToolsError)}>Suspend Queue</button>
-		 <button className="hostToolButton" onClick={() => resumeQueue(cookie, updateHostToolsError)}>Resume Queue</button>
-		 <div className='volumeSliderContainer'>
-		  <img className="volumeImage" src={volume_down} alt='Lower Volume'/>
-		  <input className="volumeSlider" title="Change Volume" type="range" onMouseUp={(e) => changeVolume(e.target.value, cookie, updateHostToolsError)}/>
-		  <img className="volumeImage" src={volume_up} alt='Raise Volume'/>
-		 </div>
-	 </div>
-	)
+	if (isHost) {
+		return (
+		<div className='hostToolbar'>
+			<button className="hostToolButton" onClick={() => pauseMusic(cookie, updateHostToolsError)}>Pause</button>
+			<button className="hostToolButton" onClick={() => resumeMusic(cookie, updateHostToolsError)}>Resume</button>
+			<button className="hostToolButton" onClick={() => suspendQueue(cookie, updateHostToolsError)}>Suspend Queue</button>
+			<button className="hostToolButton" onClick={() => resumeQueue(cookie, updateHostToolsError)}>Resume Queue</button>
+			<div className='volumeSliderContainer'>
+			<img className="volumeImage" src={volume_down} alt='Lower Volume'/>
+			<input className="volumeSlider" title="Change Volume" type="range" onMouseUp={(e) => changeVolume(e.target.value, cookie, updateHostToolsError)}/>
+			<img className="volumeImage" src={volume_up} alt='Raise Volume'/>
+			</div>
+		</div>
+		)
+	} else {
+		return <></>
+	}
 }
 
 /**
@@ -487,12 +494,11 @@ function DisplayedQueue() {
 	}, [hostToolsError]) 
 
 	/* DEBUG ONLY: whenever songs changes, change it back to test songs. */
-	// useEffect( () => {
-	// updateIsHost(true)
-	// updateSongs(TESTSONGS)
-	// }, [isHost, songs])
+	useEffect( () => {
+		updateIsHost(true)
+		// updateSongs(TESTSONGS)
+	}, [isHost, songs])
 
-	
 	return (
 	 <>
 	  
@@ -503,12 +509,12 @@ function DisplayedQueue() {
 
 	  {hostToolsError!==0 &&
 	   <>
-	    <h2>Error with Host Tools: Code 200</h2>
+	    <h2>Error with Host Tools: Code {hostToolsError}</h2>
 	   </>
 	  }
 
-	  {/*If you're a host, display the host controls*/}
-	  {isHost===true && HostToolsMenu()}
+	  {/*Display the host tools menu. It will only be visible if you're the host*/}
+	  <HostToolsMenu></HostToolsMenu>
 
 	  {/*Debug button for refreshing queue*/}
 	  {/*<button className="hostToolButton refreshButton" onClick={() => requestQueue(updateQueueError, updateSongs)}>Refresh Queue</button>*/}
