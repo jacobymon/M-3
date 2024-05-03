@@ -231,7 +231,7 @@ class UniversalQueue:
         else:
             return False
 
-    def set_suspend_toggle(self, flag):
+    def set_suspend_toggle(self, flag, cookie):
         """
         privileged host-only function
 
@@ -243,7 +243,7 @@ class UniversalQueue:
         """
         #MOCKED verify cookie is host's, would pass the cookie in from request instead
         #of self.cookie
-        if self.cookie_verifier(self.hostCookie):
+        if self.cookie_verifier(cookie):
 
             if flag == True:
                 self.suspend_toggle = True
@@ -333,13 +333,6 @@ def pause_route():
 def unpause_route():
     UQ.unpause_queue()
 
-@app.route('/remove_song', methods=['GET', 'POST'])
-@cross_origin()
-def remove_song():
-    id_to_remove = request.args.get('id')
-    cookie = request.args.get('cookie')
-    UQ.remove_from_queue(id, cookie)
-
 @app.route('/request_update', methods=['GET', 'POST'])
 @cross_origin()
 def update_visual_queue():
@@ -372,6 +365,25 @@ def verify_host():
             return [True, UQ.hostCookie]
         else:
             return [False, ""]
+
+@app.route('/remove_song', methods=['GET', 'POST'])
+@cross_origin()
+def remove_song():
+    id_to_remove = request.args.get('id')
+    cookie = request.args.get('cookie')
+    UQ.remove_from_queue(id, cookie)
+
+@app.route('/suspend_queue', methods=['GET', 'POST'])
+@cross_origin()
+def suspend_queue():
+    cookie = request.args.get('cookie')
+    UQ.set_suspend_toggle(True, cookie)
+
+@app.route('/unsuspend_queue', methods=['GET', 'POST'])
+@cross_origin()
+def unsuspend_queue():
+    cookie = request.args.get('cookie')
+    UQ.set_suspend_toggle(False, cookie)
 
 if __name__ == '__main__':
     with open('../m3-frontend/.env', 'w') as f_obj:

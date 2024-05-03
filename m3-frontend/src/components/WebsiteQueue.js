@@ -25,11 +25,11 @@ const VERIFY_HOST_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/verify
 const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_update`
 const REQUEST_QUEUE_UPDATE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/update_ui` //TODO, on backburner
 
-const DELETE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/remove_song` //TODO
+const DELETE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/remove_song` 
 
 const PAUSE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/pause` //TODO
 const RESUME_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unpause` //TODO
-const SUSPEND_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/suspend_queue` //TODO
+const SUSPEND_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/suspend_queue`
 const RESUME_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unsuspend_queue` //TODO
 const CHANGE_VOLUME_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/change_volume` //TODO, on backburner
 
@@ -203,7 +203,7 @@ async function suspendQueue(cookie, updateHostToolsError) {
 	// Return the status of the request
 
 	try {
-		const response = await axios.post(SUSPEND_QUEUE_CALL, { cookie }, {timeout:5000})
+		const response = await axios.post(SUSPEND_QUEUE_CALL + `?cookie=${cookie}`, null, {timeout:5000})
 
 		// Handle the response from here
 
@@ -227,7 +227,7 @@ async function resumeQueue(cookie, updateHostToolsError) {
 	// Return the status of the request
 
 	try {
-		const response = await axios.post(RESUME_QUEUE_CALL, { cookie }, {timeout:5000})
+		const response = await axios.post(RESUME_QUEUE_CALL + `?cookie=${cookie}`, null, {timeout:5000})
 
 		// Handle the response from here
 
@@ -249,7 +249,7 @@ async function pauseMusic(cookie, updateHostToolsError) {
 	// Return the status of the request
 
 	try {
-		const response = await axios.post(PAUSE_SONG_CALL, { cookie }, {timeout:5000})
+		const response = await axios.post(PAUSE_SONG_CALL + `?cookie=${cookie}`, null, {timeout:5000})
 
 		// Handle the response from here
 
@@ -271,7 +271,7 @@ async function resumeMusic(cookie, updateHostToolsError) {
 	// Return the status of the request
 
 	try {
-		const response = await axios.post(RESUME_SONG_CALL, { cookie }, {timeout:5000})
+		const response = await axios.post(RESUME_SONG_CALL + `?cookie=${cookie}`, null, {timeout:5000})
 
 		// Handle the response from here
 
@@ -298,7 +298,7 @@ async function changeVolume(vol, cookie, updateHostToolsError) {
 	
 	console.log(vol);
 	try {
-		const response = await axios.post(CHANGE_VOLUME_CALL, { vol, cookie }, {timeout:5000})
+		const response = await axios.post(CHANGE_VOLUME_CALL + `?vol=${vol}, cookie=${cookie}`, null, {timeout:5000})
 
 		// Handle the response from here
 

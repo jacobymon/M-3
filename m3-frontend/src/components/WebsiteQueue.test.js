@@ -12,6 +12,8 @@ jest.mock('axios');
 // axios.get.mockRejectedValue
 // == axios.get.mockImplementation(() => Promise.reject({ ... }));
 
+const RIGHT_COOKIE = "chocolate chip"
+
 const TESTSONG1 = {
 	"name": "All I Want For Christmas Is You",
 	"artist": "Mariah Carey",
@@ -36,7 +38,7 @@ const TESTSONG2 = {
 
 const AXIOS_ISHOST = {
 	status: 200,
-	data: [true, "chocolate chip"]
+	data: [true, RIGHT_COOKIE]
 }
 const AXIOS_ISNOTHOST = {
 	status: 200,
@@ -263,7 +265,8 @@ describe("Remove Song Button", () => {
 		fireEvent.click(remove_button);
 
 		expect(axios.post).toBeCalledTimes(1)
-		expect(axios.post.mock.calls[0][1].submissionID).toBe(TESTSONG1.submissionID)
+		expect(axios.post.mock.calls[0][0]).toContain("" +TESTSONG1.submissionID)
+		expect(axios.post.mock.calls[0][0]).toContain(RIGHT_COOKIE)
 
 	})
 })
