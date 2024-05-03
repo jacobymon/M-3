@@ -197,7 +197,7 @@ class UniversalQueue:
         """
         #IMPORTANT removal of first song starts playing next song is checked manually
         #IMPORTANT this operation is curretnly O(n). Look into making it O(1) with dictionary
-        if self.cookie_verifier(cookie):
+        if not self.cookie_verifier(cookie):
             for s in self.data:
                 if s.id == id:
                     #If we're removing the first item in the queue which is currently playing, just kill the
@@ -250,7 +250,7 @@ class UniversalQueue:
         """
         #MOCKED verify cookie is host's, would pass the cookie in from request instead
         #of self.cookie
-        if self.cookie_verifier(cookie):
+        if not self.cookie_verifier(cookie):
 
             if flag == True:
                 self.suspend_toggle = True
