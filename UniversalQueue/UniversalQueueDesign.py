@@ -177,7 +177,7 @@ class UniversalQueue:
         #except Exceptions as e:
              #send e to front end 
 
-    def remove_from_queue(self, id):
+    def remove_from_queue(self, id, cookie):
         """
          a privileged host-only function that removes songs from queue.
         removing the current song goes to the next song.
@@ -189,11 +189,9 @@ class UniversalQueue:
         @param index: index recieved from host corresponding song the want removed from queue
        
         """
-        #MOCKED verify cookie is host's, would pass the cookie in from request instead
-        #of self.cookie
         #IMPORTANT removal of first song starts playing next song is checked manually
         #IMPORTANT this operation is curretnly O(n). Look into making it O(1) with dictionary
-        if self.cookie_verifier(self.hostCookie):
+        if self.cookie_verifier(cookie):
             for s in self.data:
                 if s.id == id:
                     #If we're removing the first item in the queue which is currently playing, just kill the
@@ -334,6 +332,13 @@ def pause_route():
 @cross_origin()
 def unpause_route():
     UQ.unpause_queue()
+
+@app.route('/remove_song', methods=['GET', 'POST'])
+@cross_origin()
+def remove_song():
+    id_to_remove = request.args.get('id')
+    cookie = request.args.get('cookie')
+    UQ.remove_from_queue(id, cookie)
 
 @app.route('/request_update', methods=['GET', 'POST'])
 @cross_origin()

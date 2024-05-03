@@ -25,7 +25,7 @@ const VERIFY_HOST_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/verify
 const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_update`
 const REQUEST_QUEUE_UPDATE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/update_ui` //TODO, on backburner
 
-const DELETE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/delete_song` //TODO
+const DELETE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/remove_song` //TODO
 
 const PAUSE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/pause` //TODO
 const RESUME_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unpause` //TODO
@@ -179,11 +179,9 @@ async function requestQueueUpdates (updateQueueError, updateSongs) {
 async function removeSong(submissionID, cookie, updateHostToolsError) {
 
 	try {
-		const response = await axios.post(DELETE_SONG_CALL, {
-			submissionID, cookie
-		}, {timeout:5000})
-
-		// Handle the response from here
+		const response = await axios.post(DELETE_SONG_CALL
+											+`?id=${submissionID},`
+											+`?cookie=${cookie}`, null, {timeout:5000})
 
 		return response.status;
 	} catch (error) {
@@ -350,7 +348,7 @@ function DeleteButton(props) {
 	const cookie = useContext(CookieContext)
 	const updateHostToolsError = useContext(HostToolsContext);
 
-	if (isHost) {
+	if (isHost && props.submissionID !== 0) {
 		return <button 
 			data-testid="removeSongButton"
 			className="removeSongButton"
