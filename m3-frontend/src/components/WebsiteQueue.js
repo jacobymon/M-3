@@ -354,9 +354,9 @@ function DeleteButton(props) {
 			className="removeSongButton"
 			onClick={() => {removeSong(props.submissionID, cookie, updateHostToolsError)}}
 		>X</button>
-	} else {
-		return <></>
-	}
+	} 
+	return <></>
+	
 	
 }
 
@@ -384,9 +384,9 @@ function HostToolsMenu() {
 			</div>
 		</div>
 		)
-	} else {
-		return <></>
-	}
+	} 
+	return <></>
+	
 }
 
 /**
