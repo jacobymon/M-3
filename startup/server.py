@@ -141,6 +141,7 @@ class Server(object):
             pkg = NPMPackage(os.path.join(current_path, '../m3-frontend/package.json'), shell=True)
         else:
             pkg = NPMPackage(os.path.join(current_path, '../m3-frontend/package.json'))
+        pkg.install()
         pkg.run_script('start')
 
     
