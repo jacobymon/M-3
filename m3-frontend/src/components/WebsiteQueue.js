@@ -348,7 +348,7 @@ function DeleteButton(props) {
 	const cookie = useContext(CookieContext)
 	const updateHostToolsError = useContext(HostToolsContext);
 
-	if (isHost && props.submissionID !== 0) {
+	if (isHost && props.submissionID !== -1) {
 		return <button 
 			data-testid="removeSongButton"
 			className="removeSongButton"
@@ -473,7 +473,7 @@ function DisplayedQueue() {
 			// If too many requests fail in a row, notify the user
 			// The simplest solution is to create a fake "queue out of sync, please refresh" song
 			updateSongs([{
-				"submission_id": 0,
+				"submission_id": -1,
 				"name": "QUEUE OUT OF SYNC",
 				"artist": "please refresh the page",
 				"albumcover": ""
