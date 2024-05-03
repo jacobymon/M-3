@@ -140,7 +140,7 @@ class startup():
         elif self.OS == 'Mac':
             return self._is_spotify_installed_mac()
         else:
-            logging.error("OS not supported is found: %s", str(OS))
+            logging.error("OS not supported is found: %s", str(self.OS))
             return False
     
     def is_spotify_running(self):
@@ -184,7 +184,7 @@ class startup():
                     "An error occurred while starting Spotify on Mac: %s", e)
                 
         else:
-            logging.error("OS not supported is found: %s", str(OS))
+            logging.error("OS not supported is found: %s", str(self.OS))
         return
 
     def main(self):
