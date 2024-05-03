@@ -11,6 +11,7 @@ from server import Server
 
 path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(path + '/../UniversalQueue/Spotify_Interface')
+sys.path.append(path + '/../UniversalQueue')
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')

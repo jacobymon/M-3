@@ -4,15 +4,12 @@ import platform
 import socket
 import sys
 import threading
+import time
 import webbrowser
 
 import qrcode
 from flask import Flask
 from pynpm import NPMPackage
-
-path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(path + '/../UniversalQueue')
-# import UniversalQueueDesign
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -114,10 +111,10 @@ class Server(object):
             qr.add_data(self.url)
             qr.make(fit=True)
             
-            logging.info("Saving QR code image to 'qr_code.png'")
+            logging.info("Saving QR code image to 'qr-code.png'")
             img = qr.make_image(fill_color="black", back_color="white")
             current_path = os.path.dirname(__file__)
-            full_image_path = os.path.join(current_path, "..\m3-frontend\src\content\qr-code.png")
+            full_image_path = os.path.join(current_path, "../m3-frontend/src/content/qr-code.png")
             img.save(full_image_path)
             logging.info("QR code image saved successfully.")
 
@@ -157,27 +154,26 @@ class Server(object):
             logging.info("Website opened successfully.")
         else:
             logging.error("Failed to open website.")
-        
-        
-    def hello_world(self):
-        """ Dummy Function"""
-        return 'Hello World'
 
-    def main(self):
+    def run_backend(self):
+        import UniversalQueueDesign
         
+    def thread_run_backend(self):
         backend_thread = threading.Thread(target=self.run_backend, args=())
         backend_thread.start()
 
+    def main(self):
         server = Server()
         port = 3000 # server.select_available_port()
         ip = server._get_local_ip()
         server.url = "http://" + ip + ":" + str(port)
         server.generate_qr_code()
+        server.thread_run_backend()
+        time.sleep(5)
         server._react_run()
         server.open_website()
 
-    def run_backend(self):
-        import UniversalQueueDesign
+
 
 
 
