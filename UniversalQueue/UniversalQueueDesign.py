@@ -203,6 +203,7 @@ class UniversalQueue:
                     #current wait call on flush queue as it will remove the first item 
                     if s.id == self.data[0].id:
                         self.flush_exit.set()
+                        self.flush_exit.clear()
                     #If we're removing anything else, just remove it from the queue
                     else:
                         self.data.remove(s)
