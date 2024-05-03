@@ -117,30 +117,36 @@ class UniversalQueue:
 
             self.data = self.data[1:]
 
-    def pause_queue(self):
+    def pause_queue(self, cookie):
         """
         allows us to pause the queu and play the queue.
 
         @return bool: true when queue is paused, false when queue is unpaused
 
         """
+
+        if not self.cookie_is_valid(cookie):
+            raise ValueError('invalid id')
 
         if self.pause_toggle == False:
             self.pause_toggle = True
             
             self.spotify.pause()
             self.flush_exit.set()
+        
 
-        else:
-            print("Queue is already paused")
 
-    def unpause_queue(self):
+    def unpause_queue(self, cookie):
         """
         allows us to pause the queu and play the queue.
 
         @return bool: true when queue is paused, false when queue is unpaused
 
         """
+
+        if not self.cookie_is_valid(cookie):
+            raise ValueError('invalid id')
+
         if self.pause_toggle == True:
             self.pause_toggle = False 
             
@@ -176,7 +182,7 @@ class UniversalQueue:
         #except Exceptions as e:
              #send e to front end 
 
-    def remove_from_queue(self, id):
+    def remove_from_queue(self, id, cookie):
         """
          a privileged host-only function that removes songs from queue.
         removing the current song goes to the next song.
@@ -188,11 +194,9 @@ class UniversalQueue:
         @param index: index recieved from host corresponding song the want removed from queue
        
         """
-        #MOCKED verify cookie is host's, would pass the cookie in from request instead
-        #of self.cookie
         #IMPORTANT removal of first song starts playing next song is checked manually
         #IMPORTANT this operation is curretnly O(n). Look into making it O(1) with dictionary
-        if self.cookie_verifier(self.hostCookie):
+        if self.cookie_is_valid(cookie):
             for s in self.data:
                 if s.id == id:
                     #If we're removing the first item in the queue which is currently playing, just kill the
@@ -204,8 +208,10 @@ class UniversalQueue:
                         self.data.remove(s)
                     #write()
                     return
-            else:
-                raise ValueError('invalid id')
+            #If no song retuns
+            raise ValueError(f"id {id} was not a song in the queue")
+        else:
+            raise ValueError(f"Cookie {cookie} was invalid")
 
             # except:
             #     raise ValueError('invalid id')
@@ -213,7 +219,7 @@ class UniversalQueue:
 
        
 
-    def cookie_verifier(self, cookie):
+    def cookie_is_valid(self, cookie):
         """
         verifies that the privileged functions are being called by the host.
         throw error when return is false.
@@ -230,9 +236,10 @@ class UniversalQueue:
         if cookie == self.hostCookie:
             return True
         else:
+            print(f"Given cookie {cookie} did not match host cookie {self.hostCookie}")
             return False
 
-    def set_suspend_toggle(self, flag):
+    def set_suspend_toggle(self, flag, cookie):
         """
         privileged host-only function
 
@@ -244,7 +251,7 @@ class UniversalQueue:
         """
         #MOCKED verify cookie is host's, would pass the cookie in from request instead
         #of self.cookie
-        if self.cookie_verifier(self.hostCookie):
+        if self.cookie_is_valid(cookie):
 
             if flag == True:
                 self.suspend_toggle = True
@@ -347,8 +354,7 @@ def update_visual_queue():
                 'artist': UQ.data[i].artist,
                 'albumname': UQ.data[i].album,
                 'albumcover': UQ.data[i].image,
-                'submissionID': 1,
-                'id': ""
+                'submissionID': UQ.data[i].id,
                     }
         # print( "NAMENAMENAMENAMENAMENANEMEANE " + UQ.data[i].name, songObject['name'])
         data.append(songObject)
@@ -366,6 +372,42 @@ def verify_host():
             return [True, UQ.hostCookie]
         else:
             return [False, ""]
+
+@app.route('/remove_song', methods=['GET', 'POST'])
+@cross_origin()
+def remove_song():
+    id_to_remove = int(request.json['id'])
+    cookie =request.json['cookie']
+    UQ.remove_from_queue(id_to_remove, cookie)
+    return str(id)
+
+@app.route('/suspend_queue', methods=['GET', 'POST'])
+@cross_origin()
+def suspend_queue():
+    cookie =request.json['cookie']
+    UQ.set_suspend_toggle(True, cookie)
+    return ""
+
+@app.route('/unsuspend_queue', methods=['GET', 'POST'])
+@cross_origin()
+def unsuspend_queue():
+    cookie =request.json['cookie']
+    UQ.set_suspend_toggle(False, cookie)
+    return ""
+
+@app.route('/pause_music', methods=['GET', 'POST'])
+@cross_origin()
+def pause_music():
+    cookie =request.json['cookie']
+    UQ.pause_queue(cookie)
+    return ""
+
+@app.route('/unpause_music', methods=['GET', 'POST'])
+@cross_origin()
+def unpause_music():
+    cookie =request.json['cookie']
+    UQ.unpause_queue(cookie)
+    return ""
 
 with open(path + '/../m3-frontend/.env', 'w') as f_obj:
     f_obj.write('REACT_APP_BACKEND_IP="'+local_ip+'"')

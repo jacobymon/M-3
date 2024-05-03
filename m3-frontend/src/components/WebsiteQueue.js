@@ -16,23 +16,26 @@ import volume_up from "../content/volume_up.png"
 
 const MAX_QUEUE_RE_REQUESTS = 2;
 const WAIT_AFTER_FAILED_RQU = 60*1000 //miliseconds
-const HOSTTOOLS_WARNING_TIME = 5*1000 //miliseconds
+const HOSTTOOLS_WARNING_TIME = 15*1000 //miliseconds
 const QUEUE_POLLING_TIME = 1*1000 //miliseconds
+const RECHECK_ISHOST_TIME = 1*1000 //miliseconds
 
 const VERIFY_HOST_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/verify_host`
 
 const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_update`
-const REQUEST_QUEUE_UPDATE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/update_ui` //TODO
+const REQUEST_QUEUE_UPDATE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/update_ui` //TODO, on backburner
 
-const DELETE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/delete_song` //TODO
+const DELETE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/remove_song` 
 
-const PAUSE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/pause` //TODO
-const RESUME_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unpause` //TODO
-const SUSPEND_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/suspend_queue` //TODO
-const RESUME_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unsuspend_queue` //TODO
-const CHANGE_VOLUME_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/change_volume` //TODO
+const PAUSE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/pause_music` 
+const RESUME_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unpause_music` 
+const SUSPEND_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/suspend_queue`
+const RESUME_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/unsuspend_queue` 
+const CHANGE_VOLUME_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/change_volume` //TODO, on backburner
 
-const TESTSONGS = [
+
+// eslint-disable-next-line
+const TESTSONGS = [ // For making sure rendering works visually
 	{
 		"name": "All I Want For Christmas Is You",
 		"artist": "Mariah Carey",
@@ -65,7 +68,8 @@ async function verify_host(updateIsHost, updateCookie) {
 		updateIsHost(response.data[0]);
 		updateCookie(response.data[1]);
 	} catch (error) {
-		throw new Error("Host site is offline or not funcitoning.")
+		// Keep displaying the user UI, and rerequest soon.
+		setTimeout(() => {verify_host(updateIsHost, updateCookie)}, RECHECK_ISHOST_TIME)
 	}
 }
 
@@ -119,6 +123,8 @@ async function autoCallRequestQueue(updateQueueError, updateSongs) {
  * changes to the queue. If it gets a response, immedaitely set the displayed
  * queue to use the new up-to-date data.
  * 
+ * Not in use currently, temporarily using short polling instead.
+ * 
  * @param {function} updateQueueError The function to set a new error code (and
  * 										force the component to re-render)
  * @param {function} updateSongs The function from displayedQueue to change the data in
@@ -170,18 +176,17 @@ async function requestQueueUpdates (updateQueueError, updateSongs) {
  * 
  * @return {int} status of api call
  */
-async function removeSong(submissionID, cookie) {
+async function removeSong(submissionID, cookie, updateHostToolsError) {
 
 	try {
-		const response = await axios.post(DELETE_SONG_CALL, {
-			submissionID, cookie
-		}, {timeout:5000})
-
-		// Handle the response from here
+		const response = await axios.post(DELETE_SONG_CALL,
+											{"id":submissionID, "cookie":cookie}, 
+											{timeout:5000})
 
 		return response.status;
 	} catch (error) {
-		return error.response ? error.response : 500;
+		updateHostToolsError(error.status? error.status : 500)
+		return error.status? error.status : 500;
 	}
 }
 
@@ -192,22 +197,21 @@ async function removeSong(submissionID, cookie) {
  * 
  * @return {int} status of api call
  */
-async function suspendQueue(cookie) {
+async function suspendQueue(cookie, updateHostToolsError) {
 	// Send a suspend queue API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
 
 	try {
-		const response = await axios.post(SUSPEND_QUEUE_CALL, { cookie }, {timeout:5000})
+		const response = await axios.post(SUSPEND_QUEUE_CALL, {"cookie":cookie}, {timeout:5000})
 
 		// Handle the response from here
 
 		return response.status;
 	} catch (error) {
-		return error.response ? error.response : 500;
+		updateHostToolsError(error.status? error.status : 500)
+		return error.status? error.status : 500;
 	}
-
-	return 0;
 }
 
 /**
@@ -217,22 +221,21 @@ async function suspendQueue(cookie) {
  * 
  * @return {int} status of api call
  */
-async function resumeQueue(cookie) {
+async function resumeQueue(cookie, updateHostToolsError) {
 	// Send a resume queue API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
 
 	try {
-		const response = await axios.post(RESUME_QUEUE_CALL, { cookie }, {timeout:5000})
+		const response = await axios.post(RESUME_QUEUE_CALL, {"cookie":cookie}, {timeout:5000})
 
 		// Handle the response from here
 
 		return response.status;
 	} catch (error) {
-		return error.response ? error.response : 500;
+		updateHostToolsError(error.status? error.status : 500)
+		return error.status? error.status : 500;
 	}
-
-	return 0;
 }
 
 /**
@@ -240,22 +243,21 @@ async function resumeQueue(cookie) {
  * 
  * @return {int} status of api call
  */
-async function pauseMusic(cookie) {
+async function pauseMusic(cookie, updateHostToolsError) {
 	// Send a pause music API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
 
 	try {
-		const response = await axios.post(PAUSE_SONG_CALL, { cookie }, {timeout:5000})
+		const response = await axios.post(PAUSE_SONG_CALL, {"cookie":cookie}, {timeout:5000})
 
 		// Handle the response from here
 
 		return response.status;
 	} catch (error) {
-		return error.response ? error.response : 500;
+		updateHostToolsError(error.status? error.status : 500)
+		return error.status? error.status : 500;
 	}
-
-	return 0;
 }
 
 /**
@@ -263,32 +265,31 @@ async function pauseMusic(cookie) {
  * 
  * @return {int} status of api call
  */
-async function resumeMusic(cookie) {
+async function resumeMusic(cookie, updateHostToolsError) {
 	// Send a resume music API call to the universal queue.
 	// If failed: set hostToolsError to error
 	// Return the status of the request
 
 	try {
-		const response = await axios.post(RESUME_SONG_CALL, { cookie }, {timeout:5000})
+		const response = await axios.post(RESUME_SONG_CALL, {"cookie":cookie}, {timeout:5000})
 
 		// Handle the response from here
 
 		return response.status;
 	} catch (error) {
-		return error.response ? error.response : 500;
+		updateHostToolsError(error.status? error.status : 500)
+		return error.status? error.status : 500;
 	}
-
-	return 0;
 }
 
 /**
- * Sends a Pause API call to the Spotify class. 
+ * Sends a Change Volume API call to the Spotify class. 
  * 
  * @param {int} vol The volume to set the music to.
  * 
  * @return {int} status of api call
  */
-async function changeVolume(vol, cookie) {
+async function changeVolume(vol, cookie, updateHostToolsError) {
 	// TODO: no actual use for this until superusers
 
 	// Send a change volume API call to the universal queue.
@@ -297,15 +298,15 @@ async function changeVolume(vol, cookie) {
 	
 	console.log(vol);
 	try {
-		const response = await axios.post(CHANGE_VOLUME_CALL, { vol, cookie }, {timeout:5000})
+		const response = await axios.post(CHANGE_VOLUME_CALL, {"vol": vol,"cookie":cookie}, {timeout:5000})
 
 		// Handle the response from here
 
 		return response.status;
 	} catch (error) {
-		return error.response ? error.response : 500;
+		updateHostToolsError(error.status? error.status : 500)
+		return error.status? error.status : 500;
 	}
-	return 0;
 }
 
 // GUI functions
@@ -347,14 +348,45 @@ function DeleteButton(props) {
 	const cookie = useContext(CookieContext)
 	const updateHostToolsError = useContext(HostToolsContext);
 
-	if (isHost) {
+	if (isHost && props.submissionID !== -1) {
 		return <button 
 			data-testid="removeSongButton"
 			className="removeSongButton"
-			onClick={() => {removeSong(props.submissionID, cookie)}}
+			onClick={() => {removeSong(props.submissionID, cookie, updateHostToolsError)}}
 		>X</button>
-	}
+	} 
 	return <></>
+	
+	
+}
+
+/**
+ * React component to display host control tools.
+ * 
+ * @return HTML code for host tools.
+ */
+function HostToolsMenu() {
+	const isHost = useContext(IsHostContext)
+	const cookie = useContext(CookieContext)
+	const updateHostToolsError = useContext(HostToolsContext)
+
+	if (isHost) {
+		return (
+		<div className='hostToolbar'>
+			<button className="hostToolButton" onClick={() => pauseMusic(cookie, updateHostToolsError)}>Pause</button>
+			<button className="hostToolButton" onClick={() => resumeMusic(cookie, updateHostToolsError)}>Resume</button>
+			<button className="hostToolButton" onClick={() => suspendQueue(cookie, updateHostToolsError)}>Suspend Queue</button>
+			<button className="hostToolButton" onClick={() => resumeQueue(cookie, updateHostToolsError)}>Resume Queue</button>
+			<div className='volumeSliderContainer'>
+			<img className="volumeImage" src={volume_down} alt='Lower Volume'/>
+			<input className="volumeSlider" title="Change Volume" type="range" onMouseUp={(e) => changeVolume(e.target.value, cookie, updateHostToolsError)}/>
+			<img className="volumeImage" src={volume_up} alt='Raise Volume'/>
+			</div>
+		</div>
+		)
+	} 
+	return <></>
+	
 }
 
 /**
@@ -441,7 +473,7 @@ function DisplayedQueue() {
 			// If too many requests fail in a row, notify the user
 			// The simplest solution is to create a fake "queue out of sync, please refresh" song
 			updateSongs([{
-				"submission_id": 0,
+				"submission_id": -1,
 				"name": "QUEUE OUT OF SYNC",
 				"artist": "please refresh the page",
 				"albumcover": ""
@@ -459,44 +491,28 @@ function DisplayedQueue() {
 		)
 	}, [hostToolsError]) 
 
-	// /* DEBUG ONLY: whenever songs changes, change it back to test songs. */
-	// useEffect( () => {
-	// 	isHost = true;
-	// 	updateSongs(TESTSONGS)
-	// }, [songs])
-	
-	
+	/* DEBUG ONLY: whenever songs changes, change it back to test songs. */
+	useEffect( () => {
+		updateIsHost(true)
+		// updateSongs(TESTSONGS)
+	}, [isHost, songs])
+
 	return (
 	 <>
 	  
-	  {/* share isHost and cookie through the whole program*/}
+	  {/* share isHost and cookie through the whole component*/}
 	  <IsHostContext.Provider value={isHost}>
 	  <CookieContext.Provider value={cookie}>
+	  <HostToolsContext.Provider value={updateHostToolsError}>
 
 	  {hostToolsError!==0 &&
 	   <>
-	    {/*TODO Display the error message*/}
+	    <h2>Error with Host Tools: Code {hostToolsError}</h2>
 	   </>
 	  }
 
-	  {/*If you're a host, display the host controls*/}
-	  {isHost===true &&
-	   <>
-	    {/*TODO Buttons to start/stop the queue and play/pause the music
-		   and a slider to set volume*/}
-		<div className='hostToolbar'>
-		 <button className="hostToolButton" onClick={() => pauseMusic(cookie)}>Pause</button>
-		 <button className="hostToolButton" onClick={() => resumeMusic(cookie)}>Resume</button>
-		 <button className="hostToolButton" onClick={() => suspendQueue(cookie)}>Suspend Queue</button>
-		 <button className="hostToolButton" onClick={() => resumeQueue(cookie)}>Resume Queue</button>
-		 <div className='volumeSliderContainer'>
-		  <img className="volumeImage" src={volume_down} alt='Lower Volume'/>
-		  <input className="volumeSlider" title="Change Volume" type="range" onMouseUp={(e) => changeVolume(e.target.value, cookie)}/>
-		  <img className="volumeImage" src={volume_up} alt='Raise Volume'/>
-		 </div>
-		</div>
-	   </>
-	  }
+	  {/*Display the host tools menu. It will only be visible if you're the host*/}
+	  <HostToolsMenu></HostToolsMenu>
 
 	  {/*Debug button for refreshing queue*/}
 	  {/*<button className="hostToolButton refreshButton" onClick={() => requestQueue(updateQueueError, updateSongs)}>Refresh Queue</button>*/}
@@ -518,6 +534,7 @@ function DisplayedQueue() {
 	   )}
 	  </div>
 
+      </HostToolsContext.Provider>
 	  </CookieContext.Provider>
 	  </IsHostContext.Provider>
 
