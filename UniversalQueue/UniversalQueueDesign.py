@@ -209,6 +209,8 @@ class UniversalQueue:
                         self.data.remove(s)
                     #write()
                     return
+            #If no song retuns
+            raise ValueError(f"id {id} was not a song in the queue")
         else:
             raise ValueError(f"Cookie {cookie} was invalid")
 
@@ -353,8 +355,7 @@ def update_visual_queue():
                 'artist': UQ.data[i].artist,
                 'albumname': UQ.data[i].album,
                 'albumcover': UQ.data[i].image,
-                'submissionID': 1,
-                'id': ""
+                'submissionID': UQ.data[i].id,
                     }
         # print( "NAMENAMENAMENAMENAMENANEMEANE " + UQ.data[i].name, songObject['name'])
         data.append(songObject)
