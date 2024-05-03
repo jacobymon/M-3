@@ -203,7 +203,7 @@ async function suspendQueue(cookie, updateHostToolsError) {
 	// Return the status of the request
 
 	try {
-		const response = await axios.post(SUSPEND_QUEUE_CALL + `?cookie=${cookie}`, null, {timeout:5000})
+		const response = await axios.post(SUSPEND_QUEUE_CALL, {"cookie":cookie}, {timeout:5000})
 
 		// Handle the response from here
 
@@ -227,7 +227,7 @@ async function resumeQueue(cookie, updateHostToolsError) {
 	// Return the status of the request
 
 	try {
-		const response = await axios.post(RESUME_QUEUE_CALL + `?cookie=${cookie}`, null, {timeout:5000})
+		const response = await axios.post(RESUME_QUEUE_CALL, {"cookie":cookie}, {timeout:5000})
 
 		// Handle the response from here
 
@@ -249,7 +249,7 @@ async function pauseMusic(cookie, updateHostToolsError) {
 	// Return the status of the request
 
 	try {
-		const response = await axios.post(PAUSE_SONG_CALL + `?cookie=${cookie}`, null, {timeout:5000})
+		const response = await axios.post(PAUSE_SONG_CALL, {"cookie":cookie}, {timeout:5000})
 
 		// Handle the response from here
 
@@ -271,7 +271,7 @@ async function resumeMusic(cookie, updateHostToolsError) {
 	// Return the status of the request
 
 	try {
-		const response = await axios.post(RESUME_SONG_CALL + `?cookie=${cookie}`, null, {timeout:5000})
+		const response = await axios.post(RESUME_SONG_CALL, {"cookie":cookie}, {timeout:5000})
 
 		// Handle the response from here
 
@@ -298,7 +298,7 @@ async function changeVolume(vol, cookie, updateHostToolsError) {
 	
 	console.log(vol);
 	try {
-		const response = await axios.post(CHANGE_VOLUME_CALL + `?vol=${vol}, cookie=${cookie}`, null, {timeout:5000})
+		const response = await axios.post(CHANGE_VOLUME_CALL, {"vol": vol,"cookie":cookie}, {timeout:5000})
 
 		// Handle the response from here
 

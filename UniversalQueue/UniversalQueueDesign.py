@@ -210,7 +210,7 @@ class UniversalQueue:
                     #write()
                     return
         else:
-            raise ValueError('invalid id')
+            raise ValueError(f"Cookie {cookie} was invalid")
 
             # except:
             #     raise ValueError('invalid id')
@@ -235,7 +235,7 @@ class UniversalQueue:
         if cookie == self.hostCookie:
             return True
         else:
-            print("Given cookie {} did not match host cookie {}", cookie, self.hostCookie)
+            print(f"Given cookie {cookie} did not match host cookie {self.hostCookie}")
             return False
 
     def set_suspend_toggle(self, flag, cookie):
@@ -384,28 +384,28 @@ def remove_song():
 @app.route('/suspend_queue', methods=['GET', 'POST'])
 @cross_origin()
 def suspend_queue():
-    cookie = request.args.get('cookie')
+    cookie =request.json['cookie']
     UQ.set_suspend_toggle(True, cookie)
     return ""
 
 @app.route('/unsuspend_queue', methods=['GET', 'POST'])
 @cross_origin()
 def unsuspend_queue():
-    cookie = request.args.get('cookie')
+    cookie =request.json['cookie']
     UQ.set_suspend_toggle(False, cookie)
     return ""
 
 @app.route('/pause_music', methods=['GET', 'POST'])
 @cross_origin()
 def pause_music():
-    cookie = request.args.get('cookie')
+    cookie =request.json['cookie']
     UQ.pause_queue(cookie)
     return ""
 
 @app.route('/unpause_music', methods=['GET', 'POST'])
 @cross_origin()
 def unpause_music():
-    cookie = request.args.get('cookie')
+    cookie =request.json['cookie']
     UQ.unpause_queue(cookie)
     return ""
 
