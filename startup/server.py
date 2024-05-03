@@ -1,7 +1,10 @@
 import logging
 import os
+import platform
 import socket
+import sys
 import threading
+import time
 import webbrowser
 
 import qrcode
@@ -108,10 +111,10 @@ class Server(object):
             qr.add_data(self.url)
             qr.make(fit=True)
             
-            logging.info("Saving QR code image to 'qr_code.png'")
+            logging.info("Saving QR code image to 'qr-code.png'")
             img = qr.make_image(fill_color="black", back_color="white")
             current_path = os.path.dirname(__file__)
-            full_image_path = os.path.join(current_path, "..\m3-frontend\src\content\qr_code.png")
+            full_image_path = os.path.join(current_path, "../m3-frontend/src/content/qr-code.png")
             img.save(full_image_path)
             logging.info("QR code image saved successfully.")
 
@@ -119,20 +122,27 @@ class Server(object):
             logging.error("An error occurred: %s", e)
     
 
-    #def flask_configs(self, **configs):
-    #    for config, value in configs:
-    #        self.flask_app.config[config.upper()] = value
+    def _check_operating_system(self):
+        OS = platform.system()
+        if OS == 'Darwin':
+            logging.info("OS successfully retrieved: %s", "Mac")
+            return "Mac"
+        elif OS == 'Windows' or OS == 'Linux':
+            logging.info("OS successfully retrieved: %s", str(OS))
+            return platform.system()
+        else:
+            logging.error("OS not supported is found: %s", str(OS))
+            return ""
 
-    #def flask_add_endpoint(self, endpoint=None, endpoint_name=None, handler=None, methods=['GET'], *args, **kwargs):
-    #    self.flask_app.add_url_rule(endpoint, endpoint_name, handler, methods=methods, *args, **kwargs)
-
-    #def _flask_run(self, **kwargs):
-     #   self.flask_app.run(**kwargs)
-     #   return
-     #   
-    def _react_run():
-        pkg = NPMPackage('../m3-frontend/package.json', shell=True)
+    def _react_run(self):
+        operating_system = self._check_operating_system()
+        current_path = os.path.dirname(__file__)
+        if operating_system == 'Windows':
+            pkg = NPMPackage(os.path.join(current_path, '../m3-frontend/package.json'), shell=True)
+        else:
+            pkg = NPMPackage(os.path.join(current_path, '../m3-frontend/package.json'))
         pkg.run_script('start')
+
     
     def threaded_react_run(self, **kwargs):
         thread = threading.Thread(target=self._react_run, kwargs=kwargs)
@@ -144,11 +154,13 @@ class Server(object):
             logging.info("Website opened successfully.")
         else:
             logging.error("Failed to open website.")
+
+    def run_backend(self):
+        import UniversalQueueDesign
         
-        
-    def hello_world(self):
-        """ Dummy Function"""
-        return 'Hello World'
+    def thread_run_backend(self):
+        backend_thread = threading.Thread(target=self.run_backend, args=())
+        backend_thread.start()
 
     def main(self):
         server = Server()
@@ -156,8 +168,12 @@ class Server(object):
         ip = server._get_local_ip()
         server.url = "http://" + ip + ":" + str(port)
         server.generate_qr_code()
-        server.threaded_react_run()
+        server.thread_run_backend()
+        time.sleep(5)
+        server._react_run()
         server.open_website()
+
+
 
 
 

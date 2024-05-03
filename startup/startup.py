@@ -5,13 +5,13 @@ import subprocess
 import sys
 from os.path import exists
 
-import AppOpener
 import psutil
 import tekore as tk
 from server import Server
 
 path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(path + '/../UniversalQueue/Spotify_Interface')
+sys.path.append(path + '/../UniversalQueue')
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -159,6 +159,7 @@ class startup():
         OS = self._check_operating_system()
         if OS == 'Windows':
             try:
+                import AppOpener
                 AppOpener.open("spotify")
                 logging.info("Spotify started on Windows")
             except Exception as e:

@@ -1,25 +1,24 @@
 """ This module implements the Universal Queue class """
 from time import sleep
-""" This module allows us to log our errors"""
-import logging
 
-from flask import Flask, request 
-from flask_cors import CORS, cross_origin
- 
+""" This module allows us to log our errors"""
 import json
-import sys
+import logging
 import os
+import sys
+
+from flask import Flask, request
+from flask_cors import CORS, cross_origin
 
 path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(path +"/Spotify_Interface")
 
-from Spotify_Interface.spotify_interface_class import Spotify_Interface_Class
-from Song import Song
-
+import socket
 import threading
 
+from Song import Song
+from Spotify_Interface.spotify_interface_class import Spotify_Interface_Class
 
-import socket
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(("8.8.8.8", 80))
 local_ip = s.getsockname()[0]
@@ -410,9 +409,7 @@ def unpause_music():
     UQ.unpause_queue(cookie)
     return ""
 
-if __name__ == '__main__':
-    with open('../m3-frontend/.env', 'w') as f_obj:
-        f_obj.write('REACT_APP_BACKEND_IP="'+local_ip+'"')
+with open(path + '/../m3-frontend/.env', 'w') as f_obj:
+    f_obj.write('REACT_APP_BACKEND_IP="'+local_ip+'"')
 
-    app.run(host = '0.0.0.0', port=8080) 
-
+app.run(host = '0.0.0.0', port=8080) 
