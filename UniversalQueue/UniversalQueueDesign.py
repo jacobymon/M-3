@@ -335,7 +335,7 @@ def pause_route():
 def unpause_route():
     UQ.unpause_queue()
 
-@app.route('/request_update', methods=['GET', 'POST'])
+@app.route('/request_queue', methods=['GET', 'POST'])
 @cross_origin()
 def update_visual_queue():
 
@@ -357,6 +357,17 @@ def update_visual_queue():
     jsonData = json.dumps(data)
     # print('#################' + jsonData + '#################')
     return jsonData
+
+@app.route('/request_future_updates')
+def stream_queue_updates():
+    def eventStream():
+        while True:
+            return #TODO sleep until queue is updated
+            data = []
+            #TODO initialize all the queue JSON stuff
+            yield "data:{}\n\n".format(data)
+    # Returns a stream for events
+    return Response(eventStream(), mimetype="text/event-stream")
 
 @app.route('/verify_host', methods=['GET', 'POST'])
 @cross_origin()

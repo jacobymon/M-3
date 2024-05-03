@@ -22,8 +22,8 @@ const RECHECK_ISHOST_TIME = 1*1000 //miliseconds
 
 const VERIFY_HOST_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/verify_host`
 
-const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_update`
-const SSE_QUEUE_UPDATE_SOURCE = `http://${process.env.REACT_APP_BACKEND_IP}:8080/recieve_update`
+const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_queue`
+const SSE_QUEUE_UPDATE_SOURCE = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_future_updates`
 
 const DELETE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/delete_song` //TODO
 
