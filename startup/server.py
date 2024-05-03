@@ -13,8 +13,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 class Server(object):
 
-    def __init__(self, app = Flask(__name__), **configs):
+    def __init__(self, os, **configs):
         self.url = None
+        self.os = os
         
     def _get_local_ip(self): 
         """
@@ -63,22 +64,9 @@ class Server(object):
             logging.error("An error occurred: %s", e)
     
 
-    def _check_operating_system(self):
-        OS = platform.system()
-        if OS == 'Darwin':
-            logging.info("OS successfully retrieved: %s", "Mac")
-            return "Mac"
-        elif OS == 'Windows' or OS == 'Linux':
-            logging.info("OS successfully retrieved: %s", str(OS))
-            return platform.system()
-        else:
-            logging.error("OS not supported is found: %s", str(OS))
-            return ""
-
     def react_run(self):
-        operating_system = self._check_operating_system()
         current_path = os.path.dirname(__file__)
-        if operating_system == 'Windows':
+        if self.os == 'Windows':
             pkg = NPMPackage(os.path.join(current_path, '../m3-frontend/package.json'), shell=True)
         else:
             pkg = NPMPackage(os.path.join(current_path, '../m3-frontend/package.json'))
@@ -94,7 +82,7 @@ class Server(object):
         backend_thread.start()
 
     def main(self):
-        server = Server()
+        server = Server(self.os)
         port = 3000 
         ip = server._get_local_ip()
         server.url = "http://" + ip + ":" + str(port)

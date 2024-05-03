@@ -1,4 +1,5 @@
 import os
+
 path = os.path.dirname(os.path.abspath(__file__))
 requirements_path = path + '/../requirements.txt'
 os.system("pip install -r " + requirements_path)
@@ -21,7 +22,7 @@ logging.basicConfig(level=logging.INFO,
 
 class startup():
     def __init__(self):
-        return
+        self.OS = self._check_operating_system()
     
     def _create_config_file(self):
         path = os.path.dirname(os.path.abspath(__file__))
@@ -132,12 +133,11 @@ class startup():
             return False
 
     def is_spotify_installed(self):
-        OS = self._check_operating_system()
-        if OS == 'Windows':
+        if self.OS == 'Windows':
             return self._is_spotify_installed_windows()
-        elif OS == 'Linux':
+        elif self.OS == 'Linux':
             return self._is_spotify_installed_linux()
-        elif OS == 'Mac':
+        elif self.OS == 'Mac':
             return self._is_spotify_installed_mac()
         else:
             logging.error("OS not supported is found: %s", str(OS))
@@ -158,8 +158,7 @@ class startup():
     
     def start_spotify(self):
         """ Starts Spotify on the user's machine """
-        OS = self._check_operating_system()
-        if OS == 'Windows':
+        if self.OS == 'Windows':
             try:
                 import AppOpener
                 AppOpener.open("spotify")
@@ -168,7 +167,7 @@ class startup():
                 logging.error(
                     "An error occurred while starting Spotify on Windows: %s", e)
 
-        elif OS == 'Linux':
+        elif self.OS == 'Linux':
             try:
                 subprocess.run(["spotify"])
                 logging.info("Spotify started on Linux")
@@ -176,7 +175,7 @@ class startup():
                 logging.error(
                     "An error occurred while starting Spotify on Linux: %s", e)
                 
-        elif OS == 'Mac':
+        elif self.OS == 'Mac':
             try:
                 subprocess.run(["open", "spotify://"])
                 logging.info("Spotify started on Mac")
@@ -200,7 +199,7 @@ class startup():
         if not self.is_account_premium():
             print("You have to upgrade your Spotify account to premium first")
             return
-        website_server = Server()
+        website_server = Server(self.OS)
         website_server.main()
 
 
