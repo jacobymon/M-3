@@ -133,6 +133,7 @@ class UniversalQueue:
             
             self.spotify.pause()
             self.flush_exit.set()
+            self.flush_exit.clear()
         
 
 
@@ -152,6 +153,7 @@ class UniversalQueue:
             
             self.spotify.unpause()
             self.pause_exit.set()
+            self.pause_exit.clear()
 
 
 
