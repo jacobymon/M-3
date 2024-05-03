@@ -181,7 +181,7 @@ async function removeSong(submissionID, cookie, updateHostToolsError) {
 	try {
 		const response = await axios.post(DELETE_SONG_CALL
 											+`?id=${submissionID},`
-											+`?cookie=${cookie}`, null, {timeout:5000})
+											+`cookie=${cookie}`, null, {timeout:5000})
 
 		return response.status;
 	} catch (error) {
