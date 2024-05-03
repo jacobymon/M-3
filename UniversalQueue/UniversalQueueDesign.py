@@ -312,13 +312,18 @@ def return_results():
 @cross_origin()
 def return_results_from_url():
     url = request.args.get('spotify_url')
-    response = {'spotify_url': UQ.spotify.from_url(url)}
+    # response = {'spotify_url': UQ.spotify.from_url(url)}
 
-    song_data = json.dumps(response)
+    print(UQ.spotify.from_url(url)['results'][0])
+    pre_dump = {
+        'status': 200,
+        'search_results': UQ.spotify.from_url(url)['results'][0]
+    }
+    song_data = json.dumps(pre_dump)
+    print(song_data)
     song = Song(song_data)
 
     UQ.insert(song)
-    print(song_data)
     return song_data
 
 @app.route('/submit_song', methods=['GET', 'POST'])
