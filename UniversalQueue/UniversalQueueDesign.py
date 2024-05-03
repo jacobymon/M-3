@@ -67,6 +67,8 @@ class UniversalQueue:
 
         self.pause_exit = threading.Event()
 
+        self.queue_update_exit = threading.Event()
+
     def insert(self, song): 
         """
         When queue not suspended
@@ -362,10 +364,22 @@ def update_visual_queue():
 def stream_queue_updates():
     def eventStream():
         while True:
-            return #TODO sleep until queue is updated
+            # wait until the UQ sends a queue_update event
+            UQ.queue_update_exit.wait()
+            # TODO: call UQ.flush_exit.set() and UQ.flush_exit.clear()
+            # whenever the queue changes
             data = []
-            #TODO initialize all the queue JSON stuff
-            yield "data:{}\n\n".format(data)
+            for i in range(len(UQ.data)):
+                songObject = {
+                        'name': UQ.data[i].name,
+                        'artist': UQ.data[i].artist,
+                        'albumname': UQ.data[i].album,
+                        'albumcover': UQ.data[i].image,
+                        'submissionID': 1,
+                        'id': ""
+                            }
+                data.append(songObject)
+            yield "data:{}\n\n".format(data) 
     # Returns a stream for events
     return Response(eventStream(), mimetype="text/event-stream")
 
