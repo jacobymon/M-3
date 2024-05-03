@@ -2,10 +2,8 @@ import logging
 import os
 import platform
 import socket
-import sys
 import threading
 import time
-import webbrowser
 
 import qrcode
 from flask import Flask
@@ -77,7 +75,7 @@ class Server(object):
             logging.error("OS not supported is found: %s", str(OS))
             return ""
 
-    def _react_run(self):
+    def react_run(self):
         operating_system = self._check_operating_system()
         current_path = os.path.dirname(__file__)
         if operating_system == 'Windows':
@@ -87,18 +85,7 @@ class Server(object):
         pkg.install()
         pkg.run_script('start')
 
-    
-    def threaded_react_run(self, **kwargs):
-        thread = threading.Thread(target=self._react_run, kwargs=kwargs)
-        thread.start()
         
-    
-    def open_website(self):
-        if webbrowser.open(self.url):
-            logging.info("Website opened successfully.")
-        else:
-            logging.error("Failed to open website.")
-
     def run_backend(self):
         import UniversalQueueDesign
         
@@ -108,14 +95,13 @@ class Server(object):
 
     def main(self):
         server = Server()
-        port = 3000 # server.select_available_port()
+        port = 3000 
         ip = server._get_local_ip()
         server.url = "http://" + ip + ":" + str(port)
         server.generate_qr_code()
         server.thread_run_backend()
         time.sleep(5)
-        server._react_run()
-        server.open_website()
+        server.react_run()
 
 
 
