@@ -126,7 +126,7 @@ class UniversalQueue:
 
         """
 
-        if self.cookie_is_valid(cookie):
+        if not self.cookie_is_valid(cookie):
             raise ValueError('invalid id')
 
         if self.pause_toggle == False:
@@ -145,7 +145,7 @@ class UniversalQueue:
 
         """
 
-        if self.cookie_is_valid(cookie):
+        if not self.cookie_is_valid(cookie):
             raise ValueError('invalid id')
 
         if self.pause_toggle == True:
