@@ -101,8 +101,14 @@ class UniversalQueue:
         #when song is finished delete it from queue
         #call update_UI()
         #call write()
+
+        just_unpaused = False
+
         while len(self.data) != 0:
-            self.spotify.play(self.data[0].uri)
+            if just_unpaused == False:
+                self.spotify.play(self.data[0].uri)
+            else: 
+                just_unpaused = False
             self.flush_exit.wait((self.data[0].s_len / 1000))
             print("WAIT ENDED")
 
@@ -110,11 +116,10 @@ class UniversalQueue:
                 remaining_time = self.data[0].s_len - self.spotify.get_current_playback_info().progress_ms
                 self.data[0].s_len = remaining_time
                 self.pause_exit.wait()
+                just_unpaused = True
+
                 continue
-                
-
-
-
+            
             self.data = self.data[1:]
 
     def pause_queue(self, cookie):
