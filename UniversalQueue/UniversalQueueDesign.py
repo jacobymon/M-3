@@ -209,8 +209,8 @@ class UniversalQueue:
                         self.data.remove(s)
                     #write()
                     return
-            else:
-                raise ValueError('invalid id')
+        else:
+            raise ValueError('invalid id')
 
             # except:
             #     raise ValueError('invalid id')
@@ -235,6 +235,7 @@ class UniversalQueue:
         if cookie == self.hostCookie:
             return True
         else:
+            print("Given cookie {} did not match host cookie {}", cookie, self.hostCookie)
             return False
 
     def set_suspend_toggle(self, flag, cookie):
