@@ -1,5 +1,8 @@
-import logging
 import os
+path = os.path.dirname(os.path.abspath(__file__))
+requirements_path = path + '/../requirements.txt'
+os.system("pip install -r " + requirements_path)
+import logging
 import platform
 import subprocess
 import sys
@@ -9,7 +12,6 @@ import psutil
 import tekore as tk
 from server import Server
 
-path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(path + '/../UniversalQueue/Spotify_Interface')
 sys.path.append(path + '/../UniversalQueue')
 

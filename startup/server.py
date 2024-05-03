@@ -13,10 +13,6 @@ from pynpm import NPMPackage
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-#TODO make it thread safe and find a way to exit the thread when we terminate the application
-#TODO Improve docstrings
-#TODO Remove Hello World and integrate with the rest
-
 class Server(object):
 
     def __init__(self, app = Flask(__name__), **configs):
@@ -42,60 +38,7 @@ class Server(object):
             finally:
                 UDP_socket.close()
         except socket.error as e:
-            logging.error("Socket creation failed: %s", str(e))
-        
-
-    def _check_port_availability(self, port):
-        """
-        Checks if the specified port is available for use.
-        
-        Args:
-            port (int): The port number to check.
-        
-        Returns:
-            bool: True if the port is available, False otherwise.
-        
-        Raises:
-            socket.error: If there is an error creating the socket or binding to the port.
-        """
-        try:
-            soket_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            try:
-                soket_connection.bind(('0.0.0.0', port))
-                logging.info("Port %s is available", port)
-                soket_connection.close()
-                return True
-            except socket.error as e:
-                logging.info("Port %s caused the error %s", str(port), str(e))
-                return False
-        except socket.error as e:
-            logging.error("Socket creation failed: %s", str(e))
-            
-            
-        
-    def select_available_port(self):
-        """
-        Selects an available port within the range from 8000 to 8100
-            
-        Returns:
-            int: The first available port found within the specified range.
-        
-        Raises:
-            Exception: If no available port is found within the specified range.
-        """
-        
-        startPort = 8000
-        endPort = 8100
-        selectedPort = 0
-        for port in range(startPort, endPort + 1):
-            if self._check_port_availability(port):
-                selectedPort = port
-                return selectedPort
-
-        if selectedPort == 0:
-            raise Exception("No available port found.")
-
-        
+            logging.error("Socket creation failed: %s", str(e))       
         
     """
         Generates a QR code from the provided URL and saves it as an image file.
@@ -173,8 +116,6 @@ class Server(object):
         time.sleep(5)
         server._react_run()
         server.open_website()
-
-
 
 
 
