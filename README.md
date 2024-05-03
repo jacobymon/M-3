@@ -19,7 +19,7 @@ To use the program, you have to set up a Spotify Web ApI on [Spotify Developers 
 - Only the first time you run startup.py:
     - It will install dependent packages, so it will take a few minutes.
     - You will be prompted to enter Client ID, Client secret, and Redirect URI to authorize your account and create an access token. After you enter those 3 credentials, you will be directed into your spotify account to authorize the app to play songs. After you accept the authorization, you will be directed to your Redirect URI, and the URL will have the authorization cookie appended to it. Copy the entire URL and paste it as prompted.
-Then, your default browser will open the Web Application!
-Other members can join by scanning the QR code or copying the URL as long as they are connected to the same network.
+- Then, your default browser will open the Web Application!
+- Other members can join by scanning the QR code or copying the URL as long as they are connected to the same network.
 
 
