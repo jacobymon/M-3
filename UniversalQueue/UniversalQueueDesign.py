@@ -376,8 +376,8 @@ def verify_host():
 @app.route('/remove_song', methods=['GET', 'POST'])
 @cross_origin()
 def remove_song():
-    id_to_remove = request.args.get('id')
-    cookie = request.args.get('cookie')
+    id_to_remove = request.json['id']
+    cookie =request.json['cookie']
     UQ.remove_from_queue(id, cookie)
     return str(id)
 
