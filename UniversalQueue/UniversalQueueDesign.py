@@ -378,30 +378,35 @@ def remove_song():
     id_to_remove = request.args.get('id')
     cookie = request.args.get('cookie')
     UQ.remove_from_queue(id, cookie)
+    return id
 
 @app.route('/suspend_queue', methods=['GET', 'POST'])
 @cross_origin()
 def suspend_queue():
     cookie = request.args.get('cookie')
     UQ.set_suspend_toggle(True, cookie)
+    return True
 
 @app.route('/unsuspend_queue', methods=['GET', 'POST'])
 @cross_origin()
 def unsuspend_queue():
     cookie = request.args.get('cookie')
     UQ.set_suspend_toggle(False, cookie)
+    return True
 
 @app.route('/pause_music', methods=['GET', 'POST'])
 @cross_origin()
 def pause_music():
     cookie = request.args.get('cookie')
     UQ.pause_queue(cookie)
+    return True
 
 @app.route('/unpause_music', methods=['GET', 'POST'])
 @cross_origin()
 def unpause_music():
     cookie = request.args.get('cookie')
     UQ.unpause_queue(cookie)
+    return True
 
 if __name__ == '__main__':
     with open('../m3-frontend/.env', 'w') as f_obj:
