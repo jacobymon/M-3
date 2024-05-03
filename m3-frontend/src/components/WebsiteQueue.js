@@ -23,7 +23,7 @@ const RECHECK_ISHOST_TIME = 1*1000 //miliseconds
 const VERIFY_HOST_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/verify_host`
 
 const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_update`
-const REQUEST_QUEUE_UPDATE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/update_ui` //TODO, on backburner
+const SSE_QUEUE_UPDATE_SOURCE = `http://${process.env.REACT_APP_BACKEND_IP}:8080/recieve_update`
 
 const DELETE_SONG_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/delete_song` //TODO
 
@@ -117,55 +117,6 @@ async function autoCallRequestQueue(updateQueueError, updateSongs) {
 		requestQueue(updateQueueError, updateSongs)
 	}
 }
-
-/**
- * Sends a request to the Universal Queue to notify this website instance of any
- * changes to the queue. If it gets a response, immedaitely set the displayed
- * queue to use the new up-to-date data.
- * 
- * Not in use currently, temporarily using short polling instead.
- * 
- * @param {function} updateQueueError The function to set a new error code (and
- * 										force the component to re-render)
- * @param {function} updateSongs The function from displayedQueue to change the data in
- * 									songs (and re-render the displayed queue)
- */
-async function requestQueueUpdates (updateQueueError, updateSongs) {
-	function sleep(ms) {return new Promise(resolve => setTimeout(resolve, ms))}
-
-	while(true) {
-		try {
-			// it could take minutes to get this response, since it 
-			// only gets returned once the queue changes.
-
-			const response = await axios.get(REQUEST_QUEUE_UPDATE_CALL);
-
-			// Handle response here
-
-			updateSongs(response.data);
-			updateQueueError(0) // all is well
-		} catch (error) {
-			var errorcode;
-			if (error.status) errorcode = error.status;
-			else errorcode = 500;
-
-			if (errorcode === 408) { //Request Timeout
-				/* Our request timed out (too long without the Unversal Queue updating),
-				* but we still want to be notified of updates, so request again 
-				* immedaitely.*/
-				// do nothing and loop back
-			} else if (errorcode === 429 ) { //Too many requests
-				/* The server is under strain, so don't make a request for a while.*/
-				await sleep(WAIT_AFTER_FAILED_RQU)
-			} else {
-				/* Something unexpected has happened, set an actual error */
-				updateQueueError(errorcode)
-				//Sleep for WAIT_AFTER_FAILED_RQU seconds
-				await sleep(WAIT_AFTER_FAILED_RQU)
-			}
-		}
-	}
-};
 
 /**
  * Sends a Remove from Queue API call to the Universal Queue. 
@@ -446,11 +397,17 @@ function DisplayedQueue() {
 	}, [])
 
 	
-	// On startup, start an async function to request any updates to the queue
+	// On startup, open an event handler for queue updates from the server
 	useEffect( () => {
-		// TEMP - long polling won't work on backend, so just short polling
-		// requestQueueUpdates(updateQueueError, updateSongs)
-		autoCallRequestQueue(updateQueueError, updateSongs)
+		// create a new connection to the server
+		const queueUpdatesSource = new EventSource(SSE_QUEUE_UPDATE_SOURCE);
+		// Add a handler
+		queueUpdatesSource.onmessage = (event) => {
+			const songs = JSON.parse(event.data)
+			updateSongs(songs)
+		}
+		// when the component unmounts, remove the connection
+		return () => queueUpdatesSource.close()
 	}, [])
 
 	/* When queueError changes (aka using useEffect({},[queueError])),
@@ -546,6 +503,6 @@ function DisplayedQueue() {
 export default DisplayedQueue;
 
 // For testing only
-export {requestQueue, requestQueueUpdates};
+export {requestQueue};
 export {Song};
 export {VERIFY_HOST_CALL, REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL};
