@@ -103,22 +103,6 @@ async function requestQueue(updateQueueError, updateSongs) {
 }
 
 /**
- * Short Polling - poll the server every so often to update the queue
- * 
- * @param {function} updateQueueError The function to set a new error code (and
- * 										force the component to re-render)
- * @param {function} updateSongs The function from displayedQueue to change the data in
- * 									songs (and re-render the displayed queue)
- */
-async function autoCallRequestQueue(updateQueueError, updateSongs) {
-	function sleep(ms) {return new Promise(resolve => setTimeout(resolve, ms))}
-	while (true) {
-		await sleep(QUEUE_POLLING_TIME)
-		requestQueue(updateQueueError, updateSongs)
-	}
-}
-
-/**
  * Sends a Remove from Queue API call to the Universal Queue. 
  * 
  * This will remove the specified instance of that song from the queue, and then result in the Universal Queue sending back an Update Queue call.
