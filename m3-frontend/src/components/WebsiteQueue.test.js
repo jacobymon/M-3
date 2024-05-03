@@ -1,9 +1,12 @@
-import { render, screen, fireEvent, act} from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import axios from 'axios';
 
-import DisplayedQueue, {requestQueue, requestQueueUpdates,
-	REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL, VERIFY_HOST_CALL,
-	Song } from './WebsiteQueue';
+import DisplayedQueue, {
+	REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL,
+	Song,
+	VERIFY_HOST_CALL,
+	requestQueue, requestQueueUpdates
+} from './WebsiteQueue';
 
 jest.mock('axios');
 
@@ -265,8 +268,8 @@ describe("Remove Song Button", () => {
 		fireEvent.click(remove_button);
 
 		expect(axios.post).toBeCalledTimes(1)
-		expect(axios.post.mock.calls[0][0]).toContain("" +TESTSONG1.submissionID)
-		expect(axios.post.mock.calls[0][0]).toContain(RIGHT_COOKIE)
+		expect(axios.post.mock.calls[0][1]['id']).toBe(TESTSONG1.submissionID)
+		expect(axios.post.mock.calls[0][1]['cookie']).toBe(RIGHT_COOKIE)
 
 	})
 })
