@@ -118,30 +118,36 @@ class UniversalQueue:
 
             self.data = self.data[1:]
 
-    def pause_queue(self):
+    def pause_queue(self, cookie):
         """
         allows us to pause the queu and play the queue.
 
         @return bool: true when queue is paused, false when queue is unpaused
 
         """
+
+        if not self.cookie_verifier(cookie):
+            raise ValueError('invalid id')
 
         if self.pause_toggle == False:
             self.pause_toggle = True
             
             self.spotify.pause()
             self.flush_exit.set()
+        
 
-        else:
-            print("Queue is already paused")
 
-    def unpause_queue(self):
+    def unpause_queue(self, cookie):
         """
         allows us to pause the queu and play the queue.
 
         @return bool: true when queue is paused, false when queue is unpaused
 
         """
+
+        if not self.cookie_verifier(cookie):
+            raise ValueError('invalid id')
+
         if self.pause_toggle == True:
             self.pause_toggle = False 
             
@@ -384,6 +390,18 @@ def suspend_queue():
 def unsuspend_queue():
     cookie = request.args.get('cookie')
     UQ.set_suspend_toggle(False, cookie)
+
+@app.route('/pause_music', methods=['GET', 'POST'])
+@cross_origin()
+def pause_music():
+    cookie = request.args.get('cookie')
+    UQ.pause_queue(cookie)
+
+@app.route('/unpause_music', methods=['GET', 'POST'])
+@cross_origin()
+def unpause_music():
+    cookie = request.args.get('cookie')
+    UQ.unpause_queue(cookie)
 
 if __name__ == '__main__':
     with open('../m3-frontend/.env', 'w') as f_obj:
