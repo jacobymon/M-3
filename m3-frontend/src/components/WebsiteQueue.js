@@ -185,8 +185,8 @@ async function removeSong(submissionID, cookie, updateHostToolsError) {
 
 		return response.status;
 	} catch (error) {
-		updateHostToolsError(error.response? error.response : 500)
-		return error.response ? error.response : 500;
+		updateHostToolsError(error.status? error.status : 500)
+		return error.status? error.status : 500;
 	}
 }
 
@@ -209,8 +209,8 @@ async function suspendQueue(cookie, updateHostToolsError) {
 
 		return response.status;
 	} catch (error) {
-		updateHostToolsError(error.response? error.response : 500)
-		return error.response ? error.response : 500;
+		updateHostToolsError(error.status? error.status : 500)
+		return error.status? error.status : 500;
 	}
 }
 
@@ -233,8 +233,8 @@ async function resumeQueue(cookie, updateHostToolsError) {
 
 		return response.status;
 	} catch (error) {
-		updateHostToolsError(error.response? error.response : 500)
-		return error.response ? error.response : 500;
+		updateHostToolsError(error.status? error.status : 500)
+		return error.status? error.status : 500;
 	}
 }
 
@@ -255,8 +255,8 @@ async function pauseMusic(cookie, updateHostToolsError) {
 
 		return response.status;
 	} catch (error) {
-		updateHostToolsError(error.response? error.response : 500)
-		return error.response ? error.response : 500;
+		updateHostToolsError(error.status? error.status : 500)
+		return error.status? error.status : 500;
 	}
 }
 
@@ -277,8 +277,8 @@ async function resumeMusic(cookie, updateHostToolsError) {
 
 		return response.status;
 	} catch (error) {
-		updateHostToolsError(error.response? error.response : 500)
-		return error.response ? error.response : 500;
+		updateHostToolsError(error.status? error.status : 500)
+		return error.status? error.status : 500;
 	}
 }
 
@@ -304,8 +304,8 @@ async function changeVolume(vol, cookie, updateHostToolsError) {
 
 		return response.status;
 	} catch (error) {
-		updateHostToolsError(error.response? error.response : 500)
-		return error.response ? error.response : 500;
+		updateHostToolsError(error.status? error.status : 500)
+		return error.status? error.status : 500;
 	}
 }
 
