@@ -126,7 +126,7 @@ class UniversalQueue:
 
         """
 
-        if not self.cookie_verifier(cookie):
+        if self.cookie_is_valid(cookie):
             raise ValueError('invalid id')
 
         if self.pause_toggle == False:
@@ -145,7 +145,7 @@ class UniversalQueue:
 
         """
 
-        if not self.cookie_verifier(cookie):
+        if self.cookie_is_valid(cookie):
             raise ValueError('invalid id')
 
         if self.pause_toggle == True:
@@ -197,7 +197,7 @@ class UniversalQueue:
         """
         #IMPORTANT removal of first song starts playing next song is checked manually
         #IMPORTANT this operation is curretnly O(n). Look into making it O(1) with dictionary
-        if not self.cookie_verifier(cookie):
+        if self.cookie_is_valid(cookie):
             for s in self.data:
                 if s.id == id:
                     #If we're removing the first item in the queue which is currently playing, just kill the
@@ -218,7 +218,7 @@ class UniversalQueue:
 
        
 
-    def cookie_verifier(self, cookie):
+    def cookie_is_valid(self, cookie):
         """
         verifies that the privileged functions are being called by the host.
         throw error when return is false.
@@ -250,7 +250,7 @@ class UniversalQueue:
         """
         #MOCKED verify cookie is host's, would pass the cookie in from request instead
         #of self.cookie
-        if not self.cookie_verifier(cookie):
+        if self.cookie_is_valid(cookie):
 
             if flag == True:
                 self.suspend_toggle = True
@@ -376,9 +376,9 @@ def verify_host():
 @app.route('/remove_song', methods=['GET', 'POST'])
 @cross_origin()
 def remove_song():
-    id_to_remove = request.json['id']
+    id_to_remove = int(request.json['id'])
     cookie =request.json['cookie']
-    UQ.remove_from_queue(id, cookie)
+    UQ.remove_from_queue(id_to_remove, cookie)
     return str(id)
 
 @app.route('/suspend_queue', methods=['GET', 'POST'])
