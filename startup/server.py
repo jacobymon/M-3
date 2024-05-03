@@ -12,7 +12,7 @@ from pynpm import NPMPackage
 
 path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(path + '/../UniversalQueue')
-import UniversalQueueDesign
+# import UniversalQueueDesign
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -164,6 +164,10 @@ class Server(object):
         return 'Hello World'
 
     def main(self):
+        
+        backend_thread = threading.Thread(target=self.run_backend, args=())
+        backend_thread.start()
+
         server = Server()
         port = 3000 # server.select_available_port()
         ip = server._get_local_ip()
@@ -171,6 +175,9 @@ class Server(object):
         server.generate_qr_code()
         server._react_run()
         server.open_website()
+
+    def run_backend(self):
+        import UniversalQueueDesign
 
 
 

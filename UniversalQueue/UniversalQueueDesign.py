@@ -368,9 +368,7 @@ def verify_host():
         else:
             return [False, ""]
 
-if __name__ == '__main__':
-    with open('../m3-frontend/.env', 'w') as f_obj:
-        f_obj.write('REACT_APP_BACKEND_IP="'+local_ip+'"')
+with open('../m3-frontend/.env', 'w') as f_obj:
+    f_obj.write('REACT_APP_BACKEND_IP="'+local_ip+'"')
 
-    app.run(host = '0.0.0.0', port=8080) 
-
+app.run(host = '0.0.0.0', port=8080) 
