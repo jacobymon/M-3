@@ -1,6 +1,5 @@
 import logging
 import os
-import platform
 import socket
 import threading
 import time
@@ -66,10 +65,11 @@ class Server(object):
 
     def react_run(self):
         current_path = os.path.dirname(__file__)
+        full_package_json_path = os.path.join(current_path, '../m3-frontend/package.json')
         if self.os == 'Windows':
-            pkg = NPMPackage(os.path.join(current_path, '../m3-frontend/package.json'), shell=True)
+            pkg = NPMPackage(full_package_json_path, shell=True)
         else:
-            pkg = NPMPackage(os.path.join(current_path, '../m3-frontend/package.json'))
+            pkg = NPMPackage(full_package_json_path)
         pkg.install()
         pkg.run_script('start')
 
@@ -90,8 +90,6 @@ class Server(object):
         server.thread_run_backend()
         time.sleep(5)
         server.react_run()
-
-
 
 if __name__ == "__main__":
     s = Server()
