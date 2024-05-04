@@ -18,6 +18,9 @@ logging.basicConfig(level=logging.INFO,
 
 
 class startup:
+    """
+    A class that combines all startup operations, runs Spotify, and sets up Spotify refresh token to authorize Spotify API
+    """
     def __init__(self):
         self.OS = self._check_operating_system()
     
