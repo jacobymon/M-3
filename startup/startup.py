@@ -1,4 +1,4 @@
-import install_dependencies
+import install_dependencies # MUST be the first line to install dependencies
 import logging
 import os
 import platform

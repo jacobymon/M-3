@@ -25,4 +25,9 @@ To use the program, you have to set up a Spotify Web ApI on [Spotify Developers 
 - Then, your default browser will open the Web Application!
 - Other members can join by scanning the QR code or copying the URL as long as they are connected to the same network.
 
-
+### In case of providing invalid credentials:
+If you entered a wrong Client ID, Client Secret, or Redirect URI, the Spotify pop-up webpage that authorizes your account will warn you which credential is invalid, and the program will not be able to authorize your account. To provide the correct credentials, you can either manually edit the config file or delete the config file and run startup.py again.
+The path to the config file is 
+```
+ M-3\UniversalQueue\Spotify_Interface\creds.config
+```
