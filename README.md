@@ -15,7 +15,10 @@ To use the program, you have to set up a Spotify Web ApI on [Spotify Developers 
     -  There are 3 main credentials: Client ID, Client secret, and Redirect URI. All of the three can be found by accessing the settings tab of the spotify web app you created. 
 
 ## Running the program
-- Run startup.py found inside the startup directory. 
+- Run startup.py found inside the startup directory using an IDE, such as Visual Studio Code, or through the command line.
+  ```
+  python startup.py 
+  ```
 - Only the first time you run startup.py:
     - It will install dependent packages, so it will take a few minutes.
     - You will be prompted to enter Client ID, Client secret, and Redirect URI to authorize your account and create an access token. After you enter those 3 credentials, you will be directed into your spotify account to authorize the app to play songs. After you accept the authorization, you will be directed to your Redirect URI, and the URL will have the authorization cookie appended to it. Copy the entire URL and paste it as prompted.
