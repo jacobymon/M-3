@@ -131,10 +131,10 @@ class startup:
             logging.info("OS successfully retrieved: %s", "Mac")
             return "Mac"
         elif OS == 'Windows' or OS == 'Linux':
-            logging.info("OS successfully retrieved: %s", str(OS))
+            logging.info("OS successfully retrieved: %s", OS)
             return platform.system()
         else:
-            logging.error("OS not supported is found: %s", str(OS))
+            logging.error("OS not supported is found: %s", OS)
             return ""
 
 
@@ -199,7 +199,7 @@ class startup:
         elif self.OS == 'Mac':
             return self._is_spotify_installed_mac()
         else:
-            logging.error("OS not supported is found: %s", str(self.OS))
+            logging.error("OS not supported is found: %s", self.OS)
             return False
     
     
@@ -252,7 +252,7 @@ class startup:
                     "An error occurred while starting Spotify on Mac: %s", str(e))
                 
         else:
-            logging.error("OS not supported is found: %s", str(self.OS))
+            logging.error("OS not supported is found: %s", self.OS)
         return
 
 
