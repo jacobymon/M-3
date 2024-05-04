@@ -5,10 +5,8 @@ import platform
 import subprocess
 import sys
 from os.path import exists
-
 import psutil
 import tekore as tk
-
 from server import Server
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -99,6 +97,9 @@ class startup:
             return False
 
     def is_account_premium(self):
+        """
+        returns True if the user's Spotify account is premium, False otherwise
+        """
         # the import is inside the function because spotify_interface_class fails if config file was not set-up
         import spotify_interface_class
         spotify_interface = spotify_interface_class.Spotify_Interface_Class()
@@ -126,6 +127,9 @@ class startup:
             return ""
 
     def _is_spotify_installed_windows(self):
+        """
+        Returns True if Spotify is installed on Windows, False otherwise
+        """
         try:
             list_of_apps = subprocess.run(
             ["powershell", "-Command", "get-StartApps"],  capture_output=True).stdout.splitlines()
@@ -142,6 +146,9 @@ class startup:
 
 
     def _is_spotify_installed_linux(self):
+        """
+        Returns True if Spotify is installed on Linux, False otherwise
+        """
         # 'which spotify' returns 1 if the application doesn't exist. And os.system() multiplies the output by 256
         if (os.system('which spotify') != 256):
             logging.info("Spotify is installed on Linux")
@@ -152,6 +159,9 @@ class startup:
 
 
     def _is_spotify_installed_mac(self):
+        """
+        Returns True if Spotify is installed on Mac, False otherwise
+        """
         try:
             list_of_apps = subprocess.run("mdfind", "KDMItemKind == \'Application\'", capture_output=True, text=True)
         except Exception as e:
@@ -166,6 +176,9 @@ class startup:
             return False
 
     def is_spotify_installed(self):
+        """
+        Returns True if Spotify is installed regardless of the device OS, False otherwise
+        """
         if self.OS == 'Windows':
             return self._is_spotify_installed_windows()
         elif self.OS == 'Linux':
@@ -177,8 +190,9 @@ class startup:
             return False
     
     def is_spotify_running(self):
-        """Checks if Spotify is running on the user's machine
-        return True if Spotify is running, False otherwise"""
+        """
+        return True if Spotify is running on the user's machine, False otherwise
+        """
         # Spotify.exe for windows, spotify for linux, and Spotify for Mac
         try:
             if ("Spotify.exe" in (p.name() for p in psutil.process_iter())
@@ -194,7 +208,9 @@ class startup:
         return False
     
     def start_spotify(self):
-        """ Starts Spotify on the user's machine """
+        """
+        Starts Spotify on the user's machine
+        """
         if self.OS == 'Windows':
             try:
                 import AppOpener  # AppOpener is imported here because it crashs if it was imported on a non-Windows machine
