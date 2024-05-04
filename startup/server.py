@@ -5,23 +5,30 @@ import threading
 import time
 
 import qrcode
-from flask import Flask
 from pynpm import NPMPackage
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
-class Server(object):
+
+class Server:
+    """
+    A class to start the backend and frontend of the web application and create QR code image for the frontend.
+
+    Attributes:
+        os (str): The device operating system
+        url (str): The URL where the web app can be accessed once running.
+    """
 
     def __init__(self, os, **configs):
         self.url = None
         self.os = os
-        
-    def _get_local_ip(self): 
+
+    def _get_local_ip(self):
         """
-        Retrieves the local IP address of the machine.
-        
-        Raises:
-            socket.error: If there is an error creating the socket or connecting to the remote host.
+        Retrieves the local IP address of the machine by attempting a connection with Google DNS
+
+        Returns: (str) the device local IP address
         """
         try:
             UDP_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -32,17 +39,18 @@ class Server(object):
                 logging.info("Local IP successfully retrieved: %s", str(IP))
                 return IP
             except socket.error as e:
-                logging.error("Failed to connect or retrieve local IP: %s", str(e))
+                logging.error(
+                    "Failed to connect or retrieve local IP: %s", str(e))
             finally:
                 UDP_socket.close()
         except socket.error as e:
-            logging.error("Socket creation failed: %s", str(e))       
-        
-    """
-        Generates a QR code from the provided URL and saves it as an image file.
-    """
+            logging.error("Socket creation failed: %s", str(e))
+
     def generate_qr_code(self):
-        try: 
+        """
+        Generates a QR code from the provided URL and saves it as an image file.
+        """
+        try:
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -51,46 +59,75 @@ class Server(object):
             )
             qr.add_data(self.url)
             qr.make(fit=True)
-            
+
             logging.info("Saving QR code image to 'qr-code.png'")
-            img = qr.make_image(fill_color="black", back_color="white")
+            qr_code_img = qr.make_image(fill_color="black", back_color="white")
             current_path = os.path.dirname(__file__)
-            full_image_path = os.path.join(current_path, "../m3-frontend/src/content/qr-code.png")
-            img.save(full_image_path)
+            full_image_path = os.path.join(
+                current_path, "../m3-frontend/src/content/qr-code.png")
+            qr_code_img.save(full_image_path)
             logging.info("QR code image saved successfully.")
 
         except Exception as e:
-            logging.error("An error occurred: %s", e)
-    
+            logging.error(
+                "An error occurred while creating QR code image: %s", e)
 
     def react_run(self):
+        """
+        Runs the frontend React application and installs required packages.
+        """
         current_path = os.path.dirname(__file__)
-        full_package_json_path = os.path.join(current_path, '../m3-frontend/package.json')
-        if self.os == 'Windows':
-            pkg = NPMPackage(full_package_json_path, shell=True)
-        else:
-            pkg = NPMPackage(full_package_json_path)
-        pkg.install()
-        pkg.run_script('start')
+        full_package_json_path = os.path.join(
+            current_path, '../m3-frontend/package.json')
+        if not os.path.exists(full_package_json_path):
+            logging.error(
+                "package.json not found at %s, cannot run React application", full_package_json_path)
+            exit()
+        try:
+            if self.os == 'Windows':
+                pkg = NPMPackage(full_package_json_path, shell=True)
+            else:
+                pkg = NPMPackage(full_package_json_path)
+            pkg.install()  # installs required React packages
+            logging.info("React packages successfully installed")
+        except Exception as e:
+            logging.error("Failed to install React packages: %s", e)
+        try:
+            pkg.run_script('start')
+        except Exception as e:
+            logging.error("Failed to start React app: %s", e)
+            exit()
 
-        
     def run_backend(self):
-        import UniversalQueueDesign
-        
+        """
+        Runs the backend Flask application 
+        """
+        try:
+            import UniversalQueueDesign
+        except Exception as e:
+            logging.error("Failed to start backend: %s", e)
+            exit()
+
     def thread_run_backend(self):
+        """
+        Runs the backend application in a separate thread to allow the frontend to run on the main thread
+        """
         backend_thread = threading.Thread(target=self.run_backend, args=())
         backend_thread.start()
 
     def main(self):
+        """
+        specifies order of operations for the class methods to run
+        """
         server = Server(self.os)
-        port = 3000 
+        port = 3000
         ip = server._get_local_ip()
-        server.url = "http://" + ip + ":" + str(port)
-        server.generate_qr_code()
+        if ip is None:
+            logging.error(
+                "Failed to retrieve IP address, QR Code cannot be generated.")
+        else:
+            server.url = "http://" + ip + ":" + str(port)
+            server.generate_qr_code()
         server.thread_run_backend()
-        time.sleep(5)
+        time.sleep(5)  # ensures backend is up before frontend starts
         server.react_run()
-
-if __name__ == "__main__":
-    s = Server()
-    s.main()
