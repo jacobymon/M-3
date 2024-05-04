@@ -3,13 +3,11 @@ import os
 import socket
 import threading
 import time
-
 import qrcode
 from pynpm import NPMPackage
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 class Server:
     """
@@ -23,6 +21,7 @@ class Server:
     def __init__(self, os, **configs):
         self.url = None
         self.os = os
+
 
     def _get_local_ip(self):
         """
@@ -45,6 +44,7 @@ class Server:
                 UDP_socket.close()
         except socket.error as e:
             logging.error("Socket creation failed: %s", str(e))
+
 
     def generate_qr_code(self):
         """
@@ -70,7 +70,8 @@ class Server:
 
         except Exception as e:
             logging.error(
-                "An error occurred while creating QR code image: %s", e)
+                "An error occurred while creating QR code image: %s", str(e))
+
 
     def react_run(self):
         """
@@ -83,6 +84,7 @@ class Server:
             logging.error(
                 "package.json not found at %s, cannot run React application", full_package_json_path)
             exit()
+            
         try:
             if self.os == 'Windows':
                 pkg = NPMPackage(full_package_json_path, shell=True)
@@ -91,12 +93,14 @@ class Server:
             pkg.install()  # installs required React packages
             logging.info("React packages successfully installed")
         except Exception as e:
-            logging.error("Failed to install React packages: %s", e)
+            logging.error("Failed to install React packages: %s", str(e))
+            
         try:
             pkg.run_script('start')
         except Exception as e:
-            logging.error("Failed to start React app: %s", e)
+            logging.error("Failed to start React app: %s", str(e))
             exit()
+
 
     def run_backend(self):
         """
@@ -105,16 +109,18 @@ class Server:
         try:
             import UniversalQueueDesign
         except Exception as e:
-            logging.error("Failed to start backend: %s", e)
+            logging.error("Failed to start backend: %s", str(e))
             exit()
+
 
     def thread_run_backend(self):
         """
         Runs the backend application in a separate thread to allow the frontend to run on the main thread
         """
         backend_thread = threading.Thread(target=self.run_backend, args=())
-        backend_thread.start()
-
+        backend_thread.start() 
+        
+        
     def main(self):
         """
         specifies order of operations for the class methods to run

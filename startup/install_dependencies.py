@@ -18,10 +18,16 @@ class install_dependencies:
             logging.error(
                 "requirements.txt not found at %s, cannot install python packages", requirements_path)
             return
+        
         try:
-            os.system("pip install -r " + requirements_path)
-            logging.info("Successfully installed required packages for Python")
+            exit_code = os.system("pip install -r " + requirements_path)
+            if(exit_code == 0):
+                logging.info("Successfully installed required packages for Python")
+                return
+            else:
+                logging.error("Failed to install required packages for Python with exit code %d", exit_code)
+                
         except Exception as e:
-            logging.error("Failed to install required packages for Python: %s", e)
+            logging.error("Failed to install required packages for Python: %s", str(e))
 
 install_dependencies.install_packages()
