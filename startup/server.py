@@ -117,10 +117,14 @@ class Server:
         """
         Runs the backend application in a separate thread to allow the frontend to run on the main thread
         """
-        backend_thread = threading.Thread(target=self.run_backend, args=())
-        backend_thread.start() 
+        try:
+            backend_thread = threading.Thread(target=self.run_backend, args=())
+            backend_thread.start() 
+        except Exception as e:
+            logging.error("Failed to start backend thread: %s", str(e))
+            exit()
         
-        
+    
     def main(self):
         """
         specifies order of operations for the class methods to run

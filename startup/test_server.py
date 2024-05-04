@@ -2,9 +2,7 @@ import logging
 import socket
 import unittest
 from unittest.mock import MagicMock, patch
-
 import qrcode
-
 from server import Server
 
 
@@ -165,6 +163,16 @@ def create_test_class(os_name):
                 with self.assertRaises(SystemExit):
                     self.server.run_backend()
                 mock_log.assert_called_with("Failed to start backend: %s", "No module named 'UniversalQueueDesign'")
+        
+        
+        @patch('logging.Logger.error')
+        @patch('threading.Thread')
+        def test_thread_run_backend(self, mock_thread, mock_log):
+            """Tests program gracefully exits if threaded_run_backend method fails"""
+            mock_thread.side_effect = Exception("Function run_backend doesn't exist")
+            with self.assertRaises(SystemExit):
+                    self.server.thread_run_backend()
+            mock_log.assert_called_with("Failed to start backend thread: %s", "Function run_backend doesn't exist")
                 
                 
     TestServer.__name__ = f"TestServer_{os_name}"
