@@ -24,7 +24,6 @@ class startup:
     def __init__(self):
         self.OS = self._check_operating_system()
     
-    
     def _create_config_file(self):
         """
         Creates a configuration file for Spotify API credentials 
@@ -39,7 +38,6 @@ class startup:
         Client_ID = input("Please provide your Spotify Client ID: ")
         Client_Secret = input("Please provide your Spotify Client Secret: ")
         Redirect_URI = input("Please provide your Spotify Redirect URI: ")
-        
         try:
             with open(filename, 'w') as file:
                 file.write('[DEFAULT]\n')
@@ -48,9 +46,8 @@ class startup:
                 file.write(f'SPOTIFY_REDIRECT_URI = {Redirect_URI}\n')
                 file.write("DEVICE =")
             logging.info("Config file successfully created")
-            
         except Exception as e:
-            logging.error("An error occurred while creating the config file: %s", str(e))
+            logging.error("An error occurred while creating the config file: %s", e)
             exit()
 
 
@@ -65,19 +62,18 @@ class startup:
         if not if_config_exist:
             logging.info("Config file does not exist")
             return False
-        
-        try:
-            with open(CONFIG_FILE, 'r') as file:
-                for line in file:
-                    if "SPOTIFY_USER_REFRESH" in line:
-                        logging.info("Refresh token already exists")
-                        return True
-        except:
-            logging.error("An error occurred while reading the config file")
+        else:
+            try:
+                with open(CONFIG_FILE, 'r') as file:
+                    for line in file:
+                        if "SPOTIFY_USER_REFRESH" in line:
+                            logging.info("Refresh token already exists")
+                            return True
+            except:
+                logging.error("An error occurred while reading the config file")
+                return False
+            logging.info("Refresh token does not exist inside config file")
             return False
-        
-        logging.info("Refresh token does not exist inside config file")
-        return False
             
 
     def create_refresh_token(self):
@@ -90,7 +86,6 @@ class startup:
         if_config_exist = exists(CONFIG_FILE)
         if not if_config_exist:
             self._create_config_file()
-            
         try:
             client_id, client_secret, redirect_uri = tk.config_from_file(
                 CONFIG_FILE)
@@ -99,12 +94,10 @@ class startup:
             tk.config_to_file(CONFIG_FILE, conf + (token.refresh_token,))
             logging.info("Token successfully created")
             return True
-        
         except Exception as e:
             logging.error(
-                "An error occurred while creating the referesh token: %s", str(e))
+                "An error occurred while creating the referesh token: %s", e)
             return False
-
 
     def is_account_premium(self):
         """
@@ -121,7 +114,6 @@ class startup:
             logging.error('The user account is not premium')
             return False
 
-
     def _check_operating_system(self):
         """
         Checks the operating system and returns the name of the OS.
@@ -137,7 +129,6 @@ class startup:
             logging.error("OS not supported is found: %s", str(OS))
             return ""
 
-
     def _is_spotify_installed_windows(self):
         """
         Returns True if Spotify is installed on Windows, False otherwise
@@ -146,7 +137,7 @@ class startup:
             list_of_apps = subprocess.run(
             ["powershell", "-Command", "get-StartApps"],  capture_output=True).stdout.splitlines()
         except Exception as e:
-            logging.error("An error occurred while retrieving list of registered apps on Windows: %s", str(e))
+            logging.error("An error occurred while retrieving list of registered apps on Windows: %s", e)
             return False
         
         for app in list_of_apps:
@@ -177,7 +168,7 @@ class startup:
         try:
             list_of_apps = subprocess.run("mdfind", "KDMItemKind == \'Application\'", capture_output=True, text=True)
         except Exception as e:
-            logging.error("An error occurred while retrieving list of registered apps on Mac: %s", str(e))
+            logging.error("An error occurred while retrieving list of registered apps on Mac: %s", e)
             
         list_of_apps = list_of_apps.strip()
         if "Spotify.app" in list_of_apps:
@@ -186,7 +177,6 @@ class startup:
         else:
             logging.error("Spotify is not installed on Mac")
             return False
-
 
     def is_spotify_installed(self):
         """
@@ -202,7 +192,6 @@ class startup:
             logging.error("OS not supported is found: %s", str(self.OS))
             return False
     
-    
     def is_spotify_running(self):
         """
         return True if Spotify is running on the user's machine, False otherwise
@@ -215,12 +204,11 @@ class startup:
                 logging.info("Spotify is running")
                 return True
         except Exception as e:
-            logging.error("An error occurred while retrieving running processes: %s", str(e))
+            logging.error("An error occurred while retrieving running processes: %s", e)
             return False
         
         logging.info("Spotify is not running")
         return False
-    
     
     def start_spotify(self):
         """
@@ -233,7 +221,7 @@ class startup:
                 logging.info("Spotify started on Windows")
             except Exception as e:
                 logging.error(
-                    "An error occurred while starting Spotify on Windows: %s", str(e))
+                    "An error occurred while starting Spotify on Windows: %s", e)
 
         elif self.OS == 'Linux':
             try:
@@ -241,7 +229,7 @@ class startup:
                 logging.info("Spotify started on Linux")
             except Exception as e:
                 logging.error(
-                    "An error occurred while starting Spotify on Linux: %s", str(e))
+                    "An error occurred while starting Spotify on Linux: %s", e)
                 
         elif self.OS == 'Mac':
             try:
@@ -249,12 +237,11 @@ class startup:
                 logging.info("Spotify started on Mac")
             except Exception as e:
                 logging.error(
-                    "An error occurred while starting Spotify on Mac: %s", str(e))
+                    "An error occurred while starting Spotify on Mac: %s", e)
                 
         else:
             logging.error("OS not supported is found: %s", str(self.OS))
         return
-
 
     def main(self):
         """
