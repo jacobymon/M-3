@@ -4,9 +4,10 @@ import os
 import platform
 import subprocess
 import sys
-from os.path import exists
+
 import psutil
 import tekore as tk
+
 from server import Server
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -30,8 +31,8 @@ class startup:
         Creates a configuration file for Spotify API credentials 
         """
         path = os.path.dirname(os.path.abspath(__file__))
-        filename = path + '/../UniversalQueue/Spotify_Interface/creds.config'
-        if_config_exist = exists(filename)
+        filename = os.path.join(path, '../UniversalQueue/Spotify_Interface/creds.config')
+        if_config_exist = os.path.exists(filename)
         if if_config_exist:
             logging.info("Config file already exists")
             return
@@ -43,7 +44,7 @@ class startup:
         try:
             with open(filename, 'w') as file:
                 file.write('[DEFAULT]\n')
-                file.write(f'SPOTIFY_CLIENT_ID = {Client_ID} \n', )
+                file.write(f'SPOTIFY_CLIENT_ID = {Client_ID}\n', )
                 file.write(f'SPOTIFY_CLIENT_SECRET = {Client_Secret}\n')
                 file.write(f'SPOTIFY_REDIRECT_URI = {Redirect_URI}\n')
                 file.write("DEVICE =")
@@ -60,8 +61,8 @@ class startup:
         Returns: (bool) True if refresh token exists, False otherwise
         """
         path = os.path.dirname(os.path.abspath(__file__))
-        CONFIG_FILE = path + '/../UniversalQueue/Spotify_Interface/creds.config'
-        if_config_exist = exists(CONFIG_FILE)
+        CONFIG_FILE = os.path.join(path, '../UniversalQueue/Spotify_Interface/creds.config')
+        if_config_exist = os.path.exists(CONFIG_FILE)
         if not if_config_exist:
             logging.info("Config file does not exist")
             return False
@@ -72,8 +73,8 @@ class startup:
                     if "SPOTIFY_USER_REFRESH" in line:
                         logging.info("Refresh token already exists")
                         return True
-        except:
-            logging.error("An error occurred while reading the config file")
+        except Exception as e:
+            logging.error("An error occurred while reading the config file: %s", str(e))
             return False
         
         logging.info("Refresh token does not exist inside config file")
@@ -86,8 +87,8 @@ class startup:
         Returns: (bool) True if token created, False otherwise
         """
         path = os.path.dirname(os.path.abspath(__file__))
-        CONFIG_FILE = path + '/../UniversalQueue/Spotify_Interface/creds.config'
-        if_config_exist = exists(CONFIG_FILE)
+        CONFIG_FILE = os.path.join(path, '../UniversalQueue/Spotify_Interface/creds.config')
+        if_config_exist = os.path.exists(CONFIG_FILE)
         if not if_config_exist:
             self._create_config_file()
             
@@ -111,14 +112,18 @@ class startup:
         returns True if the user's Spotify account is premium, False otherwise
         """
         # the import is inside the function because spotify_interface_class fails if config file was not set-up
-        import spotify_interface_class
-        spotify_interface = spotify_interface_class.Spotify_Interface_Class()
-        cur_user = spotify_interface.get_current_user_info()
-        if cur_user.product == 'premium':
-            logging.info("The user account is premium")
-            return True
-        else:
-            logging.error('The user account is not premium')
+        try:
+            import spotify_interface_class
+            spotify_interface = spotify_interface_class.Spotify_Interface_Class()
+            cur_user = spotify_interface.get_current_user_info()
+            if cur_user.product == 'premium':
+                logging.info("The user account is premium")
+                return True
+            else:
+                logging.error('The user account is not premium')
+                return False
+        except Exception as e:
+            logging.error("An error occurred while checking if the user account is premium: %s", str(e))
             return False
 
 
@@ -178,6 +183,7 @@ class startup:
             list_of_apps = subprocess.run("mdfind", "KDMItemKind == \'Application\'", capture_output=True, text=True)
         except Exception as e:
             logging.error("An error occurred while retrieving list of registered apps on Mac: %s", str(e))
+            return False
             
         list_of_apps = list_of_apps.strip()
         if "Spotify.app" in list_of_apps:
@@ -200,7 +206,7 @@ class startup:
             return self._is_spotify_installed_mac()
         else:
             logging.error("OS not supported is found: %s", self.OS)
-            return False
+            exit()
     
     
     def is_spotify_running(self):
@@ -253,8 +259,8 @@ class startup:
                 
         else:
             logging.error("OS not supported is found: %s", self.OS)
-        return
-
+            exit()
+        
 
     def main(self):
         """

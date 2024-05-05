@@ -1,8 +1,7 @@
-import logging
 import socket
 import unittest
 from unittest.mock import MagicMock, patch
-import qrcode
+
 from server import Server
 
 
@@ -73,11 +72,11 @@ def create_test_class(os_name):
         @patch('logging.Logger.info')
         def test_generate_qr_code_exception(self, mock_info, mock_log_error, mock_make_image):
             """Test generate_qr_code catching exceptions when qrcode.make_image throws any"""
-            mock_make_image.side_effect = Exception("Failed to create QR image")
+            mock_make_image.side_effect = IOError("Disk full")
             self.server.url = 'http://127.0.0.1:3000' 
             self.server.generate_qr_code()
             assert not mock_make_image.save.called
-            mock_log_error.assert_called_once_with("An error occurred while creating QR code image: %s", "Failed to create QR image")
+            mock_log_error.assert_called_once_with("An error occurred while creating QR code image: %s", "Disk full")
             
             
         @patch('os.path.exists')
@@ -143,7 +142,7 @@ def create_test_class(os_name):
             mock_join.return_value = '/fake/dir/m3-frontend'
             pkg_mock = MagicMock()
             mock_npm_package.return_value = pkg_mock
-            pkg_mock.run_script.side_effect = Exception("Craco is not installed")
+            pkg_mock.run_script.side_effect = AttributeError("Invalid NPM command.")
             with self.assertRaises(SystemExit):
                 self.server.react_run()
             if self.os == 'Windows':
@@ -152,13 +151,13 @@ def create_test_class(os_name):
                 mock_npm_package.assert_called_with('/fake/dir/m3-frontend')
             pkg_mock.install.assert_called_once()
             pkg_mock.run_script.assert_called_once_with('start')
-            mock_log_error.assert_called_once_with("Failed to start React app: %s", "Craco is not installed")
+            mock_log_error.assert_called_once_with("Failed to start React app: %s", "Invalid NPM command.")
 
 
         @patch('logging.Logger.error')
         def test_run_backend(self, mock_log):
             """Tests program gracefully exits if run_backend method fails"""
-            with patch('importlib.import_module') as mock_import:
+            with patch('builtins.__import__') as mock_import:
                 mock_import.side_effect = ImportError("No module named 'UniversalQueueDesign'")
                 with self.assertRaises(SystemExit):
                     self.server.run_backend()
@@ -169,10 +168,10 @@ def create_test_class(os_name):
         @patch('threading.Thread')
         def test_thread_run_backend(self, mock_thread, mock_log):
             """Tests program gracefully exits if threaded_run_backend method fails"""
-            mock_thread.side_effect = Exception("Function run_backend doesn't exist")
+            mock_thread.side_effect = RuntimeError("called more than once on the same thread object")
             with self.assertRaises(SystemExit):
                     self.server.thread_run_backend()
-            mock_log.assert_called_with("Failed to start backend thread: %s", "Function run_backend doesn't exist")
+            mock_log.assert_called_with("Failed to start backend thread: %s", "called more than once on the same thread object")
                 
                 
     TestServer.__name__ = f"TestServer_{os_name}"
