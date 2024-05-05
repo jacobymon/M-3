@@ -187,10 +187,10 @@ class TestSpotifyConfig(unittest.TestCase):
             self.assertEqual(method_output.read(), expected_output.read())
 
 
-    @patch('os.path.exists')
+    @patch('os.path.join')
     @patch('tekore.prompt_for_user_token')
     @patch('logging.error')
-    def test_create_refresh_token_exception(self, mock_log, mock_prompt_token, mock_exists):
+    def test_create_refresh_token_exception(self, mock_log, mock_prompt_token, mock_join):
         """Test methods catches exceptions and doesn't crash during refresh token creation
         Preconditions:
         - Config file exists and is accessible.
@@ -203,7 +203,9 @@ class TestSpotifyConfig(unittest.TestCase):
         - assert an error message is logged once in format
         "An error occurred while creating the referesh token: %s" where %s is the exception caught
         """
-        mock_exists.return_value = True
+        with open (test_creds_for_token, 'w') as test_file, open(expected_creds, 'r') as input:
+            test_file.write(input.read())
+        mock_join.return_value = test_creds_for_token 
         mock_prompt_token.side_effect = AssertionError("state is inconsistent")
         result = self.startup.create_refresh_token()
         self.assertFalse(result)
