@@ -23,10 +23,9 @@ class install_dependencies:
             exit_code = os.system("pip install -r " + requirements_path)
             if(exit_code == 0):
                 logging.info("Successfully installed required packages for Python")
-                return
             else:
                 logging.error("Failed to install required packages for Python with exit code %d", exit_code)
-                
+            return exit_code
         except Exception as e:
             logging.error("Failed to install required packages for Python: %s", str(e))
 

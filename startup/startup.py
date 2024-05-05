@@ -4,10 +4,8 @@ import os
 import platform
 import subprocess
 import sys
-
 import psutil
 import tekore as tk
-
 from server import Server
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -237,25 +235,31 @@ class startup:
                 import AppOpener  # AppOpener is imported here because it crashs if it was imported on a non-Windows machine
                 AppOpener.open("spotify")
                 logging.info("Spotify started on Windows")
+                return True
             except Exception as e:
                 logging.error(
                     "An error occurred while starting Spotify on Windows: %s", str(e))
+                return False
 
         elif self.OS == 'Linux':
             try:
                 subprocess.run(["spotify"])
                 logging.info("Spotify started on Linux")
+                return True
             except Exception as e:
                 logging.error(
                     "An error occurred while starting Spotify on Linux: %s", str(e))
+                return False
                 
         elif self.OS == 'Mac':
             try:
                 subprocess.run(["open", "spotify://"])
                 logging.info("Spotify started on Mac")
+                return True
             except Exception as e:
                 logging.error(
                     "An error occurred while starting Spotify on Mac: %s", str(e))
+                return False
                 
         else:
             logging.error("OS not supported is found: %s", self.OS)
