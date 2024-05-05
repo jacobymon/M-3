@@ -3,8 +3,8 @@ from time import sleep
 """ This module allows us to log our errors"""
 import logging
 
-from flask import Flask, request 
-from flask_cors import CORS, cross_origin
+# from flask import Flask, request 
+# from flask_cors import CORS, cross_origin
  
 import json
 import sys
@@ -18,8 +18,8 @@ from Song import Song
 
 import threading
 
-app = Flask(__name__)
-CORS(app) 
+# app = Flask(__name__)
+# CORS(app) 
 
 class UniversalQueue:
     """
@@ -315,7 +315,7 @@ class UniversalQueue:
                     SongObject = Song(myJson, True) #need special version of song initializer that takes in just the song data snippet
                     newUniQueue.insert(SongObject, True) #need special version of insert since it originally rewrites Write.json
                 
-                #call update_ui when it's written
+                #update the UI (website queue)
 
                 return newUniQueue
 
@@ -324,41 +324,41 @@ class UniversalQueue:
 
 
 
-UQ = UniversalQueue()
+# UQ = UniversalQueue()
 
-@app.route('/return_results', methods=['GET', 'POST'])
-@cross_origin()
-def return_results():
-    search_string = request.args.get('search_string')
-    response = {'search_string': UQ.spotify.return_data(search_string)}
-    print(response)
-    return response
-
-
-@app.route('/return_results_from_url', methods=['GET', 'POST'])
-@cross_origin()
-def return_results_from_url():
-    url = request.args.get('spotify_url')
-    response = {'spotify_url': UQ.spotify.from_url(url)}
-    print(response)
-    return response
-
-@app.route('/submit_song', methods=['GET', 'POST'])
-@cross_origin()
-def submit_song():
-
-    song_data = request.get_json()
-    song_data = json.dumps(song_data)
-    song = Song(song_data)
-
-    UQ.insert(song)
+# @app.route('/return_results', methods=['GET', 'POST'])
+# @cross_origin()
+# def return_results():
+#     search_string = request.args.get('search_string')
+#     response = {'search_string': UQ.spotify.return_data(search_string)}
+#     print(response)
+#     return response
 
 
-    print(UQ.data) 
-    return song_data
+# @app.route('/return_results_from_url', methods=['GET', 'POST'])
+# @cross_origin()
+# def return_results_from_url():
+#     url = request.args.get('spotify_url')
+#     response = {'spotify_url': UQ.spotify.from_url(url)}
+#     print(response)
+#     return response
+
+# @app.route('/submit_song', methods=['GET', 'POST'])
+# @cross_origin()
+# def submit_song():
+
+#     song_data = request.get_json()
+#     song_data = json.dumps(song_data)
+#     song = Song(song_data)
+
+#     UQ.insert(song)
+
+
+#     print(UQ.data) 
+#     return song_data
 
 
     
-if __name__ == '__main__':
-    app.run(host = '0.0.0.0', port=8080) 
+# if __name__ == '__main__':
+#     app.run(host = '0.0.0.0', port=8080) 
 

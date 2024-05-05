@@ -26,12 +26,13 @@ class TestSong(unittest.TestCase):
     def test_init(self):
         song1 = Song(self.SongTest_data)
 
-        self.assertEqual(song1.uri, "asadfas")
-        self.assertEqual(song1.s_len, 123)
-        self.assertEqual(song1.name, "breh")
-        self.assertEqual(song1.album, "the breh album")
-        self.assertEqual(song1.artist, "dude")
+        self.assertEqual(song1.uri, "5oD2Z1OOx1Tmcu2mc9sLY2")
+        self.assertEqual(song1.s_len, 4933)
+        self.assertEqual(song1.name, "You Suffer")
+        self.assertEqual(song1.album, "Scum")
+        self.assertEqual(song1.artist, "Napalm Death")
         self.assertEqual(song1.id, None)
+    
 
         #bad json tests
         #*****Add these tests after checking with max*********
