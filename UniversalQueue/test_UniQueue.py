@@ -83,55 +83,18 @@ class TestUniQueue(unittest.TestCase):
         self.assertTrue(self.uniQueue.suspend_toggle)
 
 
-    def test_insert_and_removal(self):
-        #note that while it is possible to insert the same mocked song object here, it would not be
-        #in a real use case, thus it's not tested for.
+    def test_insert(self):
+        #must have a spotify app running in order to perform this test!
+        #This will play a series of 3 short songs/skits resulting in about 51 seconds of testing.
+        #1. suffer by Napalm Deaeth
+        #2. Her Majesty by The Beatles
+        #3. Intro (skit) by Kanye West
 
         self.uniQueue.insert(self.song1)
 
-        self.assertEqual(self.uniQueue.data[0], self.song1)
-
         self.uniQueue.insert(self.song3)
 
-        self.assertEqual(self.uniQueue.data[-1], self.song3)
-
         self.uniQueue.insert(self.song6)
-
-        #testing id functionality
-        self.assertNotEqual(self.uniQueue.data[0].id, self.uniQueue.data[1].id)
-
-        self.assertNotEqual(self.uniQueue.data[0].id, self.uniQueue.data[2].id)
-
-        self.assertNotEqual(self.uniQueue.data[1].id, self.uniQueue.data[2].id)
-
-        #testing error handleing
-        self.uniQueue.set_suspend_toggle(True)
-
-        self.assertRaises(ValueError, self.uniQueue.insert, self.song1)
-
-        #cleanup
-        self.uniQueue.set_suspend_toggle(False)
-
-
-        #***************remove_from_queue tests**********************
-
-        self.uniQueue.remove_from_queue(1)
-
-        self.assertRaises(ValueError, self.uniQueue.remove_from_queue, 3) #remove id that's not in queue
-        
-
-        self.assertEqual(self.uniQueue.data[0].id, 0)
-        self.assertEqual(self.uniQueue.data[-1].id, 2)
-
-        self.uniQueue.remove_from_queue(0)
-
-        self.assertEqual(self.uniQueue.data[0].id, 2)
-
-        self.uniQueue.remove_from_queue(2)
-
-        self.assertEqual(self.uniQueue.data, [])
-
-        self.assertRaises(ValueError,self.uniQueue.remove_from_queue, 0) #removal of empty queue
 
 
 

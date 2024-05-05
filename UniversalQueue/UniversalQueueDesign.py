@@ -273,25 +273,24 @@ class UniversalQueue:
 
         #break down the song objects into jsonifiable data
         #write to the file
+        data = []
         for i in range(len(self.data)):
-            data = {
+            songObject = {
                     "uri": self.data[i].uri,
                     "s_len": self.data[i].s_len,
                     "name" : self.data[i].name,
                     "album": self.data[i].album,
-                    "artist": self.data[i].album
+                    "artist": self.data[i].artist
                 }
-            with open("Write.json", "w") as json_file:
-                json_file.write('[')
+            data.append(songObject)
+        
+        with open("Write.json", "w") as json_file:
                 json.dump(data, json_file)
-                if i < len(self.data) - 1:
-                    json_file.write(',')
-                else:
-                    json_file.write(']')      
+ 
 
           
 
-    def recover(instance):
+    def recover(self, instance):
         """
         recovers the current state of the queue. in case of a system crash.
 
@@ -303,17 +302,18 @@ class UniversalQueue:
         #update_ui
 
         #initialize a new queue
-        newUniQueue = instance()
+        newUniQueue = UniversalQueue()
 
         try:
-            with open("Write.json", "rec") as json_file:
+            with open("Write.json", "r+") as json_file:
                 json_file_data = json_file.read()
-                myDict = json.load(json_file_data)
-                for s in myDict:
-                    Song(s, True) #need special version of song initializer that takes in just the song data snippet
-                    newUniQueue.insert(s, True) #need special version of insert since it originally rewrites Write.json
+                myList = json.loads(json_file_data)
+                for myDict in myList:
+                    myJson = json.dumps(myDict)
+                    SongObject = Song(myJson, True) #need special version of song initializer that takes in just the song data snippet
+                    newUniQueue.insert(SongObject, True) #need special version of insert since it originally rewrites Write.json
                 
-                #call update_ui when it's written
+                #update the UI (website queue)
 
                 return newUniQueue
 
