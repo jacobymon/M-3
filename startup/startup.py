@@ -1,11 +1,13 @@
-import install_dependencies # MUST be the first line to install dependencies
 import logging
 import os
 import platform
 import subprocess
 import sys
+
 import psutil
 import tekore as tk
+
+import install_dependencies  # MUST be the first line to install dependencies
 from server import Server
 
 path = os.path.dirname(os.path.abspath(__file__))
@@ -178,13 +180,12 @@ class startup:
         Returns True if Spotify is installed on Mac, False otherwise
         """
         try:
-            list_of_apps = subprocess.run("mdfind", "KDMItemKind == \'Application\'", capture_output=True, text=True)
+            spotify_app = os.popen("ls /Applications | grep Spotify ").read()
         except Exception as e:
             logging.error("An error occurred while retrieving list of registered apps on Mac: %s", str(e))
             return False
             
-        list_of_apps = list_of_apps.strip()
-        if "Spotify.app" in list_of_apps:
+        if spotify_app == "Spotify.app":
             logging.info("Spotify is installed on Mac")
             return True
         else:
