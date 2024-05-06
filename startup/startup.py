@@ -185,7 +185,7 @@ class startup:
             logging.error("An error occurred while retrieving list of registered apps on Mac: %s", str(e))
             return False
             
-        if spotify_app == "Spotify.app":
+        if spotify_app == "Spotify.app\n":
             logging.info("Spotify is installed on Mac")
             return True
         else:
