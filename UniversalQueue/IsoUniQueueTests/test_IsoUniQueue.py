@@ -234,5 +234,8 @@ class TestUniQueue(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    log_file = 'log_file.txt'
+    with open(log_file, "a") as f:
+       runner = unittest.TextTestRunner(f)
+       unittest.main(testRunner=runner)
         
