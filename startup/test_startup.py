@@ -234,7 +234,7 @@ class TestSpotifyConfig(unittest.TestCase):
         
         
     @patch('logging.error')
-    @patch('subprocess.run')
+    @patch('os.popen')
     def test_is_spotify_installed_mac_exception(self, mock_run, mock_error):
         """Test _is_spotify_installed_mac() gracefully handles the program if it was not able
         to retrieve list of installed apps
@@ -247,11 +247,11 @@ class TestSpotifyConfig(unittest.TestCase):
         - assert the return value is False
         - assert an error message is logged once with the specific exception detail.
         """
-        mock_run.side_effect = Exception("\'Application\' is not a item")
+        mock_run.side_effect = Exception("Permission Denied")
         result = self.startup._is_spotify_installed_mac()
         self.assertFalse(result)
         mock_error.assert_called_once_with("An error occurred while retrieving list of registered apps on Mac: %s",
-                                           "\'Application\' is not a item")
+                                           "Permission Denied")
         
         
     @patch('logging.error')
