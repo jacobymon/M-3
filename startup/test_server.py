@@ -104,8 +104,7 @@ def create_test_class(os_name):
         
         @patch('qrcode.QRCode.make_image')
         @patch('logging.Logger.error') 
-        @patch('logging.Logger.info')
-        def test_generate_qr_code_exception(self, mock_info, mock_log_error, mock_make_image):
+        def test_generate_qr_code_exception(self, mock_log_error, mock_make_image):
             """Test generate_qr_code catches exceptions when qrcode.make_image throws any
             Preconditions:
             - QRCode.make_image method is set to raise an IOError indicating disk is full.
@@ -124,17 +123,24 @@ def create_test_class(os_name):
                                                    "Disk full")
             
             
-        @patch('os.path.exists')
+        @patch('os.path.dirname')
         @patch('logging.Logger.error')
-        @patch('os.path.join')
-        def test_react_run_no_package_json(self, mock_join, mock_log_error, mock_exists):
-            """Test react_run method gracefully exits when package.json is not found"""
-            mock_exists.return_value = False
-            mock_join.return_value = '/fake/dir/m3-frontend'
+        def test_react_run_no_package_json(self, mock_log_error, mock_dirname):
+            """Test react_run method gracefully exits when package.json is not found
+            Preconditions:
+            - an invlaid directory is mocked for react_run()
+            Expected Results:
+            - The method exits the application
+            Assertion:
+            - Assert the method raises SystmExit
+            - Assert an error message is logged with the format:
+            "package.json not found at %s, cannot run React application" where %s is the path 
+            """
+            mock_dirname.return_value = "fake_dir"
             with self.assertRaises(SystemExit):
                 self.server.react_run()
             mock_log_error.assert_called_once_with("package.json not found at %s, cannot run React application",
-                                                   "/fake/dir/m3-frontend")
+                                                   "fake_dir\\../m3-frontend/package.json")
             
             
         @patch('os.path.exists')
