@@ -3,14 +3,21 @@ import axios from "axios";
 import debounce from "lodash.debounce";
 import "./SongSubmission.css";
 
+/**
+ * API Call to request a search for songs from the backend.
+ * 
+ * The Spotify Class Interface will return an array of the relevant songs.
+ * 
+ * @param {function} searchbar_query The string that is used to search for songs in the backend
+ * 
+ * @returns {JSON} A JSON object containing the *status* of the request (int) and the *response*
+ * in the form of an array of song JSON objects (if status == 200), or an error message (string)
+ * 
+ */
 export async function searchSongs(searchbar_query) {
 
-  console.log("Attempting to search for songs...");
-  // Do the API request to Backend, get the results
-  // May be good to ensure that there is at least 1 character in the search_query string
+  // console.log("Attempting to search for songs...");
 
-  // Check results. Was there an error?
-  // If there was an error, set_searchbar_error(true) and        set_searchbar_error_message(“Relevant error message”)
   if (searchbar_query === "") {
     return {
       status: 400,
@@ -18,62 +25,10 @@ export async function searchSongs(searchbar_query) {
     };
   }
 
-  // return {
-  //   status: 200, // Status of what was actually returned
-  //   response: [
-  //     {
-  //       id: 1,
-  //       uri: "URI 1",
-  //       s_len: 11,
-  //       title: searchbar_query + " 1",
-  //       artist: "Artist 1",
-  //       album: "Album 1",
-  //     },
-  //     {
-  //       id: 2,
-  //       uri: "URI 2",
-  //       s_len: 22,
-  //       title: searchbar_query + " 2",
-  //       artist: "Artist 2",
-  //       album: "Album 2",
-  //     },
-  //     {
-  //       id: 3,
-  //       uri: "URI 3",
-  //       s_len: 33,
-  //       title: searchbar_query + " 3",
-  //       artist: "Artist 3",
-  //       album: "Album 3",
-  //     },
-  //     {
-  //       id: 4,
-  //       uri: "URI 4",
-  //       s_len: 44,
-  //       title: searchbar_query + " 4",
-  //       artist: "Artist 4",
-  //       album: "Album 4",
-  //     },
-  //     {
-  //       id: 5,
-  //       uri: "URI 5",
-  //       s_len: 55,
-  //       title: searchbar_query + " 5",
-  //       artist: "Artist 5",
-  //       album: "Album 5",
-  //     },
-  //   ],
-  // };
-
-  // If there was no error, set_searchbar_error(false) and set_searchbar_error_message(“No error”)
-  // If there was no error, process the results into something usable by the program (ie. trim the JSONs to only include song name, URI, artist, album).
-  // If data cannot be found, input a neutral value (ie. “Unknown”)
-  // Do set_search_results(processed_data) to set the values of what should appear in the dropdown
-
-  // axios.get("http://localhost:8080/return_results?search_string=" + searchbar_query)
-
   try {
     const response = await axios.get(
-      "http://172.28.248.60:8080/return_results?search_string=" + searchbar_query, {timeout: 5000}
+
+      `http://${process.env.REACT_APP_BACKEND_IP}:8080/return_results?search_string=${searchbar_query}`, {timeout: 5000}
     );
 
     switch(response.data.search_string.status) {
@@ -111,10 +66,20 @@ export async function searchSongs(searchbar_query) {
 
 }
 
+/**
+ * API Call to submit a song to be added to the queue based on its JSON in selected_song.
+ * 
+ * The Spotify Class Interface will a response to indicate sucess or failure.
+ * 
+ * @param {function} selected_song The JSON representing the song to be submitted to the queue
+ * 
+ * @returns {JSON} A JSON object containing the *status* of the request (int) and the *response*
+ * on success/failure in the form of a string. Failure messages (status != 200) should be
+ * used to set the error messages that are displayed to the user.
+ * 
+ */
 export async function submitSong(selected_song) {
-  // Check that the selected_song is not null. If it is, set error messages:
-  // set_submit_error(true), set_submit_error_message(“No song has been selected”)
-  // Return early
+
   if (selected_song === null) {
     return {
       status: 400,
@@ -147,16 +112,22 @@ export async function submitSong(selected_song) {
     }
   }
 
-  console.log("Attempting to submit song...");
-
-  let post_data =  {
-    status: 200,
-    search_results: selected_song,
-  }
+  // console.log("Attempting to submit song..."); 
 
   try {
-    const response = await axios.post("http://172.28.248.60:8080/submit_song", post_data, {timeout: 5000});
+
+
+    const response = await axios.post(`http://${process.env.REACT_APP_BACKEND_IP}:8080/submit_song`, 
+    {
+      status: 200,
+      search_results: selected_song,
+    }, 
+    {timeout: 7000});
+
+    // console.log(response);
+
     console.log(response);
+
 
     switch(response.data.status){
       case 200: 
@@ -177,10 +148,8 @@ export async function submitSong(selected_song) {
     }
     
   } catch (error) {
-    // console.log("Error response: ", error);
     console.log(error);
 
-    // console.log("Submit button error!!!")
     return {
       status: 500,
       response: "A network error has occurred while submitting the song.",
@@ -189,6 +158,19 @@ export async function submitSong(selected_song) {
   }
 }
 
+
+/**
+ * API Call to submit a song to the queue based on its URL when sharing a song on Spotify.
+ * 
+ * The Spotify Class Interface will a response to indicate sucess or failure.
+ * 
+ * @param {function} url_textbox_input The string representing the URL to be submitted to the queue
+ * 
+ * @returns {JSON} A JSON object containing the *status* of the request (int) and the *response*
+ * on success/failure in the form of a string. Failure messages (status != 200) should be
+ * used to set the error messages that are displayed to the user.
+ * 
+ */
 export async function submitURLSong(url_textbox_input) {
 
   if (url_textbox_input === "") {
@@ -198,11 +180,12 @@ export async function submitURLSong(url_textbox_input) {
     };
   }
 
-  console.log("Attempting to submit URL...");
+  // console.log("Attempting to submit URL...");
 
   try {
-    const response = await axios.post("http://172.28.248.60:8080/return_results_from_url?spotify_url=" + url_textbox_input, null, {timeout: 5000});
-    console.log(response);
+
+    const response = await axios.post(`http://${process.env.REACT_APP_BACKEND_IP}:8080/return_results_from_url?spotify_url=${url_textbox_input}`, null, {timeout: 5000});
+    // console.log(response);
 
     switch(response.data.spotify_url.status) {
       case 200:
@@ -229,7 +212,6 @@ export async function submitURLSong(url_textbox_input) {
     
   } catch (error) {
     console.log("Error response: ", error);
-    // console.log(error);
 
     return {
       status: 500,
@@ -237,24 +219,35 @@ export async function submitURLSong(url_textbox_input) {
     };
   }
 
-  // const response = await axios.post('https://jsonplaceholder.typicode.com/albums', url_textbox_input);
-  //   console.log("submitURLSong(" + url_textbox_input + ")");
-
-  // return response.status;
 }
 
-export function SongSubmission({ data }) {
-  const [searchBarError, setSearchBarError] = useState("");         // Hold error messages related to the search bar
-  const [submitButtonError, setSubmitButtonError] = useState("");   // Hold error messages related to song submission
-  const [searchQuery, setSearchQuery] = useState("");                 // Represents and holds the value in the search bar
-  const [URLTextboxInput, setURLTextboxInput] = useState("");         // Represents and holds the value in the URL text box
-  const [searchSongsResponse, setSearchSongsResponse] = useState(null);
-  const [searchResults, setSearchResults] = useState("");             // Holds an array of songs for the dropdown
-  const [hideSearchResults, setHideSearchResults] = useState(false);  // A toggle for hiding the dropdown if it is not clicked
-  const [selectedSong, setSelectedSong] = useState(null);             // The song that has been selected from the dropdown
+/**
+ * The fields and buttons that handle submitting songs to the Universal Queue in the backend.
+ * It allows for searching of songs and submitting those songs by clicking on them or by
+ * entering in a song's URL.
+ * 
+ * It displays error messages related to the status of the backend API requests, indicating
+ * what went wrong with the given transaction.
+ * 
+ * @returns The JSX component of SongSubmission and all of its functionality
+ */
+export function SongSubmission() {
+  const [searchBarError, setSearchBarError] = useState("");             // Hold error messages related to the search bar
+  const [submitButtonError, setSubmitButtonError] = useState("");       // Hold error messages related to song submission
+  const [searchQuery, setSearchQuery] = useState("");                   // Represents and holds the value in the search bar
+  const [URLTextboxInput, setURLTextboxInput] = useState("");           // Represents and holds the value in the URL text box
+  const [searchSongsResponse, setSearchSongsResponse] = useState(null); // Holds the returned value from searchSongs as it is being debounced
+  const [searchResults, setSearchResults] = useState("");               // Holds an array of songs for the dropdown
+  const [hideSearchResults, setHideSearchResults] = useState(false);    // A toggle for hiding the dropdown if it is not clicked
+  const [selectedSong, setSelectedSong] = useState(null);               // The song that has been selected from the dropdown
 
-  
-  // A use effect to check if we are clicking outside the dropdown and run a function.
+  /**
+   * A useEffect to check if we are clicking outside the dropdown and run a function.
+   *  
+   * For all functions, it will run handleClickOutsideDropdown unless the 
+   * command **e.stopPropagation() is run. Functions that contain this are
+   * considered to be "inside" the dropdown or unaffected by this logic.
+  */
   useEffect(() => {
     document.addEventListener("click", handleClickOutsideDropdown);
 
@@ -263,27 +256,49 @@ export function SongSubmission({ data }) {
     };
   }, []);
 
-  // Handles emptying the search bar if a song has been selected but the search query is backspaced
-  // Meant to simulate deleting the selected song from the search bar
+  /**
+   * Hides the search results dropdown.
+   * It is only run when clicking outside the dropdown due to the useEffect above.
+   */
+  const handleClickOutsideDropdown = () => {
+    setHideSearchResults(true);
+  };
+
+  /**
+   * Handles emptying the search bar if a song has been selected but the search query is backspaced
+   * Meant to simulate deleting the selected song from the search bar.
+   * 
+   * @param {Event} e The event response that comes with interacting with a component.
+   * This is usually provided as an implicit paramter when the function is called.
+  */ 
   const handleSearchBarKeyDown = (e) => {
 
     if (selectedSong && e.key === "Backspace") {
       setSearchQuery("");
       setSelectedSong(null);
     }
+
   };
 
-  // A function wrapper for searchSongs that debounces the call.
-  // That means, if called multiple times in the time interval specified,
-  // it only returns the results of the most recent call of the function.
-  // It then sets the return value of searchSongs to searchSongsResponse
+  /**
+  * A function wrapper for searchSongs that debounces the call.
+  * That means, if called multiple times in the time interval specified,
+  * it only returns the results of the most recent call of the function.
+  * 
+  * It sets the return value of searchSongs to searchSongsResponse.
+  */ 
   const searchSongs_debounced = useCallback(
     debounce((searchInput) => 
       searchSongs(searchInput).then(setSearchSongsResponse), 500),
     [searchSongs, setSearchSongsResponse]
   );
 
-  // Handles running a debounced searchSongs whenever the search bar is changed
+  /**
+   * Handles running a debounced searchSongs whenever the search bar is changed.
+   * 
+   * @param {Event} e The event response that comes with interacting with a component.
+   * This is usually provided as an implicit paramter when the function is called.
+  */ 
   const handleSearchBarKeystroke = async (e) => {
 
     setSearchBarError("");
@@ -295,8 +310,14 @@ export function SongSubmission({ data }) {
 
   };
 
-  // Handles updaing variables after the searchSongsResponse is updated
-  // during searchSongs_debounced
+  /**
+   * A useEffect to handle the response to searchSongs after searchsongsResponse is
+   * updated after handleSearchBarKeystroke finishes.
+   * 
+   * This function is created to allow for debouncing functionality as the debounce
+   * delays our response. Doing it this way, we react to the response when it happens.
+   *  
+  */
   React.useEffect(() => {
     console.log(searchSongsResponse)
 
@@ -311,17 +332,31 @@ export function SongSubmission({ data }) {
     }
   }, [searchSongsResponse]) // Run this useEffect whenever searchSongsResponse changes
 
-  // Handles displaying the dropdown when clicking on the search bar,
-  // if it was previously hidden
+  /**
+   * Handles displaying the dropdown when clicking on the search bar, if it was previously 
+   * hidden. This function does stopPropagation to ignore handleClickOutsideDropdown.
+   * 
+   * @param {Event} e The event response that comes with interacting with a component.
+   * This is usually provided as an implicit paramter when the function is called.
+  */ 
   const handleSearchBarClick = (e) => {
     // Prevents the behavior to be done clicking outside the dropdown
     e.stopPropagation();
 
-    console.log("Clicked searchbar");
     setHideSearchResults(false);
   };
 
-  // Handle selecting a song from the dropdown
+  /**
+   * Handle selecting a song from the dropdown.
+   * 
+   * This function ignores the handleClickOutsideDropdown as we are clicking in the dropdown.
+   * 
+   * @param {JSON} song The song JSON object that corresponds to the entry in the
+   * dropdown menu that has been selected.
+   * 
+   * @param {Event} e The event response that comes with interacting with a component.
+   * This is usually provided as an implicit paramter when the function is called.
+  */ 
   const handleDropdownSelectSong = (song, e) => {
     // Prevents the behavior to be done clicking outside the dropdown
     e.stopPropagation();
@@ -332,12 +367,9 @@ export function SongSubmission({ data }) {
     setSearchResults(null);
   };
 
-  // Hides the search results dropdown.
-  // Run when clicking outside the dropdown due to the useEffect
-  const handleClickOutsideDropdown = () => {
-    setHideSearchResults(true);
-  };
-
+  /**
+   * Handles calling submitSong to submit the song stored in *selectedSong* to the backend.
+  */ 
   const handleSubmitSong = async () => {
 
     setSubmitButtonError("Submitting song...");
@@ -354,6 +386,9 @@ export function SongSubmission({ data }) {
     
   }
 
+  /**
+   * Handles calling submitURLSong to submit the song stored in *URLTextboxInput* to the backend.
+  */ 
   const handleSubmitURL = async () => {
 
     setSubmitButtonError("Submitting URL...");
@@ -372,6 +407,8 @@ export function SongSubmission({ data }) {
 
   return (
     <div className="songSubmission">
+      
+      {/* The container for the search and submit functionality*/}
       <div className="searchContainer">
 
         {/* The input field for searching for songs */}
@@ -391,7 +428,7 @@ export function SongSubmission({ data }) {
             {searchResults.map((item, index) => (
               <div
                 className="dropdownItem"
-                data-testid={"Result" + index} // Give each item a numbered testid for testing purposes
+                data-testid={"Result" + index} // Give each item a numbered testid for testing
                 key={index}
                 onClick={(e) => handleDropdownSelectSong(item, e)}
               >
@@ -414,6 +451,7 @@ export function SongSubmission({ data }) {
         </button>
       </div>
 
+      {/* The container for the URL and submit functionality*/}
       <div className="searchContainer">
         {/* The input field for submitting song URLs to be added to the queue */}
         <input
@@ -433,6 +471,7 @@ export function SongSubmission({ data }) {
           Submit URL
         </button>
       </div>
+
       {/* The field where errors related to the search bar and URL textbox will be displayed */}
       {searchBarError && (
         <div className="errorMessage" data-testid="SearchBarError">{searchBarError}</div>

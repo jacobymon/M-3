@@ -59,6 +59,7 @@ class Song:
 
             else:
                 raise ValueError('status of json not acceptable')
+
         else:
             self.uri = dict.get('uri')   
             self.s_len = dict.get('s_len')
