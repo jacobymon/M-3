@@ -24,14 +24,13 @@ def get_first_available_device(spotify):
         if len(available_devices) == 0:
             print('No devices are available for this user.\nExiting...')
             exit()
-            
-        for availabe_device in available_devices:
-            if availabe_device.is_active:
-                return availabe_device
-            
-        print(
-            f'{available_devices[0].name} ({available_devices[0].type}) is not currently active.\nPlease play and pause a song on it and try again.\nExiting...')
-        exit()
+
+        if available_devices[0].is_active:
+            return available_devices[0]
+        else:
+            print(
+                f'{available_devices[0].name} ({available_devices[0].type}) is not currently active.\nPlease play and pause a song on it and try again.\nExiting...')
+            exit()
 
     # if the device field is filled out, we default to see if the device with the corresponding name is active.
     else: 

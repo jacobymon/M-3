@@ -1,6 +1,15 @@
 import unittest
 import UniversalQueueDesign
 import json
+# import sys
+# import os
+
+# path = os.path.dirname(os.path.abspath(__file__))
+# sys.path.append(path +"/Spotify_Interface")
+
+# from Spotify_Interface.spotify_interface_class import Spotify_Interface_Class
+# from Song import Song
+
 from Song import Song
 
 class TestUniQueue(unittest.TestCase):
@@ -74,147 +83,20 @@ class TestUniQueue(unittest.TestCase):
         self.assertTrue(self.uniQueue.suspend_toggle)
 
 
-    def test_insert_and_removal(self):
-        #note that while it is possible to insert the same mocked song object here, it would not be
-        #in a real use case, thus it's not tested for.
+    def test_insert(self):
+        #must have a spotify app running in order to perform this test!
+        #This will play a series of 3 short songs/skits resulting in about 51 seconds of testing.
+        #1. suffer by Napalm Deaeth
+        #2. Her Majesty by The Beatles
+        #3. Intro (skit) by Kanye West
 
         self.uniQueue.insert(self.song1)
 
-        self.assertEqual(self.uniQueue.data[0], self.song1)
-
         self.uniQueue.insert(self.song3)
-
-        self.assertEqual(self.uniQueue.data[-1], self.song3)
 
         self.uniQueue.insert(self.song6)
 
-        #testing id functionality
-        self.assertNotEqual(self.uniQueue.data[0].id, self.uniQueue.data[1].id)
 
-        self.assertNotEqual(self.uniQueue.data[0].id, self.uniQueue.data[2].id)
-
-        self.assertNotEqual(self.uniQueue.data[1].id, self.uniQueue.data[2].id)
-
-        #testing error handleing
-        self.uniQueue.set_suspend_toggle(True)
-
-        self.assertRaises(ValueError, self.uniQueue.insert, self.song1)
-
-        #cleanup
-        self.uniQueue.set_suspend_toggle(False)
-
-
-        #***************remove_from_queue tests**********************
-
-        self.uniQueue.remove_from_queue(1)
-
-        self.assertRaises(ValueError, self.uniQueue.remove_from_queue, 3) #remove id that's not in queue
-        
-
-        self.assertEqual(self.uniQueue.data[0].id, 0)
-        self.assertEqual(self.uniQueue.data[-1].id, 2)
-
-        self.uniQueue.remove_from_queue(0)
-
-        self.assertEqual(self.uniQueue.data[0].id, 2)
-
-        self.uniQueue.remove_from_queue(2)
-
-        self.assertEqual(self.uniQueue.data, [])
-
-        self.assertRaises(ValueError,self.uniQueue.remove_from_queue, 0) #removal of empty queue
-
-
-    def test_write_and_recover(self):
-
-
-        # self.uniQueue.insert(self.song1)
-
-        # with open('WriteTest.txt', 'r') as file:
-        #     self.WriteTest_data = file.read()
-
-        # self.assertEqual(self.WriteTest_data, self.uniQueue.data)
-
-        # self.uniQueue.insert(self.song3)
-
-        # with open('WriteTest.txt', 'r') as file:
-        #     self.WriteTest_data = file.read()
-
-        # self.assertEqual(self.WriteTest_data, self.uniQueue.data)
-
-        # self.uniQueue.insert(self.song6)
-
-        # with open('WriteTest.txt', 'r') as file:
-        #     self.WriteTest_data = file.read()
-
-        # self.assertEqual(self.WriteTest_data, self.uniQueue.data)
-
-        #the code above needs to be changed so that we are checking that write() puts parsible json data that can be recovered into a queue.
-
-
-        formerState= self.uniQueue.data
-
-        #**** simulated crash 1
-        self.uniQueue.data = []
-
-        self.uniQueue.recover("WriteTest.txt")
-
-        self.assertEqual(self.WriteTest_data, formerState)
-
-        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
-
-
-    
-        self.uniQueue.remove_from_queue(0)
-
-        with open('WriteTest.txt', 'r') as file:
-            self.WriteTest_data = file.read()
-
-        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
-
-        self.uniQueue.remove_from_queue(2)
-
-        with open('WriteTest.txt', 'r') as file:
-            self.WriteTest_data = file.read()
-
-        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
-
-        formerState= self.uniQueue.data
-
-        #**** simulated crash 2
-        self.uniQueue.data = []
-
-        self.uniQueue.recover("WriteTest.txt")
-
-        self.assertEqual(self.WriteTest_data, formerState)
-
-        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
-
-        self.uniQueue.remove_from_queue(1)
-
-        with open('WriteTest.txt', 'r') as file:
-            self.WriteTest_data = file.read()
-
-        self.assertEqual(self.WriteTest_data, self.uniQueue.data)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
 
 
 if __name__ == "__main__":

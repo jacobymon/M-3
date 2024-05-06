@@ -19,10 +19,10 @@ class Song:
         @param id: unique id of the song
 
         """
+        # Loading JSON data into a Python dictionary
+        dict = json.loads(json_data)
 
         if recover == False:
-            # Loading JSON data into a Python dictionary
-            dict = json.loads(json_data)
 
             # Accessing the JSON attributes to initialize Song attributes
             status = dict.get('status')
@@ -59,7 +59,6 @@ class Song:
 
             else:
                 raise ValueError('status of json not acceptable')
-
         else:
             self.uri = dict.get('uri')   
             self.s_len = dict.get('s_len')

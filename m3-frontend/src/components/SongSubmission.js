@@ -27,6 +27,7 @@ export async function searchSongs(searchbar_query) {
 
   try {
     const response = await axios.get(
+
       `http://${process.env.REACT_APP_BACKEND_IP}:8080/return_results?search_string=${searchbar_query}`, {timeout: 5000}
     );
 
@@ -115,6 +116,7 @@ export async function submitSong(selected_song) {
 
   try {
 
+
     const response = await axios.post(`http://${process.env.REACT_APP_BACKEND_IP}:8080/submit_song`, 
     {
       status: 200,
@@ -181,6 +183,7 @@ export async function submitURLSong(url_textbox_input) {
   // console.log("Attempting to submit URL...");
 
   try {
+
     const response = await axios.post(`http://${process.env.REACT_APP_BACKEND_IP}:8080/return_results_from_url?spotify_url=${url_textbox_input}`, null, {timeout: 5000});
     // console.log(response);
 
