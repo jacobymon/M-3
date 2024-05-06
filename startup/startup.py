@@ -1,13 +1,11 @@
+import install_dependencies  # MUST be the first line to install dependencies
 import logging
 import os
 import platform
 import subprocess
 import sys
-
 import psutil
 import tekore as tk
-
-import install_dependencies  # MUST be the first line to install dependencies
 from server import Server
 
 path = os.path.dirname(os.path.abspath(__file__))
