@@ -65,8 +65,12 @@ async function verify_host(updateIsHost, updateCookie) {
 	try {
 		const response = await axios.get(VERIFY_HOST_CALL, {timeout: 5000});
 
-		updateIsHost(response.data[0]);
-		updateCookie(response.data[1]);
+		console.log("***********************" + response.data[0])
+
+		//updateIsHost(response.data[0]);
+		updateIsHost(response.data["updateIsHost"])
+		//updateCookie(response.data[1]);
+		updateCookie(response.data["updateCookie"])
 	} catch (error) {
 		// Keep displaying the user UI, and rerequest soon.
 		setTimeout(() => {verify_host(updateIsHost, updateCookie)}, RECHECK_ISHOST_TIME)
