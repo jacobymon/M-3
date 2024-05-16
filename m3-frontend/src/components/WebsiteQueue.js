@@ -67,9 +67,7 @@ async function verify_host(updateIsHost, updateCookie) {
 
 		console.log("***********************" + response.data[0])
 
-		//updateIsHost(response.data[0]);
 		updateIsHost(response.data["updateIsHost"])
-		//updateCookie(response.data[1]);
 		updateCookie(response.data["updateCookie"])
 	} catch (error) {
 		// Keep displaying the user UI, and rerequest soon.

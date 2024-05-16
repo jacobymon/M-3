@@ -432,10 +432,8 @@ def verify_host():
     if request.method == 'GET':
         incomingIP = request.remote_addr
         if incomingIP == local_ip:
-            # return [True, UQ.hostCookie]
             return {"updateIsHost": True, "updateCookie": UQ.hostCookie}
         else:
-            #return [False, ""]
             return {"updateIsHost": False, "updateCookie": ""}
 
 
