@@ -216,6 +216,7 @@ class UniversalQueue:
         #IMPORTANT removal of first song starts playing next song is checked manually
         #IMPORTANT this operation is curretnly O(n). Look into making it O(1) with dictionary
         if self.cookie_is_valid(cookie):
+
             for s in self.data:
                 if s.id == id:
                     #If we're removing the first item in the queue which is currently playing, just kill the
@@ -223,18 +224,23 @@ class UniversalQueue:
                     if s.id == self.data[0].id:
                         self.flush_exit.set()
                         self.flush_exit.clear()
+                        #if the last song is being deleted, stop playback
+                        if len(self.data) == 1:
+                            self.spotify.pause()
+                        
                     #If we're removing anything else, just remove it from the queue
                     else:
+                        
                         self.data.remove(s)
-                    #write()
+                        
+                        
+                    self.write()
                     return
             #If no song retuns
             raise ValueError(f"id {id} was not a song in the queue")
         else:
             raise ValueError(f"Cookie {cookie} was invalid")
 
-            # except:
-            #     raise ValueError('invalid id')
         
 
        
