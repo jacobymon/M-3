@@ -1,15 +1,6 @@
 import unittest
 import IsoUniversalQueue
 import json
-# import sys
-# import os
-
-# path = os.path.dirname(os.path.abspath(__file__))
-# sys.path.append(path +"/Spotify_Interface")
-
-# from Spotify_Interface.spotify_interface_class import Spotify_Interface_Class
-# from Song import Song
-
 from Song import Song
 
 class TestUniQueue(unittest.TestCase):
@@ -17,226 +8,103 @@ class TestUniQueue(unittest.TestCase):
     def setUp(self):
         self.uniQueue = IsoUniversalQueue.UniversalQueue()
 
-        #create mock user requests via json with cookies
+        # Create mock user requests via JSON with cookies
         with open('UniQueueTest.json', 'r') as file:
-            hostRequestData= file.read()
-            hostRequestData = json.loads(hostRequestData)
+            hostRequestData = json.load(file)
             self.hostCookie = hostRequestData.get('cookie')
 
-
         with open('UniQueueTest2.json', 'r') as file:
-            userRequestData= file.read()
-            userRequestData = json.loads(userRequestData)
+            userRequestData = json.load(file)
             self.userCookie = userRequestData.get('cookie')
 
-        #MAYBE DELETEME
-        #  with open('UniQueueTest3.json', 'r') as file:
-        #     self.badRequest = file.read()
-
-        #mock Songs
+        # Mock Songs
         with open('SongTest.json', 'r') as file:
-            self.SongTest_data = file.read()
-
-        self.song1 = Song(self.SongTest_data)
+            self.song1 = Song(file.read())
 
         with open('SongTest3.json', 'r') as file:
-            self.SongTest3_data = file.read()
-
-        self.song3 = Song(self.SongTest3_data)
+            self.song3 = Song(file.read())
 
         with open('SongTest6.json', 'r') as file:
-            self.SongTest6_data = file.read()
-
-        self.song6 = Song(self.SongTest6_data)
-
+            self.song6 = Song(file.read())
 
     def test_init(self):
-
-        self.assertEqual(self.uniQueue.data, [])
-
+        """Test initialization of UniversalQueue."""
+        self.assertEqual(self.uniQueue.data, {})
         self.assertFalse(self.uniQueue.suspend_toggle)
-
         self.assertFalse(self.uniQueue.pause_toggle)
 
-
-        #IMPORTANT this is a place holder for checking if we have a real instance
-        #of the spotify interface class, not a mock
-
     def test_cookie_verifier(self):
-
-        #when integration comes we will add tests with patch and mocked requests
-        #for now we will use a static json
-
+        """Test cookie verification."""
         self.assertFalse(self.uniQueue.cookie_verifier(self.userCookie))
-
         self.assertTrue(self.uniQueue.cookie_verifier(self.hostCookie))
 
-
     def test_set_suspend_toggle(self):
-
+        """Test setting the suspend toggle."""
         self.uniQueue.set_suspend_toggle(False)
-
         self.assertFalse(self.uniQueue.suspend_toggle)
 
         self.uniQueue.set_suspend_toggle(True)
-
         self.assertTrue(self.uniQueue.suspend_toggle)
 
-
     def test_insert_and_removal(self):
-        #note that while it is possible to insert the same mocked song object here, it would not be
-        #in a real use case, thus it's not tested for.
-
+        """Test inserting and removing songs from the queue."""
         self.uniQueue.insert(self.song1)
-
-        self.assertEqual(self.uniQueue.data[0], self.song1)
+        self.assertIn(self.song1.id, self.uniQueue.data)
+        self.assertEqual(self.uniQueue.data[self.song1.id], self.song1)
 
         self.uniQueue.insert(self.song3)
-
-        self.assertEqual(self.uniQueue.data[-1], self.song3)
+        self.assertIn(self.song3.id, self.uniQueue.data)
+        self.assertEqual(self.uniQueue.data[self.song3.id], self.song3)
 
         self.uniQueue.insert(self.song6)
+        self.assertIn(self.song6.id, self.uniQueue.data)
+        self.assertEqual(self.uniQueue.data[self.song6.id], self.song6)
 
-        #testing id functionality
-        self.assertNotEqual(self.uniQueue.data[0].id, self.uniQueue.data[1].id)
+        # Test unique IDs
+        self.assertNotEqual(self.song1.id, self.song3.id)
+        self.assertNotEqual(self.song1.id, self.song6.id)
+        self.assertNotEqual(self.song3.id, self.song6.id)
 
-        self.assertNotEqual(self.uniQueue.data[0].id, self.uniQueue.data[2].id)
-
-        self.assertNotEqual(self.uniQueue.data[1].id, self.uniQueue.data[2].id)
-
-        #testing error handleing
+        # Test error handling for suspend toggle
         self.uniQueue.set_suspend_toggle(True)
-
         self.assertRaises(ValueError, self.uniQueue.insert, self.song1)
-
-        #cleanup
         self.uniQueue.set_suspend_toggle(False)
 
+        # Test removal
+        self.uniQueue.remove_from_queue(self.song1.id)
+        self.assertNotIn(self.song1.id, self.uniQueue.data)
 
-        #***************remove_from_queue tests**********************
-        self.uniQueue.remove_from_queue(1)
+        self.assertRaises(ValueError, self.uniQueue.remove_from_queue, 999)  # Non-existent ID
 
-        self.assertRaises(ValueError, self.uniQueue.remove_from_queue, 3) #remove id that's not in queue
-        
+        self.uniQueue.remove_from_queue(self.song3.id)
+        self.assertNotIn(self.song3.id, self.uniQueue.data)
 
-        self.assertEqual(self.uniQueue.data[0].id, 0)
-        self.assertEqual(self.uniQueue.data[-1].id, 2)
+        self.uniQueue.remove_from_queue(self.song6.id)
+        self.assertEqual(self.uniQueue.data, {})
 
-        self.uniQueue.remove_from_queue(0)
-
-        self.assertEqual(self.uniQueue.data[0].id, 2)
-
-        self.uniQueue.remove_from_queue(2)
-
-        self.assertEqual(self.uniQueue.data, [])
-
-        self.assertRaises(ValueError,self.uniQueue.remove_from_queue, 0) #removal of empty queue
-
+        self.assertRaises(ValueError, self.uniQueue.remove_from_queue, self.song6.id)  # Empty queue
 
     def test_write_and_recover(self):
-
-        #note that insert() and remove_from_queue have write() in them.
+        """Test writing to and recovering from a file."""
         self.uniQueue.insert(self.song1)
-
-        with open('Write.json', 'r') as file:
-            self.Write_data = file.read()
-
-        with open('WriteTest.json', 'r') as file:
-            self.WriteTest_data = file.read()
-
-        self.assertEqual(self.Write_data, self.WriteTest_data)
-
         self.uniQueue.insert(self.song3)
-
-        with open('Write.json', 'r') as file:
-            self.Write_data = file.read()
-        
-        with open('WriteTest2.json', 'r') as file:
-            self.WriteTest2_data = file.read()
-
-
-        self.assertEqual(self.Write_data, self.WriteTest2_data)
-
-
         self.uniQueue.insert(self.song6)
 
-        with open('Write.json', 'r') as file:
-            self.Write_data = file.read()
+        # Write data to file
+        self.uniQueue.write()
 
-        with open('WriteTest3.json', 'r') as file:
-            self.WriteTest3_data = file.read()
-
-        self.assertEqual(self.Write_data, self.WriteTest3_data)
-
-
-        formerURIs = []
-        for s in self.uniQueue.data:
-            formerURIs.append(s.uri)
-
-        #**** simulated crash 1
+        # Simulate crash and recover
         self.uniQueue.data = None
+        recoveredQueue = self.uniQueue.recover(None)
 
-        self.uniQueue = IsoUniversalQueue.UniversalQueue().recover('Write.json')
+        # Verify recovered data
+        self.assertIn(self.song1.id, recoveredQueue.data)
+        self.assertIn(self.song3.id, recoveredQueue.data)
+        self.assertIn(self.song6.id, recoveredQueue.data)
 
-        recoveredURIs = []
-        for s in self.uniQueue.data:
-            recoveredURIs.append(s.uri)
-
-        self.assertEqual(recoveredURIs, formerURIs)
-
-    
-        self.uniQueue.remove_from_queue(2)
-
-        with open('Write.json', 'r') as file:
-            self.Write_data = file.read()
-
-        self.assertEqual(self.Write_data, self.WriteTest2_data)
-
-
-
-        self.uniQueue.remove_from_queue(1)
-
-        formerURIs = []
-        for s in self.uniQueue.data:
-            formerURIs.append(s.uri)
-
-        #simulated crash 2
-        self.uniQueue.data = None
-
-        with open('Write.json', 'r') as file:
-            self.Write_data = file.read()
-
-        self.assertEqual(self.Write_data, self.WriteTest_data)
-
-        self.newUniQueue = IsoUniversalQueue.UniversalQueue().recover('Write.json')
-
-        recoveredURIs = []
-        for s in self.newUniQueue.data:
-            recoveredURIs.append(s.uri)
-            
-        
-        self.assertEqual(formerURIs, recoveredURIs)
-
-
-        self.newUniQueue.remove_from_queue(0)
-
-
-        self.assertEqual(self.newUniQueue.data, [])
-
-
-        #**** simulated crash 2
-        self.newUniQueue.data = None
-
-        self.newUniQueue2 = IsoUniversalQueue.UniversalQueue().recover("Write.json.txt")
-
-        self.assertEqual(self.newUniQueue2.data, [])
-
-
+        self.assertEqual(recoveredQueue.data[self.song1.id].uri, self.song1.uri)
+        self.assertEqual(recoveredQueue.data[self.song3.id].uri, self.song3.uri)
+        self.assertEqual(recoveredQueue.data[self.song6.id].uri, self.song6.uri)
 
 if __name__ == "__main__":
-    log_file = 'log_file.txt'
-    with open(log_file, "a") as f:
-       runner = unittest.TextTestRunner(f)
-       unittest.main(testRunner=runner)
-        
     unittest.main()

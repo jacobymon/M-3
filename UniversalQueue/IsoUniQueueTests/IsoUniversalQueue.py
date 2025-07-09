@@ -38,7 +38,7 @@ class UniversalQueue:
 
             @attribute pause_toggle: a boolean value where true indicates pausing, false is playing                                      
         """
-        self.data = []
+        self.data = {}  # Dictionary to store songs with their IDs as keys
 
         #PSUEDO CODE FOR NOW UNTIL MOCK COMES: self.spotify = Spotify_Interface_Class()
 
@@ -59,35 +59,28 @@ class UniversalQueue:
 
     def insert(self, song, recover = False): 
         """
-        When queue not suspended
-        inserts a song into the queue with a unique id using the song classes set_id() method
-        and calls update_UI()
+        Inserts a song into the queue with a unique ID using the song class's set_id() method.
+        Calls update_UI().
 
-        @param song: a song object that contains all of the attributes needed
-        to display info to UI and playback
+        @param song: A song object containing attributes needed for UI and playback.
+        @param recover: Boolean flag for recovery mode (doesn't write to file).
         """
         if recover == False:
             if self.suspend_toggle == False:
                 song.set_id(self.idCount)
-                self.idCount += 1 #update the next id to be unique for the next set
-                self.data.append(song)
+                self.idCount += 1  # Update the next ID to be unique
+                self.data[song.id] = song  # Add song to dictionary
                 self.write()
-
-                # if len(self.data) == 1:
-                #     self.flush_queue()
             else:
                 raise ValueError('can not insert')
-        else: #special recovery version (doesn't write())
+        else:  # Special recovery version (doesn't write())
             if self.suspend_toggle == False:
                 song.set_id(self.idCount)
-                self.idCount += 1 #update the next id to be unique for the next set
-                self.data.append(song)
-
-                # if len(self.data) == 1:
-                #     self.flush_queue()
+                self.idCount += 1  # Update the next ID to be unique
+                self.data[song.id] = song  # Add song to dictionary
             else:
                 raise ValueError('can not insert')
-            
+                
 
 
     # def flush_queue(self):
@@ -192,29 +185,19 @@ class UniversalQueue:
         @param index: index recieved from host corresponding song the want removed from queue
        
         """
-        #MOCKED verify cookie is host's, would pass the cookie in from request instead
-        #of self.cookie
-        #IMPORTANT removal of first song starts playing next song is checked manually
-        #IMPORTANT this operation is curretnly O(n). Look into making it O(1) with dictionary
+        # MOCKED verify cookie is host's, would pass the cookie in from request instead of self.cookie
         if self.cookie_verifier(self.hostCookie):
-            for s in self.data:
-                if s.id == id:
-                    #If we're removing the first item in the queue which is currently playing, just kill the
-                    #current wait call on flush queue as it will remove the first item 
-                    if s.id == self.data[0].id:
-                        # self.flush_exit.set()
-                        self.data.remove(s)
-                    #If we're removing anything else, just remove it from the queue
-                    else:
-                        self.data.remove(s)
-                    self.write()
-                    return
+            # Check if the song exists in the dictionary
+            if id in self.data:
+                # If removing the first song in the queue, handle special logic
+                if id == next(iter(self.data)):  # First song in the queue
+                    # self.flush_exit.set()  # Uncomment if flush logic is implemented
+                    pass
+                # Remove the song from the dictionary
+                del self.data[id]
+                self.write()
             else:
-                raise ValueError('invalid id')
-
-            # except:
-            #     raise ValueError('invalid id')
-        
+                raise ValueError('invalid id')        
 
        
 
@@ -266,29 +249,23 @@ class UniversalQueue:
 
     def write(self):
         """
-        Writes the queue to a file in json format on
-        the hosts local machine
-        O(n) complexity, where n is len(self.data)
-
-        @param file: the file we are writing to, created during startup 
-        """ 
-
-        #break down the song objects into jsonifiable data
-        #write to the file
+        Writes the queue to a file in JSON format on the host's local machine.
+        O(n) complexity, where n is len(self.data).
+        """
         data = []
-        for i in range(len(self.data)):
+        for song in self.data.values():
             songObject = {
-                    "uri": self.data[i].uri,
-                    "s_len": self.data[i].s_len,
-                    "name" : self.data[i].name,
-                    "album": self.data[i].album,
-                    "artist": self.data[i].artist
-                }
+                "uri": song.uri,
+                "s_len": song.s_len,
+                "name": song.name,
+                "album": song.album,
+                "artist": song.artist
+            }
             data.append(songObject)
-        
+
         with open("Write.json", "w") as json_file:
-                json.dump(data, json_file)
- 
+            json.dump(data, json_file)
+    
 
           
 
@@ -321,44 +298,3 @@ class UniversalQueue:
 
         except FileNotFoundError:
             print(f"Error: File 'Write.json' not found.")   
-
-
-
-# UQ = UniversalQueue()
-
-# @app.route('/return_results', methods=['GET', 'POST'])
-# @cross_origin()
-# def return_results():
-#     search_string = request.args.get('search_string')
-#     response = {'search_string': UQ.spotify.return_data(search_string)}
-#     print(response)
-#     return response
-
-
-# @app.route('/return_results_from_url', methods=['GET', 'POST'])
-# @cross_origin()
-# def return_results_from_url():
-#     url = request.args.get('spotify_url')
-#     response = {'spotify_url': UQ.spotify.from_url(url)}
-#     print(response)
-#     return response
-
-# @app.route('/submit_song', methods=['GET', 'POST'])
-# @cross_origin()
-# def submit_song():
-
-#     song_data = request.get_json()
-#     song_data = json.dumps(song_data)
-#     song = Song(song_data)
-
-#     UQ.insert(song)
-
-
-#     print(UQ.data) 
-#     return song_data
-
-
-    
-# if __name__ == '__main__':
-#     app.run(host = '0.0.0.0', port=8080) 
-

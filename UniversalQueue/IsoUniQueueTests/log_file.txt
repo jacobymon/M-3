@@ -9,3 +9,61 @@ OK
 Ran 5 tests in 0.010s
 
 OK
+.FE.E
+======================================================================
+ERROR: test_insert_and_removal (__main__.TestUniQueue)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "test_IsoUniQueue.py", line 96, in test_insert_and_removal
+    self.assertEqual(self.uniQueue.data[-1], self.song3)
+KeyError: -1
+
+======================================================================
+ERROR: test_write_and_recover (__main__.TestUniQueue)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "test_IsoUniQueue.py", line 174, in test_write_and_recover
+    formerURIs.append(s.uri)
+AttributeError: 'int' object has no attribute 'uri'
+
+======================================================================
+FAIL: test_init (__main__.TestUniQueue)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "test_IsoUniQueue.py", line 55, in test_init
+    self.assertEqual(self.uniQueue.data, [])
+AssertionError: {} != []
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.008s
+
+FAILED (failures=1, errors=2)
+.FE.E
+======================================================================
+ERROR: test_insert_and_removal (__main__.TestUniQueue)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "test_IsoUniQueue.py", line 96, in test_insert_and_removal
+    self.assertEqual(self.uniQueue.data[-1], self.song3)
+KeyError: -1
+
+======================================================================
+ERROR: test_write_and_recover (__main__.TestUniQueue)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "test_IsoUniQueue.py", line 174, in test_write_and_recover
+    formerURIs.append(s.uri)
+AttributeError: 'int' object has no attribute 'uri'
+
+======================================================================
+FAIL: test_init (__main__.TestUniQueue)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "test_IsoUniQueue.py", line 55, in test_init
+    self.assertEqual(self.uniQueue.data, [])
+AssertionError: {} != []
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.007s
+
+FAILED (failures=1, errors=2)
