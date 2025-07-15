@@ -33,13 +33,6 @@ class TestSong(unittest.TestCase):
         self.assertEqual(song1.artist, "Napalm Death")
         self.assertEqual(song1.id, None)
     
-
-        #bad json tests
-        #*****Add these tests after checking with max*********
-        # self.assertRaises(ValueError, Song, self.SongTest4_data)
-
-        # self.assertRaises(ValueError, Song, self.SongTest5_data)
-        #*****Add these tests after checking with max*********
         
         self.assertRaises(ValueError, Song, self.SongTest2_data)
 

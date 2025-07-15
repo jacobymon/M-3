@@ -18,6 +18,9 @@ from Song import Song
 
 import threading
 
+from YouTube_API import YouTubeAPI
+
+
 # app = Flask(__name__)
 # CORS(app) 
 
@@ -47,6 +50,7 @@ class UniversalQueue:
         self.pause_toggle = False
 
         #this is a MOCK for testing purposes!!!
+        #look into real cookie in the future
         self.hostCookie = "host"
 
         self.idCount = 0
@@ -56,6 +60,19 @@ class UniversalQueue:
         self.flush_exit = threading.Event()
 
         self.pause_exit = threading.Event()
+
+        self.youtube_api = YouTubeAPI(api_key = "AIzaSyCvQt4I9nFifFCdhkf6aA7xwWTlI1V6LYE")
+
+    def insert_youtube_song(self, video_id):
+        """
+        Inserts a YouTube song into the queue.
+
+        @param video_id: The ID of the YouTube video.
+        """
+        song_data = self.youtube_api.get_video_details(video_id)
+        song_json = json.dumps({"status": 200, "search_results": song_data})
+        song = Song(song_json)
+        self.insert(song)
 
     def insert(self, song, recover = False): 
         """

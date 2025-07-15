@@ -13,6 +13,14 @@ from flask_cors import CORS, cross_origin
 path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(path +"/Spotify_Interface")
 
+path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(path + "/IsoUniQueueTests")  # Add IsoUniQueueTests directory to the Python path
+
+
+from YouTube_API import YouTubeAPI
+
+from flask import Flask, request, jsonify
+
 import socket
 import threading
 
@@ -34,6 +42,14 @@ class UniversalQueue:
     """
     Stores all of the song requests in a queue order
     """
+
+    API_KEYS = [
+    "AIzaSyCvQt4I9nFifFCdhkf6aA7xwWTlI1V6LYE",
+    "AIzaSyC948uX02ZYvomTfRfw9eSwQJDE9bnIId4",
+    "AIzaSyCDAeaAOmP3M-TLn59923SGQTr7o1w1F4Y",
+    "AIzaSyCxzo4ExRujDH9kv1SysovtSSWTBXKDFec",
+    "AIzaSyAvOmpwSH-nePF4zeqEJwD8CfKX6dP4pTg"
+]
 
     def __init__(self):
         """
@@ -354,6 +370,12 @@ class UniversalQueue:
 
 UQ = UniversalQueue()
 
+@app.route('/', methods=['GET'])
+@cross_origin()
+def root():
+    return jsonify({"status": 200, "message": "Server is running!"})
+
+
 @app.route('/return_results', methods=['GET', 'POST'])
 @cross_origin()
 def return_results():
@@ -478,6 +500,66 @@ def unpause_music():
     cookie =request.json['cookie']
     UQ.unpause_queue(cookie)
     return ""
+
+# List of API keys
+API_KEYS = [
+                "AIzaSyCGJ1UXzFF7QL3X5WHdMhWIGJjhu1BBqh8",
+                "AIzaSyC948uX02ZYvomTfRfw9eSwQJDE9bnIId4",
+                "AIzaSyCDAeaAOmP3M-TLn59923SGQTr7o1w1F4Y",
+                "AIzaSyCxzo4ExRujDH9kv1SysovtSSWTBXKDFec",
+                "AIzaSyAvOmpwSH-nePF4zeqEJwD8CfKX6dP4pTg"
+]
+
+# Initialize YouTubeAPI with multiple keys
+youtube_api = YouTubeAPI(api_keys=API_KEYS)
+
+@app.route('/youtube_search', methods=['GET'])
+@cross_origin()
+def youtube_search():
+    search_string = request.args.get('search_string')
+    if not search_string:
+        return jsonify({"status": 400, "response": "Search string is required."})
+
+    try:
+        results = youtube_api.search_videos(search_string, max_results=4)  # Perform a search
+        return jsonify({"status": 200, "results": results})
+    except Exception as e:
+        logging.error(f"Error in YouTube search: {str(e)}")
+        return jsonify({"status": 500, "response": "An internal server error occurred."})
+
+@app.route('/youtube_submit_url', methods=['POST'])
+@cross_origin()
+def youtube_submit_url():
+    youtube_url = request.json.get('youtube_url')
+    if not youtube_url:
+        return jsonify({"status": 400, "response": "YouTube URL is required."})
+
+    try:
+        # Extract video ID from the URL
+        video_id = youtube_url.split("v=")[-1].split("&")[0]
+
+        video_details = youtube_api.search_videos(video_id)[0]  # Fetch video details
+        print("********", video_details, "********")
+        # Prepare song data for insertion
+        song_data = {
+            "status": 200,
+            "search_results": {
+                "uri": video_details["video_url"],
+                "name": video_details["title"],
+                "artist": video_details["artist"],
+                "s_len": video_details.get("duration", 0),  # Duration can be fetched separately
+                "album": None,  # YouTube songs may not have an album
+                "platform": "YouTube"
+            }
+        }
+        song_json = json.dumps(song_data)
+        song = Song(song_json)
+
+        UQ.insert(song)
+        return jsonify({"status": 200, "response": "YouTube song successfully added to the queue."})
+    except Exception as e:
+        logging.error(f"Error in YouTube song submission: {str(e)}")
+        return jsonify({"status": 500, "response": "An internal server error occurred."})
 
 with open(path + '/../m3-frontend/.env', 'w') as f_obj:
     f_obj.write('REACT_APP_BACKEND_IP="'+local_ip+'"')

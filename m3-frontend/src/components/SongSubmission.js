@@ -3,6 +3,118 @@ import axios from "axios";
 import debounce from "lodash.debounce";
 import "./SongSubmission.css";
 
+
+
+/**
+ * API Call to search for songs on YouTube.
+ * 
+ * @param {string} searchbar_query The string used to search for songs on YouTube.
+ * 
+ * @returns {JSON} A JSON object containing the *status* of the request (int) and the *response*
+ * in the form of an array of song JSON objects (if status == 200), or an error message (string).
+ */
+export async function searchYouTubeSongs(searchbar_query) {
+  if (searchbar_query === "") {
+    return {
+      status: 400,
+      response: "Please enter a song name to search.",
+    };
+  }
+
+  try {
+    const response = await axios.get(
+      `http://${process.env.REACT_APP_BACKEND_IP}:8080/youtube_search?search_string=${searchbar_query}`, 
+      { timeout: 5000 }
+    );
+
+    console.log("YouTube search response:", response.data); // Log backend response
+
+
+    switch (response.data.status) {
+      case 200:
+        console.log("Search results:", response.data.results); // Log search results
+        return {
+          status: response.data.status,
+          response: response.data.results,
+        };
+      case 500:
+        return {
+          status: response.data.status,
+          response: "An internal server error has occurred. Please try again.",
+        };
+      default:
+        return {
+          status: 500,
+          response: "An error has occurred in the backend.",
+        };
+    }
+  } catch (error) {
+    console.log("Error response: ", error);
+
+    return {
+      status: 500,
+      response: "A network error has occurred while searching YouTube songs.",
+    };
+  }
+}
+
+/**
+ * API Call to submit a YouTube song to the queue based on its URL.
+ * 
+ * @param {string} url_textbox_input The string representing the YouTube URL to be submitted to the queue.
+ * 
+ * @returns {JSON} A JSON object containing the *status* of the request (int) and the *response*
+ * on success/failure in the form of a string.
+ */
+export async function submitYouTubeURLSong(url_textbox_input) {
+  if (url_textbox_input === "") {
+    return {
+      status: 400,
+      response: "No URL was provided.",
+    };
+  }
+
+  try {
+    const response = await axios.post(
+      `http://${process.env.REACT_APP_BACKEND_IP}:8080/youtube_submit_url?youtube_url=${url_textbox_input}`, 
+      null, 
+      { timeout: 5000 }
+    );
+
+    switch (response.data.status) {
+      case 200:
+        return {
+          status: response.data.status,
+          response: "YouTube song successfully submitted.",
+        };
+      case 404:
+        return {
+          status: response.data.status,
+          response: "No song was found for that URL.",
+        };
+      case 500:
+        return {
+          status: response.data.status,
+          response: "An internal server error has occurred. Please try again.",
+        };
+      default:
+        return {
+          status: 500,
+          response: "An error has occurred in the backend.",
+        };
+    }
+  } catch (error) {
+    console.log("Error response: ", error);
+
+    return {
+      status: 500,
+      response: "A network error has occurred while submitting the YouTube song URL.",
+    };
+  }
+}
+
+
+
 /**
  * API Call to request a search for songs from the backend.
  * 
@@ -234,13 +346,17 @@ export async function submitURLSong(url_textbox_input) {
 export function SongSubmission() {
   const [searchBarError, setSearchBarError] = useState("");             // Hold error messages related to the search bar
   const [submitButtonError, setSubmitButtonError] = useState("");       // Hold error messages related to song submission
-  const [searchQuery, setSearchQuery] = useState("");                   // Represents and holds the value in the search bar
+  const [spotifySearchQuery, setSpotifySearchQuery] = useState("");                   // Represents and holds the value in the search bar
   const [URLTextboxInput, setURLTextboxInput] = useState("");           // Represents and holds the value in the URL text box
   const [searchSongsResponse, setSearchSongsResponse] = useState(null); // Holds the returned value from searchSongs as it is being debounced
   const [searchResults, setSearchResults] = useState("");               // Holds an array of songs for the dropdown
-  const [hideSearchResults, setHideSearchResults] = useState(false);    // A toggle for hiding the dropdown if it is not clicked
+  //const [hideSearchResults, setHideSearchResults] = useState(false);    // A toggle for hiding the dropdown if it is not clicked
   const [selectedSong, setSelectedSong] = useState(null);               // The song that has been selected from the dropdown
-
+  const [searchYouTubeResults, setSearchYouTubeResults] = useState(""); // Holds an array of YouTube songs for the dropdown
+  const [selectedYouTubeSong, setSelectedYouTubeSong] = useState(null); // The YouTube song selected from the dropdown
+  const [youtubeSearchQuery, setYouTubeSearchQuery] = useState("");     // YouTube-specific search query
+  const [hideSpotifySearchResults, setHideSpotifySearchResults] = useState(false); // Spotify dropdown visibility
+  const [hideYouTubeSearchResults, setHideYouTubeSearchResults] = useState(false); // YouTube dropdown visibility
   /**
    * A useEffect to check if we are clicking outside the dropdown and run a function.
    *  
@@ -261,8 +377,56 @@ export function SongSubmission() {
    * It is only run when clicking outside the dropdown due to the useEffect above.
    */
   const handleClickOutsideDropdown = () => {
-    setHideSearchResults(true);
+    setHideSpotifySearchResults(true); // Hide Spotify dropdown
+    setHideYouTubeSearchResults(true); // Hide YouTube dropdown
   };
+
+
+  /**
+ * Handles running a debounced searchYouTubeSongs whenever the search bar is changed.
+ * 
+ * @param {Event} e The event response that comes with interacting with a component.
+ */
+  const debouncedSearchYouTubeSongs = useCallback(
+    debounce((query) => {
+      searchYouTubeSongs(query).then((response) => {
+        console.log("YouTube search results:", response.response); // Log search results
+  
+        if (response.status === 200) {
+          setSearchYouTubeResults(response.response);
+          console.log("Updated searchYouTubeResults:", response.response); // Log updated state
+          setSearchBarError("");
+        } else {
+          setSearchYouTubeResults(null);
+          setSearchBarError(response.response);
+        }
+      });
+    }, 500), // Debounce delay of 500ms
+    []
+  );
+  
+  const handleYouTubeSearchBarKeystroke = (e) => {
+    setSearchBarError("");
+    setSubmitButtonError("");
+    setYouTubeSearchQuery(e.target.value); // Update YouTube-specific search query
+    debouncedSearchYouTubeSongs(e.target.value); // Trigger debounced search
+  };
+
+/**
+ * Handles calling submitYouTubeURLSong to submit the song stored in *URLTextboxInput* to the backend.
+ */
+const handleSubmitYouTubeURL = async () => {
+  setSubmitButtonError("Submitting YouTube URL...");
+
+  let response_json = await submitYouTubeURLSong(URLTextboxInput);
+
+  if (response_json.status === 200) {
+    setSubmitButtonError("");
+    setURLTextboxInput("");
+  } else {
+    setSubmitButtonError(response_json.response);
+  }
+};
 
   /**
    * Handles emptying the search bar if a song has been selected but the search query is backspaced
@@ -271,13 +435,14 @@ export function SongSubmission() {
    * @param {Event} e The event response that comes with interacting with a component.
    * This is usually provided as an implicit paramter when the function is called.
   */ 
-  const handleSearchBarKeyDown = (e) => {
-
-    if (selectedSong && e.key === "Backspace") {
-      setSearchQuery("");
-      setSelectedSong(null);
+  const handleSearchBarKeyDown = (e, platform) => {
+    if (platform === "Spotify" && selectedSong && e.key === "Backspace") {
+      setSpotifySearchQuery(""); // Clear Spotify search query
+      setSelectedSong(null); // Clear selected Spotify song
+    } else if (platform === "YouTube" && selectedYouTubeSong && e.key === "Backspace") {
+      setYouTubeSearchQuery(""); // Clear YouTube search query
+      setSelectedYouTubeSong(null); // Clear selected YouTube song
     }
-
   };
 
   /**
@@ -300,15 +465,14 @@ export function SongSubmission() {
    * This is usually provided as an implicit paramter when the function is called.
   */ 
   const handleSearchBarKeystroke = async (e) => {
-
     setSearchBarError("");
-    setSubmitButtonError("")
-
-    setSearchQuery(e.target.value);
-
-    searchSongs_debounced(e.target.value);
-
+    setSubmitButtonError("");
+  
+    setSpotifySearchQuery(e.target.value); // Update Spotify-specific search query
+  
+    searchSongs_debounced(e.target.value); // Trigger Spotify search
   };
+  
 
   /**
    * A useEffect to handle the response to searchSongs after searchsongsResponse is
@@ -339,11 +503,16 @@ export function SongSubmission() {
    * @param {Event} e The event response that comes with interacting with a component.
    * This is usually provided as an implicit paramter when the function is called.
   */ 
-  const handleSearchBarClick = (e) => {
-    // Prevents the behavior to be done clicking outside the dropdown
-    e.stopPropagation();
-
-    setHideSearchResults(false);
+  const handleSearchBarClick = (e, platform) => {
+    e.stopPropagation(); // Prevents the behavior of clicking outside the dropdown
+  
+    if (platform === "Spotify") {
+      setHideSpotifySearchResults(false); // Show Spotify dropdown
+      setHideYouTubeSearchResults(true);  // Hide YouTube dropdown
+    } else if (platform === "YouTube") {
+      setHideYouTubeSearchResults(false); // Show YouTube dropdown
+      setHideSpotifySearchResults(true);  // Hide Spotify dropdown
+    }
   };
 
   /**
@@ -357,14 +526,19 @@ export function SongSubmission() {
    * @param {Event} e The event response that comes with interacting with a component.
    * This is usually provided as an implicit paramter when the function is called.
   */ 
-  const handleDropdownSelectSong = (song, e) => {
-    // Prevents the behavior to be done clicking outside the dropdown
-    e.stopPropagation();
-
-    console.log(`Selected: ${song.title}`);
-    setSearchQuery(song.title);
-    setSelectedSong(song);
-    setSearchResults(null);
+  const handleDropdownSelectSong = (song, e, platform) => {
+    e.stopPropagation(); // Prevents the behavior of clicking outside the dropdown
+  
+    console.log(`Selected: ${song.title} from ${platform}`);
+    if (platform === "Spotify") {
+      setSpotifySearchQuery(song.title); // Update Spotify search query
+      setSelectedSong(song); // Set selected Spotify song
+      setSearchResults(null); // Clear Spotify dropdown results
+    } else if (platform === "YouTube") {
+      setYouTubeSearchQuery(song.title); // Update YouTube search query
+      setSelectedYouTubeSong(song); // Set selected YouTube song
+      setSearchYouTubeResults(null); // Clear YouTube dropdown results
+    }
   };
 
   /**
@@ -378,7 +552,7 @@ export function SongSubmission() {
 
     if (response_json.status === 200) {
       setSelectedSong(null);
-      setSearchQuery("");
+      setSpotifySearchQuery("");
       setSubmitButtonError("");
     }else {
       setSubmitButtonError(response_json.response)
@@ -405,83 +579,161 @@ export function SongSubmission() {
     }
   }
 
-  return (
-    <div className="songSubmission">
+//   return (
+//     <div className="songSubmission">
       
-      {/* The container for the search and submit functionality*/}
-      <div className="searchContainer">
+//       {/* The container for the search and submit functionality*/}
+//       <div className="searchContainer">
 
-        {/* The input field for searching for songs */}
-        <input
-          className="searchBar"
-          data-testid="SearchBar"
-          placeholder="Search for songs..."
-          value={searchQuery}
-          onClick={handleSearchBarClick} // Handles showing the dropdown if it was previously hidden
-          onChange={handleSearchBarKeystroke} // Handling searching with each keystroke
-          onKeyDown={handleSearchBarKeyDown} // Handles if a song was selected but we want to re-search
-        />
+//         {/* The input field for searching for songs */}
+//         <input
+//           className="searchBar"
+//           data-testid="SearchBar"
+//           placeholder="Search for songs..."
+//           value={searchQuery}
+//           onClick={handleSearchBarClick} // Handles showing the dropdown if it was previously hidden
+//           onChange={handleSearchBarKeystroke} // Handling searching with each keystroke
+//           onKeyDown={handleSearchBarKeyDown} // Handles if a song was selected but we want to re-search
+//         />
 
-        {/* The conditionally rendering dropdown menu for selecting songs */}
-        {!hideSearchResults && searchResults && (
-          <div className="dropdownContainer">
-            {searchResults.map((item, index) => (
-              <div
-                className="dropdownItem"
-                data-testid={"Result" + index} // Give each item a numbered testid for testing
-                key={index}
-                onClick={(e) => handleDropdownSelectSong(item, e)}
-              >
-                <div className="itemTitle">{item.title}</div>
-                <div className="itemSubtitle">
-                  {item.artist} - {item.album}
-                </div>
+//         {/* The conditionally rendering dropdown menu for selecting songs */}
+//         {!hideSearchResults && searchResults && (
+//           <div className="dropdownContainer">
+//             {searchResults.map((item, index) => (
+//               <div
+//                 className="dropdownItem"
+//                 data-testid={"Result" + index} // Give each item a numbered testid for testing
+//                 key={index}
+//                 onClick={(e) => handleDropdownSelectSong(item, e)}
+//               >
+//                 <div className="itemTitle">{item.title}</div>
+//                 <div className="itemSubtitle">
+//                   {item.artist} - {item.album}
+//                 </div>
+//               </div>
+//             ))}
+//           </div>
+//         )}
+
+//         {/* The button to submit the song that has been selected from the dropdown */}
+//         <button
+//           data-testid="SubmitButton"
+//           className="submitButton"
+//           onClick={handleSubmitSong}
+//         >
+//           Submit Song
+//         </button>
+//       </div>
+
+//       {/* The container for the URL and submit functionality*/}
+//       <div className="searchContainer">
+//         {/* The input field for submitting song URLs to be added to the queue */}
+//         <input
+//           className="searchBar"
+//           data-testid="URLTextBox"
+//           placeholder="Paste a song URL..."
+//           value={URLTextboxInput}
+//           onChange={(e) => setURLTextboxInput(e.target.value)}
+//         />
+
+//         {/* The button to submit the song URL that was passed into the URL textbox */}
+//         <button
+//           data-testid="URLSubmitButton"
+//           className="submitButton"
+//           onClick={handleSubmitURL}
+//         >
+//           Submit URL
+//         </button>
+//       </div>
+
+//       {/* The field where errors related to the search bar and URL textbox will be displayed */}
+//       {searchBarError && (
+//         <div className="errorMessage" data-testid="SearchBarError">{searchBarError}</div>
+//       )}
+
+//       {/* The field where errors related to song submission will be displayed */}
+//       {submitButtonError && (
+//         <div className="errorMessage" data-testid="SubmitButtonError">{submitButtonError}</div>
+//       )}
+
+//     </div>
+//   );
+// }
+
+return (
+  <div className="songSubmission">    
+    {/* Spotify Search and Submission */}
+    <div className="searchContainer">
+      <h3>Search Spotify Songs</h3>
+      <input
+        className="searchBar"
+        data-testid="SpotifySearchBar"
+        placeholder="Search for Spotify songs..."
+        value={spotifySearchQuery} // Spotify-specific search query
+        onClick={(e) => handleSearchBarClick(e, "Spotify")} // Handles showing the Spotify dropdown
+        onChange={handleSearchBarKeystroke} // Handling searching with each keystroke
+        onKeyDown={handleSearchBarKeyDown} // Handles if a song was selected but we want to re-search
+      />
+      {!hideSpotifySearchResults && searchResults && (
+        <div className="dropdownContainer">
+          {searchResults.map((item, index) => (
+            <div
+              className="dropdownItem"
+              data-testid={"SpotifyResult" + index}
+              key={index}
+              onClick={(e) => handleDropdownSelectSong(item, e, "Spotify")}
+            >
+              <div className="itemTitle">{item.title}</div>
+              <div className="itemSubtitle">
+                {item.artist} - {item.album}
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* The button to submit the song that has been selected from the dropdown */}
-        <button
-          data-testid="SubmitButton"
-          className="submitButton"
-          onClick={handleSubmitSong}
-        >
-          Submit Song
-        </button>
-      </div>
-
-      {/* The container for the URL and submit functionality*/}
-      <div className="searchContainer">
-        {/* The input field for submitting song URLs to be added to the queue */}
-        <input
-          className="searchBar"
-          data-testid="URLTextBox"
-          placeholder="Paste a song URL..."
-          value={URLTextboxInput}
-          onChange={(e) => setURLTextboxInput(e.target.value)}
-        />
-
-        {/* The button to submit the song URL that was passed into the URL textbox */}
-        <button
-          data-testid="URLSubmitButton"
-          className="submitButton"
-          onClick={handleSubmitURL}
-        >
-          Submit URL
-        </button>
-      </div>
-
-      {/* The field where errors related to the search bar and URL textbox will be displayed */}
-      {searchBarError && (
-        <div className="errorMessage" data-testid="SearchBarError">{searchBarError}</div>
+            </div>
+          ))}
+        </div>
       )}
-
-      {/* The field where errors related to song submission will be displayed */}
-      {submitButtonError && (
-        <div className="errorMessage" data-testid="SubmitButtonError">{submitButtonError}</div>
-      )}
-
+      <button
+        data-testid="SpotifySubmitButton"
+        className="submitButton"
+        onClick={handleSubmitSong}
+      >
+        Submit Spotify Song
+      </button>
     </div>
-  );
+
+    {/* YouTube Search and Submission */}
+    <div className="searchContainer">
+      <h3>Search YouTube Songs</h3>
+      <input
+        className="searchBar"
+        data-testid="YouTubeSearchBar"
+        placeholder="Search for YouTube songs..."
+        value={youtubeSearchQuery} // YouTube-specific search query
+        onClick={(e) => handleSearchBarClick(e, "YouTube")} // Handles showing the YouTube dropdown
+        onChange={handleYouTubeSearchBarKeystroke} // Handling searching with each keystroke
+      />
+      {!hideYouTubeSearchResults && searchYouTubeResults && (
+        <div className="dropdownContainer">
+          {searchYouTubeResults.map((item, index) => (
+            <div
+              className="dropdownItem"
+              data-testid={"YouTubeResult" + index}
+              key={index}
+              onClick={(e) => handleDropdownSelectSong(item, e, "YouTube")}
+            >
+              <div className="itemTitle">{item.title}</div>
+              <div className="itemSubtitle">{item.artist}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      <button
+        data-testid="YouTubeSubmitButton"
+        className="submitButton"
+        onClick={handleSubmitYouTubeURL}
+      >
+        Submit YouTube Song
+      </button>
+    </div>
+  </div>
+);
 }
