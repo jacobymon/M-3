@@ -81,6 +81,8 @@ class UniversalQueue:
 
         self.spotify = Spotify_Interface_Class()
 
+        self.youtube_api = YouTubeAPI(api_keys=self.API_KEYS)
+
         self.flush_exit = threading.Event()
 
         self.pause_exit = threading.Event()
@@ -116,6 +118,57 @@ class UniversalQueue:
             else:
                 raise ValueError('can not insert')
             
+
+    def insert_youtube_song(self, video_id):
+        """
+        Inserts a YouTube song into the queue.
+
+        @param video_id: The ID of the YouTube video.
+        """
+        try:
+            # Get video details from YouTube API
+            video_details = self.youtube_api.get_video_details(video_id)
+            print(f"Video details: {video_details}")  # Debug log
+            
+            # Map YouTube data to the format expected by Song class
+            song_data = {
+                "status": 200,
+                "search_results": {
+                    "uri": video_details.get("video_url", f"https://www.youtube.com/watch?v={video_id}"),
+                    "name": video_details.get("title", "Unknown Title"),
+                    "artist": video_details.get("artist", "Unknown Artist"),
+                    "s_len": self.parse_duration(video_details.get("duration", "PT0S")),
+                    "album": "YouTube",  # Placeholder since YouTube doesn't have albums
+                    "image": video_details.get("thumbnail", ""),  # Use thumbnail as image
+                    "platform": "YouTube"
+                }
+            }
+            
+            print(f"Mapped song data: {song_data}")  # Debug log
+            
+            # Convert to JSON and create Song object
+            song_json = json.dumps(song_data)
+            song = Song(song_json)
+            
+            # Insert into queue
+            self.insert(song)
+            print(f"Successfully inserted YouTube song: {video_details.get('title', 'Unknown')}")
+            
+        except Exception as e:
+            print(f"Error in insert_youtube_song: {str(e)}")
+            raise e
+        
+    def parse_duration(self, duration):
+        """
+        Helper function to parse ISO 8601 duration strings into microseconds
+        """
+        try:
+            # Convert ISO 8601 duration to total seconds, then to microseconds
+            return int(isodate.parse_duration(duration).total_seconds() * 1_000_000)
+        except Exception as e:
+            logging.error(f"Error parsing duration: {str(e)}")
+            return 0
+                
 
 
     def flush_queue(self):
@@ -561,27 +614,27 @@ def youtube_submit_url():
         except Exception as e:
             return jsonify({"status": 400, "response": "Invalid YouTube URL."})
 
-        # Fetch video details
-        video_details = youtube_api.get_video_details(video_id)  # Use the new method
-        print("********", video_details, "********")
+        # # Fetch video details
+        # video_details = youtube_api.get_video_details(video_id)  # Use the new method
+        # print("********", video_details, "********")
 
-        # Prepare song data for insertion
-        song_data = {
-            "status": 200,
-            "search_results": {
-                "uri": video_details["video_url"],
-                "name": video_details["title"],
-                "artist": video_details["artist"],
-                "s_len": parse_duration(video_details.get("duration", "PT0S")),  # Parse duration
-                "album": None,
-                "platform": "YouTube"
-            }
-        }
-        song_json = json.dumps(song_data)
-        song = Song(song_json)
+        # # Prepare song data for insertion
+        # song_data = {
+        #     "status": 200,
+        #     "search_results": {
+        #         "uri": video_details["video_url"],
+        #         "name": video_details["title"],
+        #         "artist": video_details["artist"],
+        #         "s_len": parse_duration(video_details.get("duration", "PT0S")),  # Parse duration
+        #         "album": None,
+        #         "platform": "YouTube"
+        #     }
+        # }
+        # song_json = json.dumps(song_data)
+        # song = Song(song_json)
 
         # Insert song into the queue
-        UQ.insert(song)
+        UQ.insert_youtube_song(video_id)
         return jsonify({"status": 200, "response": "YouTube song successfully added to the queue."})
     except ValueError as e:
         logging.error(f"ValueError in YouTube song submission: {str(e)}")

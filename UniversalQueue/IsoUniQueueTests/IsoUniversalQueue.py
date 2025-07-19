@@ -69,11 +69,38 @@ class UniversalQueue:
 
         @param video_id: The ID of the YouTube video.
         """
-        song_data = self.youtube_api.get_video_details(video_id)
-        song_json = json.dumps({"status": 200, "search_results": song_data})
-        song = Song(song_json)
-        self.insert(song)
-
+        try:
+            # Get video details from YouTube API
+            video_details = self.youtube_api.get_video_details(video_id)
+            print(f"Video details: {video_details}")  # Debug log
+            
+            # Map YouTube data to the format expected by Song class
+            song_data = {
+                "status": 200,
+                "search_results": {
+                    "uri": video_details.get("video_url", f"https://www.youtube.com/watch?v={video_id}"),
+                    "name": video_details.get("title", "Unknown Title"),
+                    "artist": video_details.get("artist", "Unknown Artist"),
+                    "s_len": self.parse_duration(video_details.get("duration", "PT0S")),
+                    "album": "YouTube",  # Placeholder since YouTube doesn't have albums
+                    "image": video_details.get("thumbnail", ""),  # Use thumbnail as image
+                    "platform": "YouTube"
+                }
+            }
+            
+            print(f"Mapped song data: {song_data}")  # Debug log
+            
+            # Convert to JSON and create Song object
+            song_json = json.dumps(song_data)
+            song = Song(song_json)
+            
+            # Insert into queue
+            self.insert(song)
+            print(f"Successfully inserted YouTube song: {video_details.get('title', 'Unknown')}")
+            
+        except Exception as e:
+            print(f"Error in insert_youtube_song: {str(e)}")
+            raise e
     def insert(self, song, recover = False): 
         """
         Inserts a song into the queue with a unique ID using the song class's set_id() method.
