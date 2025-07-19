@@ -6,3 +6,4 @@ qrcode
 pynpm
 configparser
 appopener
+isodate==0.6.1

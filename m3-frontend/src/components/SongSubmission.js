@@ -67,6 +67,8 @@ export async function searchYouTubeSongs(searchbar_query) {
  * on success/failure in the form of a string.
  */
 export async function submitYouTubeURLSong(url_textbox_input) {
+  console.log("Submitting YouTube URL:", url_textbox_input); // Log the URL being submitted
+
   if (url_textbox_input === "") {
     return {
       status: 400,
@@ -74,10 +76,13 @@ export async function submitYouTubeURLSong(url_textbox_input) {
     };
   }
 
+  const backendURL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/youtube_submit_url`;
+  console.log("Backend URL:", backendURL); // Log the constructed backend URL
+
   try {
     const response = await axios.post(
-      `http://${process.env.REACT_APP_BACKEND_IP}:8080/youtube_submit_url?youtube_url=${url_textbox_input}`, 
-      null, 
+      backendURL,
+      { youtube_url: url_textbox_input }, // Send the URL as JSON in the request body
       { timeout: 5000 }
     );
 
@@ -416,13 +421,20 @@ export function SongSubmission() {
  * Handles calling submitYouTubeURLSong to submit the song stored in *URLTextboxInput* to the backend.
  */
 const handleSubmitYouTubeURL = async () => {
+  if (!selectedYouTubeSong || !selectedYouTubeSong.video_url) {
+    setSubmitButtonError("Please select a valid YouTube song from the dropdown.");
+    return;
+  }
+
   setSubmitButtonError("Submitting YouTube URL...");
 
-  let response_json = await submitYouTubeURLSong(URLTextboxInput);
+  // Use the video_url from the selected song
+  let response_json = await submitYouTubeURLSong(selectedYouTubeSong.video_url);
 
   if (response_json.status === 200) {
     setSubmitButtonError("");
-    setURLTextboxInput("");
+    setYouTubeSearchQuery(""); // Clear the search bar
+    setSelectedYouTubeSong(null); // Clear the selected song
   } else {
     setSubmitButtonError(response_json.response);
   }
@@ -567,7 +579,7 @@ const handleSubmitYouTubeURL = async () => {
 
     setSubmitButtonError("Submitting URL...");
 
-    let response_json = await submitURLSong(URLTextboxInput);
+    let response_json = await submitURLSong(youtubeSearchQuery);
 
     console.log(response_json)
 
@@ -661,7 +673,7 @@ const handleSubmitYouTubeURL = async () => {
 // }
 
 return (
-  <div className="songSubmission">    
+  <div className="songSubmission">
     {/* Spotify Search and Submission */}
     <div className="searchContainer">
       <h3>Search Spotify Songs</h3>

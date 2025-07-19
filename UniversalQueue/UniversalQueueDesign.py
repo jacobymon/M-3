@@ -6,6 +6,9 @@ import json
 import logging
 import os
 import sys
+import isodate
+
+
 
 from flask import Flask, request
 from flask_cors import CORS, cross_origin
@@ -527,19 +530,41 @@ def youtube_search():
         logging.error(f"Error in YouTube search: {str(e)}")
         return jsonify({"status": 500, "response": "An internal server error occurred."})
 
+"""
+Helper function to parse ISO 8601 duration strings into microseconds
+"""
+def parse_duration(duration):
+    try:
+        # Convert ISO 8601 duration to total seconds, then to microseconds
+        return int(isodate.parse_duration(duration).total_seconds() * 1_000_000)  # Convert to microseconds
+    except Exception as e:
+        logging.error(f"Error parsing duration: {str(e)}")
+        return 0
+
 @app.route('/youtube_submit_url', methods=['POST'])
 @cross_origin()
 def youtube_submit_url():
     youtube_url = request.json.get('youtube_url')
+    print(f"Received YouTube URL: {youtube_url}")  # Debugging log
+
     if not youtube_url:
         return jsonify({"status": 400, "response": "YouTube URL is required."})
 
     try:
         # Extract video ID from the URL
-        video_id = youtube_url.split("v=")[-1].split("&")[0]
+        try:
+            video_id = youtube_url.split("v=")[-1].split("&")[0]
+            print(f"Extracted video ID: {video_id}")  # Debugging log
 
-        video_details = youtube_api.search_videos(video_id)[0]  # Fetch video details
+            if not video_id:
+                raise ValueError("Invalid YouTube URL")
+        except Exception as e:
+            return jsonify({"status": 400, "response": "Invalid YouTube URL."})
+
+        # Fetch video details
+        video_details = youtube_api.get_video_details(video_id)  # Use the new method
         print("********", video_details, "********")
+
         # Prepare song data for insertion
         song_data = {
             "status": 200,
@@ -547,20 +572,23 @@ def youtube_submit_url():
                 "uri": video_details["video_url"],
                 "name": video_details["title"],
                 "artist": video_details["artist"],
-                "s_len": video_details.get("duration", 0),  # Duration can be fetched separately
-                "album": None,  # YouTube songs may not have an album
+                "s_len": parse_duration(video_details.get("duration", "PT0S")),  # Parse duration
+                "album": None,
                 "platform": "YouTube"
             }
         }
         song_json = json.dumps(song_data)
         song = Song(song_json)
 
+        # Insert song into the queue
         UQ.insert(song)
         return jsonify({"status": 200, "response": "YouTube song successfully added to the queue."})
+    except ValueError as e:
+        logging.error(f"ValueError in YouTube song submission: {str(e)}")
+        return jsonify({"status": 400, "response": str(e)})
     except Exception as e:
         logging.error(f"Error in YouTube song submission: {str(e)}")
         return jsonify({"status": 500, "response": "An internal server error occurred."})
-
 with open(path + '/../m3-frontend/.env', 'w') as f_obj:
     f_obj.write('REACT_APP_BACKEND_IP="'+local_ip+'"')
 
