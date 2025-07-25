@@ -8,6 +8,9 @@ tools for the host to pause and play the music, and control the volume.*/
 
 import React, { useState, useEffect, useRef, 
 				createContext, useContext} from 'react';
+
+// import io from 'socket.io-client';
+
 import './WebsiteQueue.css' // eventually import a proper css file
 import axios from 'axios';
 import volume_down from "../content/volume_down.png"
@@ -20,8 +23,8 @@ const HOSTTOOLS_WARNING_TIME = 15*1000 //miliseconds
 const QUEUE_POLLING_TIME = 1*1000 //miliseconds
 const RECHECK_ISHOST_TIME = 1*1000 //miliseconds
 
-const VERIFY_HOST_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/verify_host`
-
+const BACKEND_IP = process.env.REACT_APP_BACKEND_IP || 'localhost';
+const VERIFY_HOST_CALL = `http://${BACKEND_IP}:8080/verify_host`;
 const REQUEST_QUEUE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/request_update`
 const REQUEST_QUEUE_UPDATE_CALL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/update_ui` //TODO, on backburner
 
@@ -54,6 +57,7 @@ const TESTSONGS = [ // For making sure rendering works visually
 const IsHostContext = createContext(); // context to share whether you're the host or not
 const CookieContext = createContext(); // context to share the cookie
 const HostToolsContext = createContext(); // context to share updateHostToolsError with other functions
+const YouTubeControlContext = createContext();
 
 // External Interface Functions
 
@@ -311,6 +315,190 @@ async function changeVolume(vol, cookie, updateHostToolsError) {
 	}
 }
 
+// NEW: WebSocket-enabled YouTube Player Component
+function YouTubeQueuePlayer({ currentSong, onSongEnd }) {
+    const playerRef = useRef(null);
+    const [isPlayerReady, setIsPlayerReady] = useState(false);
+    const [currentVideoId, setCurrentVideoId] = useState(null);
+    const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+
+    // Initialize YouTube Player
+    useEffect(() => {
+        if (!window.YT) {
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+
+        window.onYouTubeIframeAPIReady = initializePlayer;
+        
+        if (window.YT && window.YT.Player) {
+            initializePlayer();
+        }
+    }, []);
+
+    // Handle song changes
+    useEffect(() => {
+        if (currentSong && isPlayerReady && playerRef.current) {
+            console.log("Current song changed:", currentSong);
+            
+            const isYouTubeSong = currentSong.platform === "YouTube" || 
+                                 currentSong.albumname === "YouTube";
+            
+            if (isYouTubeSong && currentSong.video_id) {
+                const isDifferentVideo = currentVideoId !== currentSong.video_id;
+                const isDifferentSubmission = currentSubmissionId !== currentSong.submissionID;
+                
+                if (isDifferentVideo || isDifferentSubmission) {
+                    console.log(`Loading YouTube video: ${currentSong.video_id} (submission: ${currentSong.submissionID})`);
+                    setCurrentVideoId(currentSong.video_id);
+                    setCurrentSubmissionId(currentSong.submissionID);
+                    setIsPlaying(false);
+                    
+                    setTimeout(() => {
+                        if (playerRef.current) {
+                            playerRef.current.loadVideoById(currentSong.video_id);
+                        }
+                    }, 100);
+                } else {
+                    console.log("Same video and submission already loaded, not reloading");
+                }
+            } else {
+                setCurrentVideoId(null);
+                setCurrentSubmissionId(null);
+                setIsPlaying(false);
+                if (playerRef.current) {
+                    playerRef.current.stopVideo();
+                }
+            }
+        }
+    }, [currentSong, isPlayerReady, currentVideoId, currentSubmissionId]);
+
+    // ADD THESE MISSING FUNCTIONS:
+    const initializePlayer = () => {
+        playerRef.current = new window.YT.Player("youtube-player", {
+            height: "0",
+            width: "0",
+            videoId: "",
+            playerVars: {
+                autoplay: 1,
+                controls: 0,
+                disablekb: 1,
+                fs: 0,
+                modestbranding: 1,
+                rel: 0,
+                showinfo: 0,
+                mute: 0,
+                volume: 100
+            },
+            events: {
+                onReady: onPlayerReady,
+                onStateChange: onPlayerStateChange,
+            },
+        });
+    };
+
+    const onPlayerReady = () => {
+        setIsPlayerReady(true);
+        console.log("YouTube player ready");
+        
+        // Ensure player is unmuted and volume is set
+        if (playerRef.current) {
+            playerRef.current.unMute();
+            playerRef.current.setVolume(100);
+            console.log("YouTube player unmuted and volume set to 100%");
+        }
+    };
+
+    const onPlayerStateChange = (event) => {
+        console.log("YouTube player state changed:", event.data);
+        
+        const stateNames = {
+            '-1': 'unstarted',
+            '0': 'ended',
+            '1': 'playing',
+            '2': 'paused',
+            '3': 'buffering',
+            '5': 'cued'
+        };
+        
+        console.log(`YouTube state: ${stateNames[event.data] || event.data}`);
+        
+        if (event.data === window.YT.PlayerState.ENDED) {
+            console.log("YouTube song ended naturally");
+            setIsPlaying(false);
+            onSongEnd();
+        } else if (event.data === window.YT.PlayerState.PLAYING) {
+            console.log("YouTube song started playing");
+            setIsPlaying(true);
+            
+            // Debug audio settings
+            if (playerRef.current) {
+                const isMuted = playerRef.current.isMuted();
+                const volume = playerRef.current.getVolume();
+                console.log(`Audio debug - Muted: ${isMuted}, Volume: ${volume}%`);
+                
+                if (isMuted) {
+                    playerRef.current.unMute();
+                    console.log("Force unmuted player");
+                }
+                if (volume < 100) {
+                    playerRef.current.setVolume(100);
+                    console.log("Set volume to 100%");
+                }
+            }
+        } else if (event.data === window.YT.PlayerState.PAUSED) {
+            console.log("YouTube song paused");
+            setIsPlaying(false);
+        } else if (event.data === window.YT.PlayerState.BUFFERING) {
+            console.log("YouTube song buffering");
+        } else if (event.data === window.YT.PlayerState.CUED) {
+            console.log("YouTube song cued, starting playback");
+            if (playerRef.current && !isPlaying) {
+                setTimeout(() => {
+                    playerRef.current.playVideo();
+                }, 100);
+            }
+        } else if (event.data === window.YT.PlayerState.UNSTARTED) {
+            console.log("YouTube player unstarted");
+            setIsPlaying(false);
+        }
+    };
+
+    // Control functions for host tools
+    const controls = {
+        playVideo: (videoId) => {
+            if (playerRef.current && videoId) {
+                if (currentVideoId !== videoId) {
+                    playerRef.current.loadVideoById(videoId);
+                    setCurrentVideoId(videoId);
+                } else {
+                    playerRef.current.playVideo();
+                }
+            }
+        },
+        pauseVideo: () => {
+            if (playerRef.current) {
+                playerRef.current.pauseVideo();
+            }
+        },
+        stopVideo: () => {
+            if (playerRef.current) {
+                playerRef.current.stopVideo();
+                setIsPlaying(false);
+            }
+        },
+        isPlaying: () => isPlaying
+    };
+
+    return (
+        <YouTubeControlContext.Provider value={controls}>
+            <div id="youtube-player" style={{ display: "none" }}></div>
+        </YouTubeControlContext.Provider>
+    );
+}
 // GUI functions
 
 /**
@@ -367,359 +555,237 @@ function DeleteButton(props) {
  * 
  * @return HTML code for host tools.
  */
-// function HostToolsMenu() {
-// 	const isHost = useContext(IsHostContext)
-// 	const cookie = useContext(CookieContext)
-// 	const updateHostToolsError = useContext(HostToolsContext)
 
-// 	if (isHost) {
-// 		return (
-// 		<div className='hostToolbar'>
-// 			<button className="hostToolButton" onClick={() => pauseMusic(cookie, updateHostToolsError)}>Pause</button>
-// 			<button className="hostToolButton" onClick={() => resumeMusic(cookie, updateHostToolsError)}>Resume</button>
-// 			<button className="hostToolButton" onClick={() => suspendQueue(cookie, updateHostToolsError)}>Suspend Queue</button>
-// 			<button className="hostToolButton" onClick={() => resumeQueue(cookie, updateHostToolsError)}>Resume Queue</button>
-// 			{/*<div className='volumeSliderContainer'>
-// 			 <img className="volumeImage" src={volume_down} alt='Lower Volume'/>
-// 			 <input className="volumeSlider" title="Change Volume" type="range" onMouseUp={(e) => changeVolume(e.target.value, cookie, updateHostToolsError)}/>
-// 			 <img className="volumeImage" src={volume_up} alt='Raise Volume'/>
-// 			</div>*/}
-// 		</div>
-// 		)
-// 	} 
-// 	return <></>
-	
-// }
 function HostToolsMenu({ songs }) {
-	const isHost = useContext(IsHostContext);
-	const cookie = useContext(CookieContext);
-	const updateHostToolsError = useContext(HostToolsContext);
+    const isHost = useContext(IsHostContext);
+    const cookie = useContext(CookieContext);
+    const updateHostToolsError = useContext(HostToolsContext);
+    const youtubeControls = useContext(YouTubeControlContext);
   
-	// Import YouTubePlayer functions
-	const { playVideo, pauseVideo, stopVideo } = YouTubePlayer();
+    const handlePlay = async () => {
+        if (songs.length === 0) {
+            console.log("No songs in the queue.");
+            return;
+        }
   
-	const handlePlay = () => {
-	  if (songs.length === 0) {
-		console.log("No songs in the queue.");
-		return;
-	  }
+        const currentSong = songs[0];
+        console.log("Attempting to play:", currentSong);
+        
+        if (currentSong.platform === "YouTube") {
+            const videoId = extractVideoIdFromUri(currentSong.uri);
+            console.log("Extracted video ID:", videoId);
+            
+            if (videoId) {
+                try {
+                    // Call backend to control YouTube
+                    const response = await axios.post(
+                        `http://${process.env.REACT_APP_BACKEND_IP}:8080/youtube_unpause`,
+                        { video_id: videoId, cookie: cookie }
+                    );
+                    console.log("YouTube play response:", response.data);
+                    
+                    // Also control frontend player
+                    if (youtubeControls) {
+                        youtubeControls.playVideo(videoId);
+                    }
+                } catch (error) {
+                    console.error("Error controlling YouTube:", error);
+                    updateHostToolsError(500);
+                }
+            }
+        } else {
+            // Spotify or other platform
+            resumeMusic(cookie, updateHostToolsError);
+        }
+    };
   
-	  const currentSong = songs[0]; // Get the first song in the queue
-	  if (currentSong.platform === "YouTube") {
-		playVideo(currentSong.videoId); // Play YouTube video
-	  } else if (currentSong.platform === "Spotify") {
-		resumeMusic(cookie, updateHostToolsError); // Resume Spotify playback
-	  }
-	};
+    const handlePause = async () => {
+        if (songs.length === 0) {
+            console.log("No songs in the queue.");
+            return;
+        }
   
-	const handlePause = () => {
-	  if (songs.length === 0) {
-		console.log("No songs in the queue.");
-		return;
-	  }
+        const currentSong = songs[0];
+        console.log("Attempting to pause:", currentSong);
+        
+        if (currentSong.platform === "YouTube") {
+            try {
+                // Call backend to control YouTube
+                const response = await axios.post(
+                    `http://${process.env.REACT_APP_BACKEND_IP}:8080/youtube_pause`,
+                    { cookie: cookie }
+                );
+                console.log("YouTube pause response:", response.data);
+                
+                // Also control frontend player
+                if (youtubeControls) {
+                    youtubeControls.pauseVideo();
+                }
+            } catch (error) {
+                console.error("Error controlling YouTube:", error);
+                updateHostToolsError(500);
+            }
+        } else {
+            // Spotify or other platform
+            pauseMusic(cookie, updateHostToolsError);
+        }
+    };
+
+    const extractVideoIdFromUri = (uri) => {
+        if (!uri) return null;
+        if (uri.includes("youtube.com/watch?v=")) {
+            return uri.split("v=")[1].split("&")[0];
+        } else if (uri.includes("youtu.be/")) {
+            return uri.split("youtu.be/")[1].split("?")[0];
+        }
+        return null;
+    };
   
-	  const currentSong = songs[0]; // Get the first song in the queue
-	  if (currentSong.platform === "YouTube") {
-		pauseVideo(); // Pause YouTube video
-	  } else if (currentSong.platform === "Spotify") {
-		pauseMusic(cookie, updateHostToolsError); // Pause Spotify playback
-	  }
-	};
-  
-	if (isHost) {
-	  return (
-		<div className="hostToolbar">
-		  <button className="hostToolButton" onClick={handlePause}>
-			Pause
-		  </button>
-		  <button className="hostToolButton" onClick={handlePlay}>
-			Resume
-		  </button>
-		  <button
-			className="hostToolButton"
-			onClick={() => suspendQueue(cookie, updateHostToolsError)}
-		  >
-			Suspend Queue
-		  </button>
-		  <button
-			className="hostToolButton"
-			onClick={() => resumeQueue(cookie, updateHostToolsError)}
-		  >
-			Resume Queue
-		  </button>
-		</div>
-	  );
-	}
-	return <></>;
-  }
+    if (isHost) {
+        return (
+            <div className="hostToolbar">
+                <button className="hostToolButton" onClick={handlePause}>
+                    Pause
+                </button>
+                <button className="hostToolButton" onClick={handlePlay}>
+                    Resume
+                </button>
+                <button
+                    className="hostToolButton"
+                    onClick={() => suspendQueue(cookie, updateHostToolsError)}
+                >
+                    Suspend Queue
+                </button>
+                <button
+                    className="hostToolButton"
+                    onClick={() => resumeQueue(cookie, updateHostToolsError)}
+                >
+                    Resume Queue
+                </button>
+            </div>
+        );
+    }
+    return <></>;
+}
+
+
 /**
  * React component to display the current queue of songs.
  * 
  * @return HTML code for the current song queue.
  */
-// function DisplayedQueue() {
 
-// 	/**
-//    	 * songs: a list of song objects
-// 	 * Each song has the following attributes:
-// 	 *  name {String} 
-// 	 *  artist {String} 
-// 	 *  albumname {String} 
-// 	 *  albumcover {String} A link to an image of the song's cover
-// 	 *  submissionID {int} ID for each song submission
-//    	 * @type {Array}
-//    	*/
-// 	const [songs, updateSongs] = useState([]);
-
-// 	/**
-// 	 * queueError: the most recent errorcode for updating the queue.
-// 	 * 0 if the most recent call succeeded.
-// 	 * -1 if no recent queue error.
-// 	 * @type {int}
-// 	 */
-// 	const [queueError, updateQueueError] = useState(-1);
-
-// 	/** hostToolsError: the most recent errorcode for host tools @type {int} */
-// 	const [hostToolsError, updateHostToolsError] = useState(0);
-
-// 	/**
-// 	 * failedRequests: counter for how many requests have failed in a row.
-// 	 * useRef preserves this between renders.
-// 	 */
-// 	const failedRequests = useRef(0);
-
-// 	const [isHost, updateIsHost] = useState(false);
-
-// 	/** cookie to be sent with any host-only api calls @type {string} */
-// 	const [cookie, updateCookie] = useState("");
-
-
-
-// 	/* On startup (aka using useEffect({},[])),call the requestQueue() function
-// 	 asynchronously with useEffect and use it to update songs */
-// 	 useEffect( () => {
-// 		requestQueue(updateQueueError, updateSongs)
-// 	}, [])
-	
-// 	// Check for whether you're the host or not
-// 	useEffect(() => {
-// 		verify_host(updateIsHost, updateCookie)
-// 	}, [])
-
-	
-// 	// On startup, start an async function to request any updates to the queue
-// 	useEffect( () => {
-// 		// TEMP - long polling won't work on backend, so just short polling
-// 		// requestQueueUpdates(updateQueueError, updateSongs)
-// 		autoCallRequestQueue(updateQueueError, updateSongs)
-// 	}, [])
-
-// 	/* When queueError changes (aka using useEffect({},[queueError])),
-// 		attempt to recover from the error and get an up-to-date queue.
-// 	*/
-// 	useEffect( () => {
-// 		if (queueError === 0) {
-// 			//If queueError changes to 0 (all is well), reset the counter
-// 			failedRequests.current = 0
-// 		} else if (queueError === -1) {
-// 			// do nothing
-// 		} else if (failedRequests.current <= MAX_QUEUE_RE_REQUESTS) {
-// 			// If requestQueue returns 408 twice, queueError will not change,
-// 			// so the hook will not fire. To fix this, set the most recent error to -1,
-// 			// so that queueError will update no matter what.
-// 			updateQueueError(-1)
-
-// 			// If queue update fails, re-request the queue.
-// 			failedRequests.current += 1
-// 			requestQueue(updateQueueError, updateSongs)
-// 		} else {
-// 			// If too many requests fail in a row, notify the user
-// 			// The simplest solution is to create a fake "queue out of sync, please refresh" song
-// 			updateSongs([{
-// 				"submission_id": -1,
-// 				"name": "QUEUE OUT OF SYNC",
-// 				"artist": "please refresh the page",
-// 				"albumcover": ""
-// 			}])
-// 		}
-// 	}, [queueError])
-
-// 	// When HostToolsError changes, attempt to recover.
-// 	useEffect( () => {
-// 		// Set hostToolsError to 0 after some time passes, 
-// 		// so the "submission failed" warning dissapears.
-// 		setTimeout(
-// 			() => {updateHostToolsError(0)},
-// 			HOSTTOOLS_WARNING_TIME
-// 		)
-// 	}, [hostToolsError]) 
-
-// 	/* DEBUG ONLY: whenever songs changes, change it back to test songs. */
-// 	useEffect( () => {
-// 		// updateIsHost(true)
-// 		// updateSongs(TESTSONGS)
-// 	}, [isHost, songs])
-
-// 	return (
-// 	 <>
-	  
-// 	  {/* share isHost and cookie through the whole component*/}
-// 	  <IsHostContext.Provider value={isHost}>
-// 	  <CookieContext.Provider value={cookie}>
-// 	  <HostToolsContext.Provider value={updateHostToolsError}>
-
-// 	  {hostToolsError!==0 &&
-// 	   <>
-// 	    <h2>Error with Host Tools: Code {hostToolsError}</h2>
-// 	   </>
-// 	  }
-
-// 	  {/*Display the host tools menu. It will only be visible if you're the host*/}
-// 	  <HostToolsMenu></HostToolsMenu>
-
-// 	  {/*Debug button for refreshing queue*/}
-// 	  {/*<button className="hostToolButton refreshButton" onClick={() => requestQueue(updateQueueError, updateSongs)}>Refresh Queue</button>*/}
-
-// 	  {/*Regardless of whether you're a host or not, 
-// 	  	display an array of songs in the queue*/}
-// 	  <div className="songListContainer">
-// 	   {/* For each song in songs, generate an entry*/}
-// 	   { songs?.map(
-// 		(song) => <Song
-// 		 name={song.name} 
-// 		 albumname={song.albumname} 
-// 		 albumcover={song.albumcover} 
-// 		 artist={song.artist}
-// 		 submissionID={song.submissionID} 
-// 		 key={song.submissionID}>
-// 		 {/*the key element used by react to better handle song objects */}
-// 		</Song>
-// 	   )}
-// 	  </div>
-
-//       </HostToolsContext.Provider>
-// 	  </CookieContext.Provider>
-// 	  </IsHostContext.Provider>
-
-// 	 </>
-// 	);
-// }
 function DisplayedQueue() {
-	const [songs, updateSongs] = useState([]);
-	const [queueError, updateQueueError] = useState(-1);
-	const [hostToolsError, updateHostToolsError] = useState(0);
-	const failedRequests = useRef(0);
-	const [isHost, updateIsHost] = useState(false);
-	const [cookie, updateCookie] = useState("");
-  
-	useEffect(() => {
-	  requestQueue(updateQueueError, updateSongs);
-	}, []);
-  
-	useEffect(() => {
-	  verify_host(updateIsHost, updateCookie);
-	}, []);
-  
-	useEffect(() => {
-	  autoCallRequestQueue(updateQueueError, updateSongs);
-	}, []);
-  
-	return (
-	  <>
-		<IsHostContext.Provider value={isHost}>
-		  <CookieContext.Provider value={cookie}>
-			<HostToolsContext.Provider value={updateHostToolsError}>
-			  {hostToolsError !== 0 && (
-				<>
-				  <h2>Error with Host Tools: Code {hostToolsError}</h2>
-				</>
-			  )}
-  
-			  {/* Pass songs to HostToolsMenu */}
-			  <HostToolsMenu songs={songs}></HostToolsMenu>
-  
-			  <div className="songListContainer">
-				{songs?.map((song) => (
-				  <Song
-					name={song.name}
-					albumname={song.albumname}
-					albumcover={song.albumcover}
-					artist={song.artist}
-					submissionID={song.submissionID}
-					key={song.submissionID}
-				  ></Song>
-				))}
-			  </div>
-			</HostToolsContext.Provider>
-		  </CookieContext.Provider>
-		</IsHostContext.Provider>
-	  </>
-	);
-  }
+    const [songs, updateSongs] = useState([]);
+    const [currentSong, setCurrentSong] = useState(null);
+    const [queueError, updateQueueError] = useState(-1);
+    const [hostToolsError, updateHostToolsError] = useState(0);
+    const failedRequests = useRef(0);
+    const [isHost, updateIsHost] = useState(false);
+    const [cookie, updateCookie] = useState("");
 
-
-<div id="youtube-player-container" style={{ display: "none" }}></div>
-// Export YouTubePlayer as a named export
-export const YouTubePlayer = () => {
-	const playerRef = useRef(null);
-  
 	useEffect(() => {
-	  window.onYouTubeIframeAPIReady = () => {
-		playerRef.current = new window.YT.Player("youtube-player-container", {
-		  height: "0",
-		  width: "0",
-		  videoId: "",
-		  events: {
-			onReady: onPlayerReady,
-			onStateChange: onPlayerStateChange,
-		  },
-		});
-	  };
-	}, []);
+		if (songs.length > 0) {
+			console.log("Current songs in queue:", songs);
+			console.log("First song:", songs[0]);
+			console.log("First song platform:", songs[0]?.platform);
+			console.log("First song URI:", songs[0]?.uri);
+		}
+	}, [songs]);
   
-	const onPlayerReady = (event) => {
-	  console.log("YouTube Player is ready.");
-	};
+    useEffect(() => {
+        requestQueue(updateQueueError, updateSongs);
+    }, []);
   
-	const onPlayerStateChange = (event) => {
-	  if (event.data === window.YT.PlayerState.ENDED) {
-		console.log("Video ended. Playing next song...");
-		// Trigger logic to play the next song in the queue
-		playNextSong();
-	  }
-	};
+    useEffect(() => {
+        verify_host(updateIsHost, updateCookie);
+    }, []);
   
-	const playNextSong = () => {
-	  // Logic to fetch and play the next song in the queue
-	  console.log("Fetching and playing the next song...");
-	};
+    useEffect(() => {
+        autoCallRequestQueue(updateQueueError, updateSongs);
+    }, []);
+
+    // Handle queue errors
+    useEffect(() => {
+        if (queueError === 0) {
+            failedRequests.current = 0;
+        } else if (queueError === -1) {
+            // do nothing
+        } else if (failedRequests.current <= MAX_QUEUE_RE_REQUESTS) {
+            updateQueueError(-1);
+            failedRequests.current += 1;
+            requestQueue(updateQueueError, updateSongs);
+        } else {
+            updateSongs([{
+                "submissionID": -1,
+                "name": "QUEUE OUT OF SYNC",
+                "artist": "please refresh the page",
+                "albumcover": ""
+            }]);
+        }
+    }, [queueError]);
+
+    // Handle host tools errors
+    useEffect(() => {
+        setTimeout(
+            () => { updateHostToolsError(0) },
+            HOSTTOOLS_WARNING_TIME
+        );
+    }, [hostToolsError]);
+
+    // Set current song as first in queue
+    useEffect(() => {
+        if (songs.length > 0) {
+            setCurrentSong(songs[0]);
+        } else {
+            setCurrentSong(null);
+        }
+    }, [songs]);
+
+    const handleSongEnd = () => {
+        console.log("Song ended, moving to next in queue");
+        // You can implement logic here to remove the current song from queue
+    };
   
-	const playVideo = (videoId) => {
-	  if (playerRef.current) {
-		playerRef.current.loadVideoById(videoId);
-		playerRef.current.playVideo();
-	  }
-	};
+    return (
+        <>
+            {/* Add the YouTube player */}
+            <YouTubeQueuePlayer currentSong={currentSong} onSongEnd={handleSongEnd} />
+            
+            <IsHostContext.Provider value={isHost}>
+                <CookieContext.Provider value={cookie}>
+                    <HostToolsContext.Provider value={updateHostToolsError}>
+                        {hostToolsError !== 0 && (
+                            <>
+                                <h2>Error with Host Tools: Code {hostToolsError}</h2>
+                            </>
+                        )}
   
-	const pauseVideo = () => {
-	  if (playerRef.current) {
-		playerRef.current.pauseVideo();
-	  }
-	};
+                        <HostToolsMenu songs={songs}></HostToolsMenu>
   
-	const stopVideo = () => {
-	  if (playerRef.current) {
-		playerRef.current.stopVideo();
-	  }
-	};
-  
-	return { playVideo, pauseVideo, stopVideo };
-  };  
+                        <div className="songListContainer">
+                            {songs?.map((song) => (
+                                <Song
+                                    name={song.name}
+                                    albumname={song.albumname}
+                                    albumcover={song.albumcover}
+                                    artist={song.artist}
+                                    submissionID={song.submissionID}
+                                    key={song.submissionID}
+                                ></Song>
+                            ))}
+                        </div>
+                    </HostToolsContext.Provider>
+                </CookieContext.Provider>
+            </IsHostContext.Provider>
+        </>
+    );
+}  
   // Keep DisplayedQueue as the default export
 
 export default DisplayedQueue;
 
 // For testing only
-export {requestQueue, requestQueueUpdates};
+export {requestQueue};
 export {Song};
 export {VERIFY_HOST_CALL, REQUEST_QUEUE_CALL, REQUEST_QUEUE_UPDATE_CALL};

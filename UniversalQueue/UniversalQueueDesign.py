@@ -8,6 +8,8 @@ import os
 import sys
 import isodate
 
+# from flask_socketio import SocketIO, emit
+from Youtube_Interface_Class.Youtube_Interface_Class import YouTube_Interface_Class
 
 
 from flask import Flask, request
@@ -38,8 +40,10 @@ s.close()
 print(local_ip)
 
 
+# Initialize Flask app with SocketIO
 app = Flask(__name__)
-CORS(app) 
+CORS(app, resources={r"/*": {"origins": "*"}})
+# socketio = SocketIO(app, cors_allowed_origins="*")
 
 class UniversalQueue:
     """
@@ -80,6 +84,8 @@ class UniversalQueue:
         self.idCount = 0
 
         self.spotify = Spotify_Interface_Class()
+        self.youtube = YouTube_Interface_Class()  # Add this line
+
 
         self.youtube_api = YouTubeAPI(api_keys=self.API_KEYS)
 
@@ -87,7 +93,7 @@ class UniversalQueue:
 
         self.pause_exit = threading.Event()
 
-    def insert(self, song, recover = False): 
+    def insert(self, song, recover=False): 
         """
         When queue not suspended
         inserts a song into the queue with a unique id using the song classes set_id() method
@@ -96,28 +102,43 @@ class UniversalQueue:
         @param song: a song object that contains all of the attributes needed
         to display info to UI and playback
         """
-        if recover == False:
-            if self.suspend_toggle == False:
-                song.set_id(self.idCount)
-                self.idCount += 1 #update the next id to be unique for the next set
-                self.data.append(song)
-                self.write()
+        try:
+            if recover == False:
+                if self.suspend_toggle == False:
+                    song.set_id(self.idCount)
+                    self.idCount += 1 #update the next id to be unique for the next set
+                    self.data.append(song)
+                    self.write()
 
-                if len(self.data) == 1:
-                    self.flush_queue()
-            else:
-                raise ValueError('can not insert')
-        else: #special recovery version (doesn't write())
-            if self.suspend_toggle == False:
-                song.set_id(self.idCount)
-                self.idCount += 1 #update the next id to be unique for the next set
-                self.data.append(song)
+                    if len(self.data) == 1:
+                        self.flush_queue()
+                    
+                    print(f"Song inserted successfully. Queue now has {len(self.data)} songs")
+                    return 0  # ADD THIS - Return 0 for success
+                else:
+                    print("Queue is suspended, cannot insert")
+                    return 1  # ADD THIS - Return 1 for failure
+            else: #special recovery version (doesn't write())
+                if self.suspend_toggle == False:
+                    song.set_id(self.idCount)
+                    self.idCount += 1 #update the next id to be unique for the next set
+                    self.data.append(song)
 
-                if len(self.data) == 1:
-                    self.flush_queue()
-            else:
-                raise ValueError('can not insert')
-            
+                    if len(self.data) == 1:
+                        self.flush_queue()
+                    
+                    print(f"Song recovered successfully. Queue now has {len(self.data)} songs")
+                    return 0  # ADD THIS - Return 0 for success
+                else:
+                    print("Queue is suspended, cannot recover")
+                    return 1  # ADD THIS - Return 1 for failure
+                    
+        except Exception as e:
+            print(f"Error inserting song: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return 1  # ADD THIS - Return 1 for error
+                
 
     def insert_youtube_song(self, video_id):
         """
@@ -171,12 +192,12 @@ class UniversalQueue:
                 
 
 
-    def flush_queue(self):
-        """
-        Goes through queue and plays songs or pauses, updating display queue
-        as necessary by calling update_UI() 
+    # def flush_queue(self):
+    #     """
+    #     Goes through queue and plays songs or pauses, updating display queue
+    #     as necessary by calling update_UI() 
 
-        """
+    #     """
         #Queue the song for playback
         #while the queue is not empty
         #use the spotify interface instance to play the song at the front of queue
@@ -186,25 +207,78 @@ class UniversalQueue:
         #call update_UI()
         #call write()
 
+        # just_unpaused = False
+
+        # while len(self.data) != 0:
+        #     if just_unpaused == False:
+        #         self.spotify.play(self.data[0].uri)
+        #     else: 
+        #         just_unpaused = False
+        #     self.flush_exit.wait((self.data[0].s_len / 1000))
+        #     print("WAIT ENDED")
+
+        #     if self.pause_toggle == True:
+        #         remaining_time = self.data[0].s_len - self.spotify.get_current_playback_info().progress_ms
+        #         self.data[0].s_len = remaining_time
+        #         self.pause_exit.wait()
+        #         just_unpaused = True
+
+        #         continue
+            
+        #     self.data = self.data[1:]
+
+    def flush_queue(self):
+        """
+        Updated flush_queue to handle both Spotify and YouTube
+        """
         just_unpaused = False
 
         while len(self.data) != 0:
+            current_song = self.data[0]
+            
             if just_unpaused == False:
-                self.spotify.play(self.data[0].uri)
+                if hasattr(current_song, 'platform') and current_song.platform == "YouTube":
+                    # Handle YouTube playback
+                    video_id = self.youtube.extract_video_id(current_song.uri)
+                    if video_id:
+                        self.youtube.set_video_duration(current_song.s_len / 1_000_000)
+                        self.youtube.play(video_id)
+                        print(f"Playing YouTube video: {current_song.name}")
+                else:
+                    # Handle Spotify playback
+                    self.spotify.play(current_song.uri)
+                    print(f"Playing Spotify track: {current_song.name}")
             else: 
                 just_unpaused = False
-            self.flush_exit.wait((self.data[0].s_len / 1000))
+                
+            # Wait for the song duration
+            wait_time = current_song.s_len / 1_000_000
+            self.flush_exit.wait(wait_time)
             print("WAIT ENDED")
 
             if self.pause_toggle == True:
-                remaining_time = self.data[0].s_len - self.spotify.get_current_playback_info().progress_ms
-                self.data[0].s_len = remaining_time
+                if hasattr(current_song, 'platform') and current_song.platform == "YouTube":
+                    remaining_time = self.youtube.get_remaining_time_ms() * 1000  # Convert to microseconds
+                    current_song.s_len = remaining_time
+                    self.youtube.pause()
+                else:
+                    remaining_time = current_song.s_len - self.spotify.get_current_playback_info().progress_ms * 1000
+                    current_song.s_len = remaining_time
+                    self.spotify.pause()
+                    
                 self.pause_exit.wait()
+                
+                # Resume playback
+                if hasattr(current_song, 'platform') and current_song.platform == "YouTube":
+                    self.youtube.unpause()
+                else:
+                    self.spotify.unpause()
+                    
                 just_unpaused = True
-
                 continue
             
             self.data = self.data[1:]
+            self.write()
 
     def pause_queue(self, cookie):
         """
@@ -425,6 +499,47 @@ class UniversalQueue:
 
 
 UQ = UniversalQueue()
+# List of API keys
+API_KEYS = [
+                "AIzaSyCGJ1UXzFF7QL3X5WHdMhWIGJjhu1BBqh8",
+                "AIzaSyC948uX02ZYvomTfRfw9eSwQJDE9bnIId4",
+                "AIzaSyCDAeaAOmP3M-TLn59923SGQTr7o1w1F4Y",
+                "AIzaSyCxzo4ExRujDH9kv1SysovtSSWTBXKDFec",
+                "AIzaSyAvOmpwSH-nePF4zeqEJwD8CfKX6dP4pTg"
+]
+
+# Initialize YouTubeAPI with multiple keys
+youtube_api = YouTubeAPI(api_keys=API_KEYS)
+
+UQ.youtube_api = youtube_api
+# UQ.youtube = YouTube_Interface_Class(socketio=None)  # Add this line
+
+
+# # Add WebSocket event handlers
+# @socketio.on('connect')
+# def handle_connect():
+#     print('Client connected to WebSocket')
+
+# @socketio.on('disconnect')
+# def handle_disconnect():
+#     print('Client disconnected from WebSocket')
+
+# @socketio.on('youtube_song_ended')
+# def handle_youtube_song_ended(data):
+#     """
+#     Handle when a YouTube song ends on the frontend
+#     """
+#     print(f"YouTube song ended: {data.get('video_id')}")
+#     # You can add logic here to move to the next song
+#     # For example: UQ.remove_current_song()
+
+# @socketio.on('youtube_position_update')
+# def handle_position_update(data):
+#     """
+#     Handle position updates from frontend YouTube player
+#     """
+#     if hasattr(UQ, 'youtube') and UQ.youtube:
+#         UQ.youtube.update_position(data.get('position', 0))
 
 @app.route('/', methods=['GET'])
 @cross_origin()
@@ -488,38 +603,34 @@ def pause_route():
 def unpause_route():
     UQ.unpause_queue()
 
-@app.route('/request_update', methods=['GET', 'POST'])
+@app.route('/request_update', methods=['GET'])
 @cross_origin()
-def update_visual_queue():
-
-    # current_queue_data = UQ.datak
-    # current_queue_data = json.dumps(current_queue_data)
-    data = []
-    for i in range(len(UQ.data)):
-        songObject = {
-                'name': UQ.data[i].name,
-                'artist': UQ.data[i].artist,
-                'albumname': UQ.data[i].album,
-                'albumcover': UQ.data[i].image,
-                'submissionID': UQ.data[i].id,
-                    }
-        # print( "NAMENAMENAMENAMENAMENANEMEANE " + UQ.data[i].name, songObject['name'])
-        data.append(songObject)
-
-    jsonData = json.dumps(data)
-    # print('#################' + jsonData + '#################')
-    return jsonData
+def request_update():
+    try:
+        songs_data = []
+        for song in UQ.data:
+            song_dict = song.to_dict()
+            print(f"Sending song to frontend: {song_dict}")  # Debug log
+            songs_data.append(song_dict)
+        
+        print(f"Total songs in response: {len(songs_data)}")  # Debug log
+        return jsonify(songs_data)
+    except Exception as e:
+        print(f"Error in request_update: {str(e)}")
+        return jsonify({"error": str(e)})
 
 @app.route('/verify_host', methods=['GET', 'POST'])
 @cross_origin()
 def verify_host():
     if request.method == 'GET':
         incomingIP = request.remote_addr
-        if incomingIP == local_ip:
+        print(f"Incoming IP: {incomingIP}, Local IP: {local_ip}")
+        
+        # Accept connections from the actual IP, localhost, or 127.0.0.1
+        if incomingIP in [local_ip, '127.0.0.1', 'localhost', '::1']:
             return {"updateIsHost": True, "updateCookie": UQ.hostCookie}
         else:
             return {"updateIsHost": False, "updateCookie": ""}
-
 
 @app.route('/remove_song', methods=['GET', 'POST'])
 @cross_origin()
@@ -557,18 +668,6 @@ def unpause_music():
     UQ.unpause_queue(cookie)
     return ""
 
-# List of API keys
-API_KEYS = [
-                "AIzaSyCGJ1UXzFF7QL3X5WHdMhWIGJjhu1BBqh8",
-                "AIzaSyC948uX02ZYvomTfRfw9eSwQJDE9bnIId4",
-                "AIzaSyCDAeaAOmP3M-TLn59923SGQTr7o1w1F4Y",
-                "AIzaSyCxzo4ExRujDH9kv1SysovtSSWTBXKDFec",
-                "AIzaSyAvOmpwSH-nePF4zeqEJwD8CfKX6dP4pTg"
-]
-
-# Initialize YouTubeAPI with multiple keys
-youtube_api = YouTubeAPI(api_keys=API_KEYS)
-
 @app.route('/youtube_search', methods=['GET'])
 @cross_origin()
 def youtube_search():
@@ -594,55 +693,209 @@ def parse_duration(duration):
         logging.error(f"Error parsing duration: {str(e)}")
         return 0
 
+# @app.route('/youtube_play', methods=['POST'])
+# @cross_origin()
+# def youtube_play():
+#     try:
+#         data = request.json
+#         video_id = data.get('video_id')
+#         start_time = data.get('start_time', 0)
+        
+#         if hasattr(UQ, 'youtube') and UQ.youtube:
+#             result = UQ.youtube.play(video_id, start_time)
+#             return jsonify({
+#                 "status": 200 if result == 0 else 500,
+#                 "response": "YouTube play command sent"
+#             })
+#         else:
+#             return jsonify({"status": 500, "response": "YouTube interface not available"})
+#     except Exception as e:
+#         return jsonify({"status": 500, "response": str(e)})
+
+# @app.route('/youtube_pause', methods=['POST'])
+# @cross_origin()
+# def youtube_pause():
+#     try:
+#         if hasattr(UQ, 'youtube') and UQ.youtube:
+#             result = UQ.youtube.pause()
+#             return jsonify({
+#                 "status": 200 if result == 0 else 500,
+#                 "response": "YouTube pause command sent"
+#             })
+#         else:
+#             return jsonify({"status": 500, "response": "YouTube interface not available"})
+#     except Exception as e:
+#         return jsonify({"status": 500, "response": str(e)})
+
+# @app.route('/youtube_unpause', methods=['POST'])
+# @cross_origin()
+# def youtube_unpause():
+#     try:
+#         if hasattr(UQ, 'youtube') and UQ.youtube:
+#             result = UQ.youtube.unpause()
+#             return jsonify({
+#                 "status": 200 if result == 0 else 500,
+#                 "response": "YouTube unpause command sent"
+#             })
+#         else:
+#             return jsonify({"status": 500, "response": "YouTube interface not available"})
+#     except Exception as e:
+#         return jsonify({"status": 500, "response": str(e)})
+
 @app.route('/youtube_submit_url', methods=['POST'])
 @cross_origin()
 def youtube_submit_url():
-    youtube_url = request.json.get('youtube_url')
-    print(f"Received YouTube URL: {youtube_url}")  # Debugging log
-
-    if not youtube_url:
-        return jsonify({"status": 400, "response": "YouTube URL is required."})
+    print("=== YOUTUBE SUBMIT URL ROUTE CALLED ===")
 
     try:
-        # Extract video ID from the URL
-        try:
-            video_id = youtube_url.split("v=")[-1].split("&")[0]
-            print(f"Extracted video ID: {video_id}")  # Debugging log
-
-            if not video_id:
-                raise ValueError("Invalid YouTube URL")
-        except Exception as e:
-            return jsonify({"status": 400, "response": "Invalid YouTube URL."})
-
-        # # Fetch video details
-        # video_details = youtube_api.get_video_details(video_id)  # Use the new method
-        # print("********", video_details, "********")
-
-        # # Prepare song data for insertion
-        # song_data = {
-        #     "status": 200,
-        #     "search_results": {
-        #         "uri": video_details["video_url"],
-        #         "name": video_details["title"],
-        #         "artist": video_details["artist"],
-        #         "s_len": parse_duration(video_details.get("duration", "PT0S")),  # Parse duration
-        #         "album": None,
-        #         "platform": "YouTube"
-        #     }
-        # }
-        # song_json = json.dumps(song_data)
-        # song = Song(song_json)
-
-        # Insert song into the queue
-        UQ.insert_youtube_song(video_id)
-        return jsonify({"status": 200, "response": "YouTube song successfully added to the queue."})
-    except ValueError as e:
-        logging.error(f"ValueError in YouTube song submission: {str(e)}")
-        return jsonify({"status": 400, "response": str(e)})
+        data = request.json
+        print(f"Received data: {data}")
+        url = data.get('youtube_url')
+        
+        if not url:
+            return jsonify({"status": 400, "response": "No URL provided"})
+        
+        print(f"Received YouTube URL: {url}")
+        
+        # Extract video ID
+        video_id = None
+        if "youtube.com/watch?v=" in url:
+            video_id = url.split("v=")[1].split("&")[0]
+        elif "youtu.be/" in url:
+            video_id = url.split("youtu.be/")[1].split("?")[0]
+        
+        if not video_id:
+            return jsonify({"status": 400, "response": "Invalid YouTube URL"})
+        
+        print(f"Extracted video ID: {video_id}")
+        
+        # Get video info from YouTube API
+        video_title = f"YouTube Video ({video_id})"
+        channel_name = "YouTube Channel"
+        thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/default.jpg"
+        duration = 180000000  # Default: 3 minutes in microseconds
+        
+        if hasattr(UQ, 'youtube_api') and UQ.youtube_api:
+            try:
+                video_info = UQ.youtube_api.get_video_details(video_id)
+                if video_info:
+                    video_title = video_info.get('title', video_title)
+                    channel_name = video_info.get('channel_title', channel_name)
+                    thumbnail_url = video_info.get('thumbnail_url', thumbnail_url)
+                    
+                    # Convert ISO 8601 duration to microseconds
+                    duration_iso = video_info.get('duration', 'PT3M')
+                    if duration_iso and duration_iso.startswith('PT'):
+                        try:
+                            import isodate
+                            duration_seconds = isodate.parse_duration(duration_iso).total_seconds()
+                            duration = int(duration_seconds * 1_000_000)  # Convert to microseconds
+                            print(f"Converted duration {duration_iso} to {duration} microseconds")
+                        except Exception as duration_error:
+                            print(f"Duration conversion error: {duration_error}")
+                            duration = 180000000  # Default fallback
+                    
+            except Exception as e:
+                print(f"YouTube API error: {e}")
+        
+        # Create the song data structure
+        song_data = {
+            "status": 200,
+            "platform": "YouTube",
+            "search_results": {
+                "video_url": url,
+                "uri": url,
+                "title": video_title,
+                "name": video_title,
+                "channel_name": channel_name,
+                "artist": channel_name,
+                "duration": duration,  # Now in microseconds
+                "s_len": duration,     # Now in microseconds
+                "album": "YouTube",
+                "thumbnail_url": thumbnail_url,
+                "albumcover": thumbnail_url,
+                "video_id": video_id
+            },
+            "submissionID": UQ.idCount
+        }
+        
+        print(f"Creating YouTube song with data: {song_data}")
+        
+        # Create Song object
+        song = Song(song_data, recover=False)
+        print(f"Created song object: {song}")
+        
+        # Add to queue
+        result = UQ.insert(song)
+        print(f"Insert result: {result}")
+        
+        if result is None or result == 0:
+            return jsonify({
+                "status": 200, 
+                "response": "YouTube song added successfully",
+                "song_info": song.to_dict()
+            })
+        else:
+            return jsonify({"status": 500, "response": f"Failed to add song to queue, result: {result}"})
+            
     except Exception as e:
-        logging.error(f"Error in YouTube song submission: {str(e)}")
-        return jsonify({"status": 500, "response": "An internal server error occurred."})
+        print(f"Error in youtube_submit_url: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": 500, "response": str(e)})    
+    except Exception as e:
+        print(f"Error in youtube_submit_url: {str(e)}")  # Debug log
+        import traceback
+        traceback.print_exc()  # Print full error trace
+        return jsonify({"status": 500, "response": str(e)})
+
+@app.route('/test_youtube_song', methods=['POST'])
+@cross_origin()
+def test_youtube_song():
+    try:
+        # Create a simple test YouTube song
+        song_data = {
+            "status": 200,
+            "platform": "YouTube",
+            "search_results": {
+                "uri": "https://youtube.com/watch?v=dQw4w9WgXcQ",
+                "video_url": "https://youtube.com/watch?v=dQw4w9WgXcQ",
+                "name": "Test Song",
+                "title": "Test Song",
+                "artist": "Test Artist",
+                "channel_name": "Test Artist",
+                "album": "YouTube",
+                "albumcover": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg",
+                "thumbnail_url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg",
+                "video_id": "dQw4w9WgXcQ",
+                "s_len": 213000,
+                "duration": 213000
+            },
+            "submissionID": UQ.idCount
+        }
+        
+        print(f"Test song data: {song_data}")
+        
+        song = Song(song_data, recover=False)
+        print(f"Created test song: {song}")
+        
+        result = UQ.insert(song)
+        print(f"Insert result: {result}")
+        
+        return jsonify({
+            "status": 200,
+            "response": "Test song added",
+            "song": song.to_dict()
+        })
+        
+    except Exception as e:
+        print(f"Error in test: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"status": 500, "response": str(e)})
+    
 with open(path + '/../m3-frontend/.env', 'w') as f_obj:
     f_obj.write('REACT_APP_BACKEND_IP="'+local_ip+'"')
 
-app.run(host = '0.0.0.0', port=8080) 
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080, debug=True)  # Change from socketio.run to app.run

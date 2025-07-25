@@ -1,6 +1,8 @@
 import logging
 import os
 import socket
+import subprocess
+import sys
 import threading
 import time
 
@@ -22,7 +24,7 @@ class Server:
     def __init__(self, os, **configs):
         self.url = None
         self.os = os
-
+        self.backend_ip = None
 
     def _get_local_ip(self):
         """
@@ -39,13 +41,28 @@ class Server:
                 logging.info("Local IP successfully retrieved: %s", str(IP))
                 return IP
             except socket.error as e:
-                logging.error(
-                    "Failed to connect or retrieve local IP: %s", str(e))
+                logging.error("Failed to connect or retrieve local IP: %s", str(e))
+                return None
             finally:
                 UDP_socket.close()
         except socket.error as e:
             logging.error("Socket creation failed: %s", str(e))
+            return None
 
+    def _update_frontend_config(self):
+        """
+        Updates the frontend .env file with the backend IP address
+        """
+        try:
+            current_path = os.path.dirname(__file__)
+            env_path = os.path.join(current_path, '../m3-frontend/.env')
+            
+            with open(env_path, 'w') as f:
+                f.write(f'REACT_APP_BACKEND_IP="{self.backend_ip}"\n')
+            
+            logging.info(f"Updated frontend .env file with backend IP: {self.backend_ip}")
+        except Exception as e:
+            logging.error(f"Failed to update frontend .env file: {e}")
 
     def generate_qr_code(self):
         """
@@ -70,20 +87,17 @@ class Server:
             logging.info("QR code image saved successfully.")
 
         except Exception as e:
-            logging.error(
-                "An error occurred while creating QR code image: %s", str(e))
-
+            logging.error("An error occurred while creating QR code image: %s", str(e))
 
     def react_run(self):
         """
         Runs the frontend React application and installs required packages.
         """
         current_path = os.path.dirname(__file__)
-        full_package_json_path = os.path.join(
-            current_path, '../m3-frontend/package.json')
+        full_package_json_path = os.path.join(current_path, '../m3-frontend/package.json')
+        
         if not os.path.exists(full_package_json_path):
-            logging.error(
-                "package.json not found at %s, cannot run React application", full_package_json_path)
+            logging.error("package.json not found at %s, cannot run React application", full_package_json_path)
             exit()
             
         try:
@@ -102,17 +116,31 @@ class Server:
             logging.error("Failed to start React app: %s", str(e))
             exit()
 
-
     def run_backend(self):
         """
         Runs the backend Flask application 
         """
         try:
-            import UniversalQueueDesign
+            current_path = os.path.dirname(__file__)
+            backend_path = os.path.join(current_path, '../UniversalQueue')
+            backend_script = os.path.join(backend_path, 'UniversalQueueDesign.py')
+            
+            logging.info(f"Starting backend at: {backend_script}")
+            
+            # Add the backend path to Python path
+            sys.path.insert(0, backend_path)
+            
+            # Run the backend script
+            result = subprocess.run([sys.executable, backend_script], 
+                                  cwd=backend_path, 
+                                  capture_output=False)
+            
+            if result.returncode != 0:
+                logging.error(f"Backend exited with code: {result.returncode}")
+                
         except Exception as e:
             logging.error("Failed to start backend: %s", str(e))
             exit()
-
 
     def thread_run_backend(self):
         """
@@ -120,25 +148,38 @@ class Server:
         """
         try:
             backend_thread = threading.Thread(target=self.run_backend, args=())
+            backend_thread.daemon = True  # Allow main program to exit
             backend_thread.start() 
+            logging.info("Backend thread started successfully")
         except Exception as e:
             logging.error("Failed to start backend thread: %s", str(e))
             exit()
         
-    
     def main(self):
         """
         specifies order of operations for the class methods to run
         """
-        server = Server(self.os)
         port = 3000
-        ip = server._get_local_ip()
+        ip = self._get_local_ip()
+        
         if ip is None:
-            logging.error(
-                "Failed to retrieve IP address, QR Code cannot be generated.")
-        else:
-            server.url = "http://" + ip + ":" + str(port)
-            server.generate_qr_code()
-        server.thread_run_backend()
-        time.sleep(5)  # ensures backend is up before frontend starts
-        server.react_run()
+            logging.error("Failed to retrieve IP address, using localhost")
+            ip = "localhost"
+        
+        self.backend_ip = ip
+        self.url = "http://" + ip + ":" + str(port)
+        
+        # Update frontend configuration with backend IP
+        self._update_frontend_config()
+        
+        # Generate QR code
+        self.generate_qr_code()
+        
+        # Start backend in separate thread
+        self.thread_run_backend()
+        
+        # Wait for backend to start
+        time.sleep(8)  # Increased wait time
+        
+        # Start frontend
+        self.react_run()
