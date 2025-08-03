@@ -67,7 +67,7 @@ export async function searchYouTubeSongs(searchbar_query) {
  * on success/failure in the form of a string.
  */
 export async function submitYouTubeURLSong(url_textbox_input) {
-  console.log("Submitting YouTube URL:", url_textbox_input); // Log the URL being submitted
+  console.log("Submitting YouTube URL:", url_textbox_input);
 
   if (url_textbox_input === "") {
     return {
@@ -77,14 +77,24 @@ export async function submitYouTubeURLSong(url_textbox_input) {
   }
 
   const backendURL = `http://${process.env.REACT_APP_BACKEND_IP}:8080/youtube_submit_url`;
-  console.log("Backend URL:", backendURL); // Log the constructed backend URL
+  console.log("Backend URL:", backendURL);
 
   try {
+    console.log("Making axios request...");
+    
     const response = await axios.post(
       backendURL,
-      { youtube_url: url_textbox_input }, // Send the URL as JSON in the request body
-      { timeout: 5000 }
+      { youtube_url: url_textbox_input },
+      { 
+        timeout: 10000, // Increased timeout to 10 seconds
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
     );
+
+    console.log("Axios response received:", response);
+    console.log("Response data:", response.data);
 
     switch (response.data.status) {
       case 200:
@@ -109,7 +119,20 @@ export async function submitYouTubeURLSong(url_textbox_input) {
         };
     }
   } catch (error) {
-    console.log("Error response: ", error);
+    console.error("Error in submitYouTubeURLSong:", error);
+    console.error("Error details:", {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      response: error.response?.data
+    });
+
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      return {
+        status: 500,
+        response: "Request timed out. Please try again.",
+      };
+    }
 
     return {
       status: 500,
@@ -117,7 +140,6 @@ export async function submitYouTubeURLSong(url_textbox_input) {
     };
   }
 }
-
 
 
 /**
@@ -351,11 +373,10 @@ export async function submitURLSong(url_textbox_input) {
 export function SongSubmission() {
   const [searchBarError, setSearchBarError] = useState("");             // Hold error messages related to the search bar
   const [submitButtonError, setSubmitButtonError] = useState("");       // Hold error messages related to song submission
-  const [spotifySearchQuery, setSpotifySearchQuery] = useState("");                   // Represents and holds the value in the search bar
+  const [spotifySearchQuery, setSpotifySearchQuery] = useState("");     // Represents and holds the value in the search bar
   const [URLTextboxInput, setURLTextboxInput] = useState("");           // Represents and holds the value in the URL text box
   const [searchSongsResponse, setSearchSongsResponse] = useState(null); // Holds the returned value from searchSongs as it is being debounced
   const [searchResults, setSearchResults] = useState("");               // Holds an array of songs for the dropdown
-  //const [hideSearchResults, setHideSearchResults] = useState(false);    // A toggle for hiding the dropdown if it is not clicked
   const [selectedSong, setSelectedSong] = useState(null);               // The song that has been selected from the dropdown
   const [searchYouTubeResults, setSearchYouTubeResults] = useState(""); // Holds an array of YouTube songs for the dropdown
   const [selectedYouTubeSong, setSelectedYouTubeSong] = useState(null); // The YouTube song selected from the dropdown
@@ -421,22 +442,67 @@ export function SongSubmission() {
  * Handles calling submitYouTubeURLSong to submit the song stored in *URLTextboxInput* to the backend.
  */
 const handleSubmitYouTubeURL = async () => {
+  console.log("=== FUNCTION CALLED - VERY FIRST LINE ===");
+  console.log("submitButtonError current value:", submitButtonError);
+  console.log("selectedYouTubeSong:", selectedYouTubeSong);
+  console.log("youtubeSearchQuery BEFORE submission:", youtubeSearchQuery);
+
   if (!selectedYouTubeSong || !selectedYouTubeSong.video_url) {
+    console.log("=== EARLY RETURN - NO SELECTED SONG ===");
     setSubmitButtonError("Please select a valid YouTube song from the dropdown.");
     return;
   }
 
+  // Prevent multiple submissions
+  if (submitButtonError === "Submitting YouTube URL...") {
+    console.log("=== EARLY RETURN - ALREADY SUBMITTING ===");
+    console.log("Already submitting, ignoring duplicate request");
+    return;
+  }
+
+  console.log("=== ABOUT TO SET SUBMITTING STATUS ===");
   setSubmitButtonError("Submitting YouTube URL...");
+  console.log("=== SET SUBMITTING STATUS ===");
 
-  // Use the video_url from the selected song
-  let response_json = await submitYouTubeURLSong(selectedYouTubeSong.video_url);
+  try {
+    console.log("About to call submitYouTubeURLSong with:", selectedYouTubeSong.video_url);
+    
+    // Use the video_url from the selected song
+    const response_json = await submitYouTubeURLSong(selectedYouTubeSong.video_url);
+    
+    console.log("Backend response received:", response_json);
+    console.log("Backend response status:", response_json.status);
+    console.log("Backend response type:", typeof response_json.status);
 
-  if (response_json.status === 200) {
-    setSubmitButtonError("");
-    setYouTubeSearchQuery(""); // Clear the search bar
-    setSelectedYouTubeSong(null); // Clear the selected song
-  } else {
-    setSubmitButtonError(response_json.response);
+    if (response_json.status === 200) {
+      console.log("SUCCESS - About to clear fields");
+      console.log("youtubeSearchQuery BEFORE clearing:", youtubeSearchQuery);
+      
+      setSubmitButtonError("");
+      setYouTubeSearchQuery("");
+      
+      console.log("Called setYouTubeSearchQuery with empty string");
+      
+      setSelectedYouTubeSong(null);
+      setSearchYouTubeResults("");
+      setHideYouTubeSearchResults(true);
+      
+      console.log("All clearing operations completed");
+    } else {
+      console.log("FAILURE - Status is not 200, it's:", response_json.status);
+      console.log("FAILURE - Not clearing fields");
+      setSubmitButtonError(response_json.response || "Unknown error occurred");
+    }
+  } catch (error) {
+    console.error("ERROR in handleSubmitYouTubeURL:", error);
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    
+    if (error.name === 'AbortError' || error.message.includes('cancelled')) {
+      setSubmitButtonError("Request was cancelled. Please try again.");
+    } else {
+      setSubmitButtonError("Network error occurred");
+    }
   }
 };
 
@@ -591,86 +657,6 @@ const handleSubmitYouTubeURL = async () => {
     }
   }
 
-//   return (
-//     <div className="songSubmission">
-      
-//       {/* The container for the search and submit functionality*/}
-//       <div className="searchContainer">
-
-//         {/* The input field for searching for songs */}
-//         <input
-//           className="searchBar"
-//           data-testid="SearchBar"
-//           placeholder="Search for songs..."
-//           value={searchQuery}
-//           onClick={handleSearchBarClick} // Handles showing the dropdown if it was previously hidden
-//           onChange={handleSearchBarKeystroke} // Handling searching with each keystroke
-//           onKeyDown={handleSearchBarKeyDown} // Handles if a song was selected but we want to re-search
-//         />
-
-//         {/* The conditionally rendering dropdown menu for selecting songs */}
-//         {!hideSearchResults && searchResults && (
-//           <div className="dropdownContainer">
-//             {searchResults.map((item, index) => (
-//               <div
-//                 className="dropdownItem"
-//                 data-testid={"Result" + index} // Give each item a numbered testid for testing
-//                 key={index}
-//                 onClick={(e) => handleDropdownSelectSong(item, e)}
-//               >
-//                 <div className="itemTitle">{item.title}</div>
-//                 <div className="itemSubtitle">
-//                   {item.artist} - {item.album}
-//                 </div>
-//               </div>
-//             ))}
-//           </div>
-//         )}
-
-//         {/* The button to submit the song that has been selected from the dropdown */}
-//         <button
-//           data-testid="SubmitButton"
-//           className="submitButton"
-//           onClick={handleSubmitSong}
-//         >
-//           Submit Song
-//         </button>
-//       </div>
-
-//       {/* The container for the URL and submit functionality*/}
-//       <div className="searchContainer">
-//         {/* The input field for submitting song URLs to be added to the queue */}
-//         <input
-//           className="searchBar"
-//           data-testid="URLTextBox"
-//           placeholder="Paste a song URL..."
-//           value={URLTextboxInput}
-//           onChange={(e) => setURLTextboxInput(e.target.value)}
-//         />
-
-//         {/* The button to submit the song URL that was passed into the URL textbox */}
-//         <button
-//           data-testid="URLSubmitButton"
-//           className="submitButton"
-//           onClick={handleSubmitURL}
-//         >
-//           Submit URL
-//         </button>
-//       </div>
-
-//       {/* The field where errors related to the search bar and URL textbox will be displayed */}
-//       {searchBarError && (
-//         <div className="errorMessage" data-testid="SearchBarError">{searchBarError}</div>
-//       )}
-
-//       {/* The field where errors related to song submission will be displayed */}
-//       {submitButtonError && (
-//         <div className="errorMessage" data-testid="SubmitButtonError">{submitButtonError}</div>
-//       )}
-
-//     </div>
-//   );
-// }
 
 return (
   <div className="songSubmission">
@@ -742,8 +728,9 @@ return (
         data-testid="YouTubeSubmitButton"
         className="submitButton"
         onClick={handleSubmitYouTubeURL}
+        disabled={submitButtonError === "Submitting YouTube URL..."} // Disable during submission
       >
-        Submit YouTube Song
+        {submitButtonError === "Submitting YouTube URL..." ? "Submitting..." : "Submit YouTube Song"}
       </button>
     </div>
   </div>
