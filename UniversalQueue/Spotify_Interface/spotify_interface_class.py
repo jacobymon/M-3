@@ -115,7 +115,7 @@ class Spotify_Interface_Class:
                     'title' : track.name,
                     'artist': track.artists[0].name,
                     'album' : track.album.name,
-                    'image' : track.album.images[0].url
+                    'albumcover' : track.album.images[0].url
                     }
 
             results.append(json_data)
@@ -139,6 +139,7 @@ class Spotify_Interface_Class:
                 'title' : track.name,
                 'artist': track.artists[0].name,
                 'album' : track.album.name
+                
                 }
 
         results.append(json_data)

@@ -33,7 +33,7 @@ class Song:
                     self.artist = search_results.get('channel_name') or search_results.get('artist')
                     self.s_len = search_results.get('duration') or search_results.get('s_len')
                     self.album = search_results.get('album') or "YouTube"  # Set default album for YouTube
-                    self.albumname = "YouTube"  # Add this for frontend compatibility
+                    self.albumname = "YouTube"  
                     self.albumcover = search_results.get('thumbnail_url') or search_results.get('albumcover', '')
                     self.video_id = search_results.get('video_id', '')
                 else:

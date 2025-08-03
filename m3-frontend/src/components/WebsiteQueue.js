@@ -828,10 +828,35 @@ function DisplayedQueue() {
 		};
 	}, [songs]);
 
-    const handleSongEnd = () => {
-        console.log("Song ended, moving to next in queue");
-        // You can implement logic here to remove the current song from queue
-    };
+    const handleSongEnd = async () => {
+		console.log("Song ended, moving to next in queue");
+		
+		if (currentSong && currentSong.submissionID !== -1) {
+			console.log(`Removing finished song: ${currentSong.name} (ID: ${currentSong.submissionID})`);
+			
+			try {
+				// Call the backend to remove the finished song
+				const response = await axios.post(
+					DELETE_SONG_CALL,
+					{ "id": currentSong.submissionID, "cookie": cookie },
+					{ timeout: 5000 }
+				);
+				
+				if (response.status === 200) {
+					console.log("Successfully removed finished song from queue");
+					// The queue will be updated automatically through polling
+				} else {
+					console.error("Failed to remove song:", response.status);
+				}
+				
+			} catch (error) {
+				console.error("Error removing finished song:", error);
+				updateHostToolsError(error.status || 500);
+			}
+		} else {
+			console.log("No valid current song to remove");
+		}
+	};
   
     return (
         <>

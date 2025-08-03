@@ -266,33 +266,71 @@ class UniversalQueue:
                     wait_time = current_song.s_len / 1_000_000
                     print(f"YouTube song - Waiting {wait_time} seconds for song to finish")
                 else:
-                    # Spotify duration is in milliseconds
+                    # Spotify duration is in milliseconds  
                     wait_time = current_song.s_len / 1_000
                     print(f"Spotify song - Waiting {wait_time} seconds for song to finish")
                 
-                # Wait for the song to finish or be interrupted
-                self.flush_exit.wait(wait_time)
-                
-                # Check if we were interrupted by pause
-                if self.pause_toggle == True:
-                    print("Song was paused, handling pause logic...")
+                # MAIN WAITING LOOP - This is where the magic happens
+                while True:  # ← ADD THIS INNER LOOP
+                    # Wait for the song to finish or be interrupted
+                    song_finished = self.flush_exit.wait(wait_time)
                     
-                    # Calculate remaining time if Spotify
-                    if not (hasattr(current_song, 'platform') and current_song.platform == "YouTube"):
-                        try:
-                            playback_info = self.spotify.get_current_playback_info()
-                            if playback_info and playback_info.progress_ms:
-                                # Spotify progress is in milliseconds, s_len is in milliseconds
-                                remaining_time = current_song.s_len - playback_info.progress_ms
-                                current_song.s_len = max(remaining_time, 0)  # Don't go negative
-                                print(f"Updated remaining time: {current_song.s_len / 1_000} seconds")
-                        except Exception as e:
-                            print(f"Error getting playback info: {e}")
-                    
-                    # Wait for unpause
-                    self.pause_exit.wait()
-                    print("Unpaused, continuing song...")
-                    continue  # Continue with the same song
+                    # Check if we were interrupted by pause
+                    if self.pause_toggle == True:  
+                        print("Song was paused, handling pause logic...")
+                        
+                        # Calculate remaining time if Spotify
+                        if not (hasattr(current_song, 'platform') and current_song.platform == "YouTube"):
+                            try:
+                                playback_info = self.spotify.get_current_playback_info()
+                                print(f"Playback info: {playback_info}")
+                                
+                                if playback_info and hasattr(playback_info, 'progress_ms') and playback_info.progress_ms is not None:
+                                    progress_ms = playback_info.progress_ms
+                                    
+                                    # Check if s_len is in microseconds or milliseconds
+                                    if current_song.s_len > 10000000:  # If > 10M, likely microseconds
+                                        song_duration_ms = current_song.s_len / 1000  # Convert to milliseconds
+                                        print(f"Song duration (converted from microseconds): {song_duration_ms}ms")
+                                    else:
+                                        song_duration_ms = current_song.s_len  # Already in milliseconds
+                                        print(f"Song duration (already in milliseconds): {song_duration_ms}ms")
+                                    
+                                    print(f"Current progress: {progress_ms}ms")
+                                    print(f"Original song length: {current_song.s_len}")
+                                    
+                                    # Calculate remaining time in original units
+                                    if current_song.s_len > 10000000:  # Was in microseconds
+                                        remaining_time_ms = song_duration_ms - progress_ms
+                                        remaining_time_microseconds = remaining_time_ms * 1000
+                                        current_song.s_len = max(remaining_time_microseconds, 0)
+                                        wait_time = remaining_time_ms / 1000  # Update wait_time for next iteration
+                                        print(f"Updated remaining time: {remaining_time_microseconds} microseconds ({remaining_time_ms}ms)")
+                                    else:  # Was in milliseconds
+                                        remaining_time_ms = song_duration_ms - progress_ms
+                                        current_song.s_len = max(remaining_time_ms, 0)
+                                        wait_time = remaining_time_ms / 1000  # Update wait_time for next iteration
+                                        print(f"Updated remaining time: {remaining_time_ms}ms")
+                                        
+                                else:
+                                    print("No valid playback info available, keeping original song length")
+                                    
+                            except Exception as e:
+                                print(f"Error getting playback info: {e}")
+                                print("Keeping original song length due to error")
+                        
+                        # Wait for unpause
+                        print("Waiting for unpause signal...")
+                        self.pause_exit.wait()
+                        print("Unpaused, continuing song with remaining time...")
+                        
+                        # DON'T break or continue - just loop back to wait for remaining time
+                        print(f"Will now wait {wait_time} seconds for remaining song time")
+                        
+                    else:
+                        # Song finished naturally (timeout occurred)
+                        print(f"Song finished naturally: {current_song.name}")
+                        break  # Break out of inner while loop
                 
                 # Song finished naturally, remove from queue
                 print(f"Song finished: {current_song.name}")
@@ -351,10 +389,9 @@ class UniversalQueue:
 
     def unpause_queue(self, cookie):
         """
-        allows us to pause the queu and play the queue.
+        allows us to pause the queue and play the queue.
 
         @return bool: true when queue is paused, false when queue is unpaused
-
         """
 
         if not self.cookie_is_valid(cookie):
@@ -363,15 +400,18 @@ class UniversalQueue:
         if self.pause_toggle == True:
             self.pause_toggle = False 
             
-            self.spotify.unpause()
+            # Resume Spotify playback from where it was paused
+            try:
+                self.spotify.unpause()  # ← ADD THIS BACK - Let Spotify resume naturally
+            except Exception as e:
+                print(f"Error resuming Spotify: {e}")
+            
             self.pause_exit.set()
             self.pause_exit.clear()
-
-
-
+            
+            print("Queue unpaused - Spotify should resume from where it left off")
         else:
             print("Queue is currently Playing")
-
 
     def update_ui(self):
         """
@@ -631,13 +671,11 @@ def submit_song():
     
     song_data['search_results']['name'] = song_data['search_results']['title']
     
-    # ADD THIS DEBUG LOG
     print(f"Song duration before Song creation: {song_data['search_results'].get('s_len', 'NOT FOUND')}")
     
     song_data = json.dumps(song_data)
     song = Song(song_data)
     
-    # ADD THIS DEBUG LOG
     print(f"Song duration after Song creation: {song.s_len}")
     print(f"Song duration in seconds: {song.s_len / 1_000_000}")
     
@@ -661,7 +699,7 @@ def request_update():
         songs_data = []
         for song in UQ.data:
             song_dict = song.to_dict()
-            print(f"Sending song to frontend: {song_dict}")  # Debug log
+            # print(f"Sending song to frontend: {song_dict}")  # Debug log
             songs_data.append(song_dict)
         
         print(f"Total songs in response: {len(songs_data)}")  # Debug log
