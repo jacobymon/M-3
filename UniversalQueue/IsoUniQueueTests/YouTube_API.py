@@ -10,11 +10,7 @@ class YouTubeAPI:
         """
         if api_keys is None:
             api_keys = [
-                "AIzaSyCGJ1UXzFF7QL3X5WHdMhWIGJjhu1BBqh8",
-                "AIzaSyC948uX02ZYvomTfRfw9eSwQJDE9bnIId4",
-                "AIzaSyCDAeaAOmP3M-TLn59923SGQTr7o1w1F4Y",
-                "AIzaSyCxzo4ExRujDH9kv1SysovtSSWTBXKDFec",
-                "AIzaSyAvOmpwSH-nePF4zeqEJwD8CfKX6dP4pTg"
+                "AIzaSyDU-lh8yXjypSK7GEPIcIsiORoDtHckfps"
             ]
         self.api_keys = api_keys  # List of API keys
         self.current_key_index = 0  # Index to track the current API key

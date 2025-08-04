@@ -48,6 +48,14 @@ class UniversalQueue:
     """
     Stores all of the song requests in a queue order
     """
+    # Global variable to store latest YouTube progress
+    latest_youtube_progress = {
+        "current_time": 0,
+        "duration": 0,
+        "remaining_seconds": 0,
+        "timestamp": 0,
+        "video_id": ""
+    }
 
     API_KEYS = [
     "AIzaSyCvQt4I9nFifFCdhkf6aA7xwWTlI1V6LYE",
@@ -279,8 +287,49 @@ class UniversalQueue:
                     if self.pause_toggle == True:  
                         print("Song was paused, handling pause logic...")
                         
-                        # Calculate remaining time if Spotify
-                        if not (hasattr(current_song, 'platform') and current_song.platform == "YouTube"):
+                        # Calculate remaining time based on platform
+                        if hasattr(current_song, 'platform') and current_song.platform == "YouTube":
+                            try:
+                                print("YouTube song paused - getting progress from frontend")
+                                
+                                # Store the song start time if not already stored
+                                if not hasattr(current_song, 'start_time'):
+                                    current_song.start_time = time.time()
+                                
+                                # Option 1: Check for recent progress data from frontend
+                                global latest_youtube_progress
+                                
+                                # Check if we have recent progress data (within last 5 seconds)
+                                if (hasattr(current_song, 'start_time') and 
+                                    'latest_youtube_progress' in globals() and 
+                                    time.time() - latest_youtube_progress.get('timestamp', 0) < 5 and 
+                                    latest_youtube_progress.get('remaining_seconds', 0) > 0):
+                                    
+                                    remaining_seconds = latest_youtube_progress['remaining_seconds']
+                                    remaining_microseconds = int(remaining_seconds * 1_000_000)
+                                    
+                                    print(f"Using recent YouTube progress: {remaining_seconds:.1f} seconds remaining")
+                                    current_song.s_len = max(remaining_microseconds, 0)
+                                    wait_time = remaining_seconds
+                                    
+                                else:
+                                    print("No recent progress data, using time estimation")
+                                    # Fallback to time estimation
+                                    elapsed_time = time.time() - current_song.start_time
+                                    elapsed_microseconds = int(elapsed_time * 1_000_000)
+                                    remaining_microseconds = max(0, current_song.s_len - elapsed_microseconds)
+                                    current_song.s_len = remaining_microseconds
+                                    wait_time = remaining_microseconds / 1_000_000
+                                    
+                                    print(f"Time estimation - Elapsed: {elapsed_time:.1f}s, Remaining: {wait_time:.1f}s")
+                                    
+                            except Exception as e:
+                                print(f"Error handling YouTube pause: {e}")
+                                # Keep original s_len as ultimate fallback
+                                wait_time = current_song.s_len / 1_000_000
+                                
+                        else:
+                            # Spotify pause handling (your existing code)
                             try:
                                 playback_info = self.spotify.get_current_playback_info()
                                 print(f"Playback info: {playback_info}")
@@ -288,12 +337,12 @@ class UniversalQueue:
                                 if playback_info and hasattr(playback_info, 'progress_ms') and playback_info.progress_ms is not None:
                                     progress_ms = playback_info.progress_ms
                                     
-                                    # Check if s_len is in microseconds or milliseconds
+                                    # Your existing Spotify pause calculation logic...
                                     if current_song.s_len > 10000000:  # If > 10M, likely microseconds
-                                        song_duration_ms = current_song.s_len / 1000  # Convert to milliseconds
+                                        song_duration_ms = current_song.s_len / 1000
                                         print(f"Song duration (converted from microseconds): {song_duration_ms}ms")
                                     else:
-                                        song_duration_ms = current_song.s_len  # Already in milliseconds
+                                        song_duration_ms = current_song.s_len
                                         print(f"Song duration (already in milliseconds): {song_duration_ms}ms")
                                     
                                     print(f"Current progress: {progress_ms}ms")
@@ -304,12 +353,12 @@ class UniversalQueue:
                                         remaining_time_ms = song_duration_ms - progress_ms
                                         remaining_time_microseconds = remaining_time_ms * 1000
                                         current_song.s_len = max(remaining_time_microseconds, 0)
-                                        wait_time = remaining_time_ms / 1000  # Update wait_time for next iteration
+                                        wait_time = remaining_time_ms / 1000
                                         print(f"Updated remaining time: {remaining_time_microseconds} microseconds ({remaining_time_ms}ms)")
                                     else:  # Was in milliseconds
                                         remaining_time_ms = song_duration_ms - progress_ms
                                         current_song.s_len = max(remaining_time_ms, 0)
-                                        wait_time = remaining_time_ms / 1000  # Update wait_time for next iteration
+                                        wait_time = remaining_time_ms / 1000
                                         print(f"Updated remaining time: {remaining_time_ms}ms")
                                         
                                 else:
@@ -324,7 +373,6 @@ class UniversalQueue:
                         self.pause_exit.wait()
                         print("Unpaused, continuing song with remaining time...")
                         
-                        # DON'T break or continue - just loop back to wait for remaining time
                         print(f"Will now wait {wait_time} seconds for remaining song time")
                         
                     else:
@@ -369,50 +417,70 @@ class UniversalQueue:
 
     def pause_queue(self, cookie):
         """
-        allows us to pause the queu and play the queue.
-
-        @return bool: true when queue is paused, false when queue is unpaused
-
+        Pause the queue - works for both Spotify and YouTube
         """
-
         if not self.cookie_is_valid(cookie):
             raise ValueError('invalid id')
 
         if self.pause_toggle == False:
             self.pause_toggle = True
             
-            self.spotify.pause()
+            # Pause the appropriate platform
+            if len(self.data) > 0:
+                current_song = self.data[0]
+                if hasattr(current_song, 'platform') and current_song.platform == "YouTube":
+                    print("Pausing YouTube playback via backend")
+                    try:
+                        # Get current playback time from frontend
+                        # This would require a separate call or websocket communication
+                        print("YouTube pause - time tracking will be handled in flush_queue")
+                    except Exception as e:
+                        print(f"Error pausing YouTube: {e}")
+                else:
+                    print("Pausing Spotify playback")
+                    try:
+                        self.spotify.pause()
+                    except Exception as e:
+                        print(f"Error pausing Spotify: {e}")
+            
             self.flush_exit.set()
             self.flush_exit.clear()
-        
-
+            print("Queue paused")
 
     def unpause_queue(self, cookie):
         """
-        allows us to pause the queue and play the queue.
-
-        @return bool: true when queue is paused, false when queue is unpaused
+        Unpause the queue - works for both Spotify and YouTube
         """
-
         if not self.cookie_is_valid(cookie):
             raise ValueError('invalid id')
 
         if self.pause_toggle == True:
             self.pause_toggle = False 
             
-            # Resume Spotify playback from where it was paused
-            try:
-                self.spotify.unpause()  # ← ADD THIS BACK - Let Spotify resume naturally
-            except Exception as e:
-                print(f"Error resuming Spotify: {e}")
+            # Resume the appropriate platform
+            if len(self.data) > 0:
+                current_song = self.data[0]
+                if hasattr(current_song, 'platform') and current_song.platform == "YouTube":
+                    print("Resuming YouTube playback via backend")
+                    try:
+                        # YouTube resume logic - let the frontend handle the actual playback
+                        # The flush_queue will continue with the remaining time
+                        pass
+                    except Exception as e:
+                        print(f"Error resuming YouTube: {e}")
+                else:
+                    print("Resuming Spotify playback")
+                    try:
+                        self.spotify.unpause()
+                    except Exception as e:
+                        print(f"Error resuming Spotify: {e}")
             
             self.pause_exit.set()
             self.pause_exit.clear()
             
-            print("Queue unpaused - Spotify should resume from where it left off")
+            print("Queue unpaused")
         else:
             print("Queue is currently Playing")
-
     def update_ui(self):
         """
         Sends the current state of the queue to the UI for all users. It will handle requests from users
@@ -590,11 +658,7 @@ class UniversalQueue:
 UQ = UniversalQueue()
 # List of API keys
 API_KEYS = [
-                "AIzaSyCGJ1UXzFF7QL3X5WHdMhWIGJjhu1BBqh8",
-                "AIzaSyC948uX02ZYvomTfRfw9eSwQJDE9bnIId4",
-                "AIzaSyCDAeaAOmP3M-TLn59923SGQTr7o1w1F4Y",
-                "AIzaSyCxzo4ExRujDH9kv1SysovtSSWTBXKDFec",
-                "AIzaSyAvOmpwSH-nePF4zeqEJwD8CfKX6dP4pTg"
+               "AIzaSyDU-lh8yXjypSK7GEPIcIsiORoDtHckfps"
 ]
 
 # Initialize YouTubeAPI with multiple keys
@@ -691,6 +755,99 @@ def pause_route():
 @cross_origin()
 def unpause_route():
     UQ.unpause_queue()
+
+@app.route('/youtube_pause', methods=['POST'])
+@cross_origin()
+def youtube_pause():
+    """Pause YouTube playback"""
+    try:
+        cookie = request.json['cookie']
+        
+        if not UQ.cookie_is_valid(cookie):
+            return jsonify({"status": 400, "response": "Invalid cookie"})
+        
+        # Check if current song is YouTube
+        if len(UQ.data) > 0:
+            current_song = UQ.data[0]
+            if hasattr(current_song, 'platform') and current_song.platform == "YouTube":
+                # Use the same pause logic as Spotify
+                UQ.pause_queue(cookie)
+                return jsonify({"status": 200, "response": "YouTube playback paused"})
+            else:
+                return jsonify({"status": 400, "response": "Current song is not YouTube"})
+        else:
+            return jsonify({"status": 400, "response": "No songs in queue"})
+            
+    except Exception as e:
+        print(f"Error in youtube_pause: {e}")
+        return jsonify({"status": 500, "response": str(e)})
+
+@app.route('/youtube_unpause', methods=['POST'])
+@cross_origin()
+def youtube_unpause():
+    """Unpause YouTube playback"""
+    try:
+        cookie = request.json['cookie']
+        
+        if not UQ.cookie_is_valid(cookie):
+            return jsonify({"status": 400, "response": "Invalid cookie"})
+        
+        # Check if current song is YouTube
+        if len(UQ.data) > 0:
+            current_song = UQ.data[0]
+            if hasattr(current_song, 'platform') and current_song.platform == "YouTube":
+                # Use the same unpause logic as Spotify
+                UQ.unpause_queue(cookie)
+                return jsonify({"status": 200, "response": "YouTube playback resumed"})
+            else:
+                return jsonify({"status": 400, "response": "Current song is not YouTube"})
+        else:
+            return jsonify({"status": 400, "response": "No songs in queue"})
+            
+    except Exception as e:
+        print(f"Error in youtube_unpause: {e}")
+        return jsonify({"status": 500, "response": str(e)})
+    
+@app.route('/get_youtube_progress', methods=['POST'])
+@cross_origin()
+def get_youtube_progress():
+    """Get current YouTube playback progress from frontend"""
+    global latest_youtube_progress
+    
+    try:
+        data = request.json
+        current_time_seconds = data.get('current_time', 0)
+        duration_seconds = data.get('duration', 0)
+        video_id = data.get('video_id', '')
+        
+        # Convert to microseconds to match your backend format
+        current_time_microseconds = int(current_time_seconds * 1_000_000)
+        duration_microseconds = int(duration_seconds * 1_000_000)
+        remaining_microseconds = max(0, duration_microseconds - current_time_microseconds)
+        remaining_seconds = remaining_microseconds / 1_000_000
+        
+        # Store the latest progress globally
+        latest_youtube_progress = {
+            "current_time": current_time_seconds,
+            "duration": duration_seconds,
+            "remaining_seconds": remaining_seconds,
+            "timestamp": time.time(),
+            "video_id": video_id
+        }
+        
+        print(f"Updated YouTube progress: {current_time_seconds:.1f}/{duration_seconds:.1f}s, {remaining_seconds:.1f}s remaining")
+        
+        return jsonify({
+            "status": 200,
+            "current_time_microseconds": current_time_microseconds,
+            "duration_microseconds": duration_microseconds,
+            "remaining_microseconds": remaining_microseconds,
+            "remaining_seconds": remaining_seconds
+        })
+        
+    except Exception as e:
+        print(f"Error getting YouTube progress: {e}")
+        return jsonify({"status": 500, "response": str(e)})
 
 @app.route('/request_update', methods=['GET'])
 @cross_origin()

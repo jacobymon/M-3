@@ -317,12 +317,110 @@ async function changeVolume(vol, cookie, updateHostToolsError) {
 
 // NEW: WebSocket-enabled YouTube Player Component
 function YouTubeQueuePlayer({ currentSong, onSongEnd }) {
-	const currentVideoIdRef = useRef(null); // ADD THIS: Immediate tracking
     const playerRef = useRef(null);
+    const currentVideoIdRef = useRef(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [currentVideoId, setCurrentVideoId] = useState(null);
     const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
+
+    // ADD: Method to get current playback time
+    const getCurrentTime = () => {
+        if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
+            try {
+                const currentTime = playerRef.current.getCurrentTime();
+                console.log(`Current YouTube time: ${currentTime} seconds`);
+                return currentTime;
+            } catch (error) {
+                console.error("Error getting current time:", error);
+                return 0;
+            }
+        }
+        return 0;
+    };
+
+    // ADD: Method to get total duration
+    const getDuration = () => {
+        if (playerRef.current && typeof playerRef.current.getDuration === 'function') {
+            try {
+                const duration = playerRef.current.getDuration();
+                console.log(`YouTube duration: ${duration} seconds`);
+                return duration;
+            } catch (error) {
+                console.error("Error getting duration:", error);
+                return 0;
+            }
+        }
+        return 0;
+    };
+
+    // ADD: Method to calculate remaining time
+    const getRemainingTime = () => {
+        const currentTime = getCurrentTime();
+        const duration = getDuration();
+        const remaining = Math.max(0, duration - currentTime);
+        console.log(`Remaining time: ${remaining} seconds`);
+        return remaining;
+    };
+
+	const sendProgressToBackend = async () => {
+		try {
+			const currentTime = getCurrentTime();
+			const duration = getDuration();
+			
+			console.log(`Sending progress to backend: ${currentTime}/${duration} seconds`);
+			
+			const response = await fetch('http://localhost:8080/get_youtube_progress', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					current_time: currentTime,
+					duration: duration,
+					video_id: currentVideoId
+				})
+			});
+			
+			const data = await response.json();
+			console.log('Backend progress response:', data);
+			return data;
+			
+		} catch (error) {
+			console.error('Error sending progress to backend:', error);
+			return null;
+		}
+	};
+
+	
+
+
+    // UPDATE: Expose these methods to parent components via context or props
+	useEffect(() => {
+		window.youtubePlayerControls = {
+			getCurrentTime,
+			getDuration,
+			getRemainingTime,
+			sendProgressToBackend,
+			playerRef: playerRef.current,
+			// ADD: Direct pause/play methods
+			pause: () => {
+				console.log("Direct pause called");
+				if (playerRef.current) {
+					playerRef.current.pauseVideo();
+				}
+			},
+			play: () => {
+				console.log("Direct play called");
+				if (playerRef.current) {
+					playerRef.current.playVideo();
+				}
+			}
+		};
+		
+		console.log('YouTube player controls exposed globally');
+	}, [isPlayerReady, currentVideoId]);
+
 
     // Initialize YouTube Player
     useEffect(() => {
@@ -446,116 +544,128 @@ function YouTubeQueuePlayer({ currentSong, onSongEnd }) {
     };
 
     const onPlayerStateChange = (event) => {
-        console.log("YouTube player state changed:", event.data);
-        console.log("Current song at state change:", currentSong);
-        
-        // CHANGE: More robust check for YouTube songs
-        const isCurrentSongYouTube = currentSong && 
-            (currentSong.platform === "YouTube" || currentSong.albumname === "YouTube");
-        
-        // CHANGE: Use REF for immediate video ID check
-        const hasVideoLoaded = currentVideoIdRef.current !== null && currentVideoIdRef.current !== "";
-        
-        console.log("Is current song YouTube?", isCurrentSongYouTube);
-        console.log("Has video loaded?", hasVideoLoaded);
-        console.log("Current video ID (ref):", currentVideoIdRef.current); // USE REF
-        console.log("Current video ID (state):", currentVideoId);
-        
-        // CHANGE: Allow state changes if we have a video loaded OR if it's a YouTube song
-        if (!isCurrentSongYouTube && !hasVideoLoaded) {
-            console.log("Ignoring YouTube state change - no YouTube song or video loaded");
-            
-            // Force stop the YouTube player if it's trying to play
-            if (event.data === 1) { // Playing state
-                console.log("Force stopping YouTube player - no valid YouTube context");
-                if (playerRef.current) {
-                    playerRef.current.stopVideo();
-                }
-            }
-            return;
-        }
-        
-        // Rest of your existing YouTube state change logic...
-        const stateNames = {
-            '-1': 'unstarted',
-            '0': 'ended',
-            '1': 'playing',
-            '2': 'paused',
-            '3': 'buffering',
-            '5': 'cued'
-        };
-        
-        console.log(`YouTube state: ${stateNames[event.data] || event.data}`);
-        
-        if (event.data === window.YT.PlayerState.ENDED) {
-            console.log("YouTube song ended naturally");
-            setIsPlaying(false);
-            onSongEnd();
-        } else if (event.data === window.YT.PlayerState.PLAYING) {
-            console.log("YouTube song started playing");
-            setIsPlaying(true);
-            
-            // Debug audio settings
-            if (playerRef.current) {
-                const isMuted = playerRef.current.isMuted();
-                const volume = playerRef.current.getVolume();
-                console.log(`Audio debug - Muted: ${isMuted}, Volume: ${volume}%`);
-                
-                if (isMuted) {
-                    playerRef.current.unMute();
-                    console.log("Force unmuted player");
-                }
-                if (volume < 100) {
-                    playerRef.current.setVolume(100);
-                    console.log("Set volume to 100%");
-                }
-            }
-        } else if (event.data === window.YT.PlayerState.PAUSED) {
-            console.log("YouTube song paused");
-            setIsPlaying(false);
-        } else if (event.data === window.YT.PlayerState.BUFFERING) {
-            console.log("YouTube song buffering");
-        } else if (event.data === window.YT.PlayerState.CUED) {
-            console.log("YouTube song cued, starting playback");
-            if (playerRef.current && !isPlaying) {
-                setTimeout(() => {
-                    playerRef.current.playVideo();
-                }, 100);
-            }
-        } else if (event.data === window.YT.PlayerState.UNSTARTED) {
-            console.log("YouTube player unstarted");
-            setIsPlaying(false);
-        }
-    };
+		console.log("YouTube player state changed:", event.data);
+		console.log("Current song at state change:", currentSong);
+		
+		// CHANGE: More robust check for YouTube songs
+		const isCurrentSongYouTube = currentSong && 
+			(currentSong.platform === "YouTube" || currentSong.albumname === "YouTube");
+		
+		// CHANGE: Use REF for immediate video ID check
+		const hasVideoLoaded = currentVideoIdRef.current !== null && currentVideoIdRef.current !== "";
+		
+		console.log("Is current song YouTube?", isCurrentSongYouTube);
+		console.log("Has video loaded?", hasVideoLoaded);
+		console.log("Current video ID (ref):", currentVideoIdRef.current);
+		console.log("Current video ID (state):", currentVideoId);
+		
+		// CHANGE: Allow state changes if we have a video loaded OR if it's a YouTube song
+		if (!isCurrentSongYouTube && !hasVideoLoaded) {
+			console.log("Ignoring YouTube state change - no YouTube song or video loaded");
+			
+			// Force stop the YouTube player if it's trying to play
+			if (event.data === 1) { // Playing state
+				console.log("Force stopping YouTube player - no valid YouTube context");
+				if (playerRef.current) {
+					playerRef.current.stopVideo();
+				}
+			}
+			return;
+		}
+		
+		// Rest of your existing YouTube state change logic...
+		const stateNames = {
+			'-1': 'unstarted',
+			'0': 'ended',
+			'1': 'playing',
+			'2': 'paused',
+			'3': 'buffering',
+			'5': 'cued'
+		};
+		
+		console.log(`YouTube state: ${stateNames[event.data] || event.data}`);
+		
+		if (event.data === window.YT.PlayerState.ENDED) {
+			console.log("YouTube song ended naturally");
+			setIsPlaying(false);
+			onSongEnd();
+		} else if (event.data === window.YT.PlayerState.PLAYING) {
+			console.log("YouTube song started playing");
+			setIsPlaying(true);
+			
+			// Debug audio settings
+			if (playerRef.current) {
+				const isMuted = playerRef.current.isMuted();
+				const volume = playerRef.current.getVolume();
+				console.log(`Audio debug - Muted: ${isMuted}, Volume: ${volume}%`);
+				
+				if (isMuted) {
+					playerRef.current.unMute();
+					console.log("Force unmuted player");
+				}
+				if (volume < 100) {
+					playerRef.current.setVolume(100);
+					console.log("Set volume to 100%");
+				}
+			}
+		} else if (event.data === window.YT.PlayerState.PAUSED) {
+			console.log("YouTube song paused - sending current progress to backend");
+			// ADD: Automatically send progress when paused
+			sendProgressToBackend();
+			setIsPlaying(false);
+		} else if (event.data === window.YT.PlayerState.BUFFERING) {
+			console.log("YouTube song buffering");
+		} else if (event.data === window.YT.PlayerState.CUED) {
+			console.log("YouTube song cued, starting playback");
+			if (playerRef.current && !isPlaying) {
+				setTimeout(() => {
+					playerRef.current.playVideo();
+				}, 100);
+			}
+		} else if (event.data === window.YT.PlayerState.UNSTARTED) {
+			console.log("YouTube player unstarted");
+			setIsPlaying(false);
+		}
+	};
 	
-    // Control functions for host tools
-    const controls = {
-        playVideo: (videoId) => {
-            if (playerRef.current && videoId) {
-                if (currentVideoId !== videoId) {
-                    playerRef.current.loadVideoById(videoId);
-                    setCurrentVideoId(videoId);
-                } else {
-                    playerRef.current.playVideo();
-                }
+// Control functions for host tools
+const controls = {
+    playVideo: (videoId) => {
+        console.log("YouTube controls - playVideo called with:", videoId);
+        if (playerRef.current) {
+            if (videoId && currentVideoId !== videoId) {
+                // Loading a new video
+                console.log("Loading new video:", videoId);
+                playerRef.current.loadVideoById(videoId);
+                setCurrentVideoId(videoId);
+            } else {
+                // Just resuming current video
+                console.log("Resuming current video");
+                playerRef.current.playVideo();
             }
-        },
-        pauseVideo: () => {
-            if (playerRef.current) {
-                playerRef.current.pauseVideo();
-            }
-        },
-        stopVideo: () => {
-            if (playerRef.current) {
-                playerRef.current.stopVideo();
-                setIsPlaying(false);
-            }
-        },
-        isPlaying: () => isPlaying
-    };
+        }
+    },
+    pauseVideo: () => {
+        console.log("YouTube controls - pauseVideo called");
+        if (playerRef.current) {
+            playerRef.current.pauseVideo();
+        }
+    },
+    stopVideo: () => {
+        console.log("YouTube controls - stopVideo called");
+        if (playerRef.current) {
+            playerRef.current.stopVideo();
+            setIsPlaying(false);
+        }
+    },
+    isPlaying: () => isPlaying
+};
+
+console.log("YouTube controls object created:", controls); // ADD THIS DEBUG LINE
 
     return (
         <YouTubeControlContext.Provider value={controls}>
+			{console.log("YouTubeControlContext.Provider rendering with controls:", controls)}
             <div id="youtube-player" style={{ display: "none" }}></div>
         </YouTubeControlContext.Provider>
     );
@@ -617,80 +727,106 @@ function DeleteButton(props) {
  * @return HTML code for host tools.
  */
 
-function HostToolsMenu({ songs }) {
+function HostToolsMenu({ songs, youtubeControls }) {  
     const isHost = useContext(IsHostContext);
     const cookie = useContext(CookieContext);
     const updateHostToolsError = useContext(HostToolsContext);
-    const youtubeControls = useContext(YouTubeControlContext);
   
     const handlePlay = async () => {
-        if (songs.length === 0) {
-            console.log("No songs in the queue.");
-            return;
-        }
-  
-        const currentSong = songs[0];
-        console.log("Attempting to play:", currentSong);
-        
-        if (currentSong.platform === "YouTube") {
-            const videoId = extractVideoIdFromUri(currentSong.uri);
-            console.log("Extracted video ID:", videoId);
-            
-            if (videoId) {
-                try {
-                    // Call backend to control YouTube
-                    const response = await axios.post(
-                        `http://${process.env.REACT_APP_BACKEND_IP}:8080/youtube_unpause`,
-                        { video_id: videoId, cookie: cookie }
-                    );
-                    console.log("YouTube play response:", response.data);
-                    
-                    // Also control frontend player
-                    if (youtubeControls) {
-                        youtubeControls.playVideo(videoId);
-                    }
-                } catch (error) {
-                    console.error("Error controlling YouTube:", error);
-                    updateHostToolsError(500);
-                }
-            }
-        } else {
-            // Spotify or other platform
-            resumeMusic(cookie, updateHostToolsError);
-        }
-    };
+		if (songs.length === 0) {
+			console.log("No songs in the queue.");
+			return;
+		}
+	
+		const currentSong = songs[0];
+		console.log("=== RESUME DEBUG ===");
+		console.log("Attempting to resume:", currentSong);
+		console.log("Is YouTube song:", currentSong.platform === "YouTube" || currentSong.albumname === "YouTube");
+		console.log("YouTube controls available:", !!youtubeControls);
+		console.log("YouTube player controls global:", !!window.youtubePlayerControls);
+		
+		// Use unified resume for both YouTube and Spotify
+		try {
+			console.log("Sending resume request to backend...");
+			const response = await resumeMusic(cookie, updateHostToolsError);
+			console.log("Backend resume response:", response);
+			
+			if (response === 200) {
+				console.log("Successfully resumed playback");
+				
+				// For YouTube songs, resume the player
+				if ((currentSong.platform === "YouTube" || currentSong.albumname === "YouTube")) {
+					// Try multiple methods to resume YouTube playback
+					if (youtubeControls) {
+						console.log("Resuming YouTube player via context...");
+						youtubeControls.playVideo(); // Don't pass videoId, just resume
+					} else if (window.youtubePlayerControls && window.youtubePlayerControls.playerRef) {
+						console.log("Resuming YouTube player via global controls...");
+						window.youtubePlayerControls.playerRef.playVideo();
+					} else {
+						console.log("No YouTube controls available for resume!");
+					}
+				}
+			}
+		} catch (error) {
+			console.error("Error resuming playback:", error);
+			updateHostToolsError(500);
+		}
+	};
   
     const handlePause = async () => {
-        if (songs.length === 0) {
-            console.log("No songs in the queue.");
-            return;
-        }
-  
-        const currentSong = songs[0];
-        console.log("Attempting to pause:", currentSong);
-        
-        if (currentSong.platform === "YouTube") {
-            try {
-                // Call backend to control YouTube
-                const response = await axios.post(
-                    `http://${process.env.REACT_APP_BACKEND_IP}:8080/youtube_pause`,
-                    { cookie: cookie }
-                );
-                console.log("YouTube pause response:", response.data);
-                
-                // Also control frontend player
-                if (youtubeControls) {
-                    youtubeControls.pauseVideo();
-                }
-            } catch (error) {
-                console.error("Error controlling YouTube:", error);
-                updateHostToolsError(500);
-            }
-        } else {
-            // Spotify or other platform
-            pauseMusic(cookie, updateHostToolsError);
-        }
-    };
+		if (songs.length === 0) {
+			console.log("No songs in the queue.");
+			return;
+		}
+	
+		const currentSong = songs[0];
+		console.log("=== PAUSE DEBUG ===");
+		console.log("Attempting to pause:", currentSong);
+		console.log("Is YouTube song:", currentSong.platform === "YouTube" || currentSong.albumname === "YouTube");
+		console.log("YouTube controls available:", !!youtubeControls);
+		console.log("YouTube player controls global:", !!window.youtubePlayerControls);
+		
+		// For YouTube songs, send progress FIRST, then pause
+		if ((currentSong.platform === "YouTube" || currentSong.albumname === "YouTube")) {
+			// First, manually send current progress
+			if (window.youtubePlayerControls && window.youtubePlayerControls.sendProgressToBackend) {
+				console.log("Sending current progress before pausing...");
+				await window.youtubePlayerControls.sendProgressToBackend();
+			}
+			
+			// Then pause the YouTube player - try multiple methods
+			if (youtubeControls) {
+				console.log("Pausing YouTube player via context...");
+				youtubeControls.pauseVideo();
+			} else if (window.youtubePlayerControls && window.youtubePlayerControls.playerRef) {
+				console.log("Pausing YouTube player via global controls...");
+				window.youtubePlayerControls.playerRef.pauseVideo();
+			} else {
+				console.log("Trying direct player access...");
+				// Try to find the player directly
+				const playerElements = document.querySelectorAll('#youtube-player iframe');
+				if (playerElements.length > 0) {
+					console.log("Found YouTube iframe, trying to pause via postMessage");
+					// This is a fallback - might not work due to CORS
+				}
+			}
+		}
+		
+		// Send pause request to backend (this should now have progress data)
+		try {
+			console.log("Sending pause request to backend...");
+			const response = await pauseMusic(cookie, updateHostToolsError);
+			console.log("Backend pause response:", response);
+			
+			if (response === 200) {
+				console.log("Successfully paused playback");
+			}
+		} catch (error) {
+			console.error("Error pausing playback:", error);
+			updateHostToolsError(500);
+		}
+	};
 
     const extractVideoIdFromUri = (uri) => {
         if (!uri) return null;
@@ -728,7 +864,6 @@ function HostToolsMenu({ songs }) {
     }
     return <></>;
 }
-
 
 /**
  * React component to display the current queue of songs.
@@ -859,38 +994,43 @@ function DisplayedQueue() {
 	};
   
     return (
-        <>
-            {/* Add the YouTube player */}
-            <YouTubeQueuePlayer currentSong={currentSong} onSongEnd={handleSongEnd} />
-            
-            <IsHostContext.Provider value={isHost}>
-                <CookieContext.Provider value={cookie}>
-                    <HostToolsContext.Provider value={updateHostToolsError}>
-                        {hostToolsError !== 0 && (
-                            <>
-                                <h2>Error with Host Tools: Code {hostToolsError}</h2>
-                            </>
-                        )}
-  
-                        <HostToolsMenu songs={songs}></HostToolsMenu>
-  
-                        <div className="songListContainer">
-                            {songs?.map((song) => (
-                                <Song
-                                    name={song.name}
-                                    albumname={song.albumname}
-                                    albumcover={song.albumcover}
-                                    artist={song.artist}
-                                    submissionID={song.submissionID}
-                                    key={song.submissionID}
-                                ></Song>
-                            ))}
-                        </div>
-                    </HostToolsContext.Provider>
-                </CookieContext.Provider>
-            </IsHostContext.Provider>
-        </>
-    );
+		<>
+			{/* Add the YouTube player - this provides the YouTubeControlContext */}
+			<YouTubeQueuePlayer currentSong={currentSong} onSongEnd={handleSongEnd} />
+			
+			<IsHostContext.Provider value={isHost}>
+				<CookieContext.Provider value={cookie}>
+					<HostToolsContext.Provider value={updateHostToolsError}>
+						{hostToolsError !== 0 && (
+							<>
+								<h2>Error with Host Tools: Code {hostToolsError}</h2>
+							</>
+						)}
+	
+						{/* CHANGE: Wrap HostToolsMenu with YouTubeControlContext.Consumer */}
+						<YouTubeControlContext.Consumer>
+							{(youtubeControls) => (
+								<HostToolsMenu songs={songs} youtubeControls={youtubeControls} />
+							)}
+						</YouTubeControlContext.Consumer>
+	
+						<div className="songListContainer">
+							{songs?.map((song) => (
+								<Song
+									name={song.name}
+									albumname={song.albumname}
+									albumcover={song.albumcover}
+									artist={song.artist}
+									submissionID={song.submissionID}
+									key={song.submissionID}
+								></Song>
+							))}
+						</div>
+					</HostToolsContext.Provider>
+				</CookieContext.Provider>
+			</IsHostContext.Provider>
+		</>
+	);
 }  
   // Keep DisplayedQueue as the default export
 
