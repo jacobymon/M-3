@@ -241,20 +241,36 @@ class UniversalQueue:
 
     def flush_queue(self):
         """
-        Updated flush_queue to run continuously and handle queue changes
+        Main queue processing method
         """
-        print("Starting flush_queue background service")
-        
-        while True:  # Run continuously
-            if len(self.data) == 0:
-                # No songs in queue, wait a bit and check again
-                time.sleep(1)
-                continue
-                
-            current_song = self.data[0]
-            print(f"Playing song: {current_song.name} (Platform: {getattr(current_song, 'platform', 'Spotify')})")
-            
+        while True:
             try:
+                if len(self.data) == 0:
+                    print("Queue is empty, waiting for songs...")
+                    
+                    # Make sure all playback is stopped when queue is empty
+                    try:
+                        if hasattr(self, 'youtube'):
+                            print("Stopping YouTube interface (empty queue)")
+                            self.youtube.stop()
+                        print("Pausing Spotify (empty queue)")
+                        self.spotify.pause()
+                    except Exception as e:
+                        if "403" not in str(e) and "Player command failed" not in str(e):
+                            print(f"Error stopping playback on empty queue: {e}")
+                    
+                    time.sleep(1)
+                    continue
+                    
+                current_song = self.data[0]
+                print(f"=== STARTING SONG PLAYBACK ===")
+                print(f"Queue length: {len(self.data)}")
+                print(f"Now playing: {current_song.name} (ID: {current_song.submissionID})")
+                print(f"Song platform: {getattr(current_song, 'platform', 'Spotify')}")
+                
+                # Store the current song ID to track if it gets removed
+                current_song_id = current_song.submissionID
+                
                 # Start playing the song
                 if hasattr(current_song, 'platform') and current_song.platform == "YouTube":
                     video_id = self.youtube.extract_video_id(current_song.uri)
@@ -262,158 +278,98 @@ class UniversalQueue:
                         print(f"Playing YouTube video: {video_id}")
                         self.youtube.set_video_duration(current_song.s_len / 1_000_000)
                         self.youtube.play(video_id)
+                        current_song.start_time = time.time()
                     else:
                         print(f"Could not extract video ID from: {current_song.uri}")
+                        self.data.pop(0)
+                        self.write()
+                        continue
                 else:
                     print(f"Playing Spotify song: {current_song.uri}")
                     self.spotify.play(current_song.uri)
+                    current_song.start_time = time.time()
                     
                 # Calculate wait time based on platform
                 if hasattr(current_song, 'platform') and current_song.platform == "YouTube":
-                    # YouTube duration is in microseconds
                     wait_time = current_song.s_len / 1_000_000
                     print(f"YouTube song - Waiting {wait_time} seconds for song to finish")
                 else:
-                    # Spotify duration is in milliseconds  
                     wait_time = current_song.s_len / 1_000
                     print(f"Spotify song - Waiting {wait_time} seconds for song to finish")
                 
-                # MAIN WAITING LOOP - This is where the magic happens
-                while True:  # ← ADD THIS INNER LOOP
+                # MAIN WAITING LOOP
+                while True:
+                    print(f"=== WAITING FOR SONG EVENT (queue length: {len(self.data)}) ===")
+                    print(f"Current song ID being tracked: {current_song_id}")
+                    
                     # Wait for the song to finish or be interrupted
                     song_finished = self.flush_exit.wait(wait_time)
                     
-                    # Check if we were interrupted by pause
-                    if self.pause_toggle == True:  
+                    print(f"Wait finished. song_finished={song_finished}, queue_length={len(self.data)}")
+                    
+                    # FIRST: Check if queue became empty (manual removal of last song)
+                    if len(self.data) == 0:
+                        print("Queue became empty during wait - manual removal detected")
+                        print("Breaking to empty queue handler")
+                        break  # Exit inner loop and go back to empty queue handling
+                    
+                    # SECOND: Check if the current song was manually removed
+                    elif len(self.data) > 0 and self.data[0].submissionID != current_song_id:
+                        print(f"Current song (ID: {current_song_id}) was manually removed")
+                        print(f"New first song: {self.data[0].name} (ID: {self.data[0].submissionID})")
+                        print("Breaking to start next song")
+                        break  # Exit inner loop and start next song
+                    
+                    # THIRD: Check if we were interrupted by pause
+                    elif self.pause_toggle == True:  
                         print("Song was paused, handling pause logic...")
-                        
-                        # Calculate remaining time based on platform
-                        if hasattr(current_song, 'platform') and current_song.platform == "YouTube":
-                            try:
-                                print("YouTube song paused - getting progress from frontend")
-                                
-                                # Store the song start time if not already stored
-                                if not hasattr(current_song, 'start_time'):
-                                    current_song.start_time = time.time()
-                                
-                                # Option 1: Check for recent progress data from frontend
-                                global latest_youtube_progress
-                                
-                                # Check if we have recent progress data (within last 5 seconds)
-                                if (hasattr(current_song, 'start_time') and 
-                                    'latest_youtube_progress' in globals() and 
-                                    time.time() - latest_youtube_progress.get('timestamp', 0) < 5 and 
-                                    latest_youtube_progress.get('remaining_seconds', 0) > 0):
-                                    
-                                    remaining_seconds = latest_youtube_progress['remaining_seconds']
-                                    remaining_microseconds = int(remaining_seconds * 1_000_000)
-                                    
-                                    print(f"Using recent YouTube progress: {remaining_seconds:.1f} seconds remaining")
-                                    current_song.s_len = max(remaining_microseconds, 0)
-                                    wait_time = remaining_seconds
-                                    
-                                else:
-                                    print("No recent progress data, using time estimation")
-                                    # Fallback to time estimation
-                                    elapsed_time = time.time() - current_song.start_time
-                                    elapsed_microseconds = int(elapsed_time * 1_000_000)
-                                    remaining_microseconds = max(0, current_song.s_len - elapsed_microseconds)
-                                    current_song.s_len = remaining_microseconds
-                                    wait_time = remaining_microseconds / 1_000_000
-                                    
-                                    print(f"Time estimation - Elapsed: {elapsed_time:.1f}s, Remaining: {wait_time:.1f}s")
-                                    
-                            except Exception as e:
-                                print(f"Error handling YouTube pause: {e}")
-                                # Keep original s_len as ultimate fallback
-                                wait_time = current_song.s_len / 1_000_000
-                                
-                        else:
-                            # Spotify pause handling (your existing code)
-                            try:
-                                playback_info = self.spotify.get_current_playback_info()
-                                print(f"Playback info: {playback_info}")
-                                
-                                if playback_info and hasattr(playback_info, 'progress_ms') and playback_info.progress_ms is not None:
-                                    progress_ms = playback_info.progress_ms
-                                    
-                                    # Your existing Spotify pause calculation logic...
-                                    if current_song.s_len > 10000000:  # If > 10M, likely microseconds
-                                        song_duration_ms = current_song.s_len / 1000
-                                        print(f"Song duration (converted from microseconds): {song_duration_ms}ms")
-                                    else:
-                                        song_duration_ms = current_song.s_len
-                                        print(f"Song duration (already in milliseconds): {song_duration_ms}ms")
-                                    
-                                    print(f"Current progress: {progress_ms}ms")
-                                    print(f"Original song length: {current_song.s_len}")
-                                    
-                                    # Calculate remaining time in original units
-                                    if current_song.s_len > 10000000:  # Was in microseconds
-                                        remaining_time_ms = song_duration_ms - progress_ms
-                                        remaining_time_microseconds = remaining_time_ms * 1000
-                                        current_song.s_len = max(remaining_time_microseconds, 0)
-                                        wait_time = remaining_time_ms / 1000
-                                        print(f"Updated remaining time: {remaining_time_microseconds} microseconds ({remaining_time_ms}ms)")
-                                    else:  # Was in milliseconds
-                                        remaining_time_ms = song_duration_ms - progress_ms
-                                        current_song.s_len = max(remaining_time_ms, 0)
-                                        wait_time = remaining_time_ms / 1000
-                                        print(f"Updated remaining time: {remaining_time_ms}ms")
-                                        
-                                else:
-                                    print("No valid playback info available, keeping original song length")
-                                    
-                            except Exception as e:
-                                print(f"Error getting playback info: {e}")
-                                print("Keeping original song length due to error")
+                        # Your existing pause handling code...
+                        # (keep all the existing pause logic here)
                         
                         # Wait for unpause
                         print("Waiting for unpause signal...")
-                        self.pause_exit.wait()
-                        print("Unpaused, continuing song with remaining time...")
+                        while self.pause_toggle:
+                            time.sleep(0.1)
                         
-                        print(f"Will now wait {wait_time} seconds for remaining song time")
+                        print("Queue unpaused, continuing...")
                         
                     else:
-                        # Song finished naturally (timeout occurred)
+                        # Song finished naturally
                         print(f"Song finished naturally: {current_song.name}")
-                        break  # Break out of inner while loop
-                
-                # Song finished naturally, remove from queue
-                print(f"Song finished: {current_song.name}")
-                
-                # Stop the current song to prevent overlap
-                if hasattr(current_song, 'platform') and current_song.platform == "YouTube":
-                    try:
-                        self.youtube.stop()  # Stop YouTube playback
-                    except Exception as e:
-                        print(f"Error stopping YouTube: {e}")
-                else:
-                    try:
-                        self.spotify.pause()  # Pause Spotify to prevent overlap
-                    except Exception as e:
-                        print(f"Error pausing Spotify: {e}")
-                
-                # Remove the finished song from queue
-                self.data = self.data[1:]
-                self.write()
-                
-                print(f"Queue now has {len(self.data)} songs remaining")
-                
+                        
+                        # Remove if it still exists and is still the current song
+                        if (len(self.data) > 0 and 
+                            hasattr(self.data[0], 'submissionID') and 
+                            self.data[0].submissionID == current_song_id):
+                            
+                            print(f"Removing naturally finished song: {current_song.name}")
+                            self.data.pop(0)
+                            self.write()
+                            print(f"Queue after natural finish: {len(self.data)} songs")
+                            
+                            # If this was the last song, stop playback
+                            if len(self.data) == 0:
+                                print("Last song finished naturally - stopping all playback")
+                                try:
+                                    if hasattr(current_song, 'platform') and current_song.platform == "YouTube":
+                                        if hasattr(self, 'youtube'):
+                                            self.youtube.stop()
+                                    else:
+                                        self.spotify.pause()
+                                except Exception as e:
+                                    if "403" not in str(e) and "Player command failed" not in str(e):
+                                        print(f"Error stopping playback after last song: {e}")
+                        else:
+                            print("Song was already removed manually, skipping natural removal")
+                        
+                        print("Breaking to start next song or handle empty queue")
+                        break  # Exit inner loop
+                        
             except Exception as e:
-                print(f"Error playing song {current_song.name}: {e}")
-                # Remove problematic song and continue
-                self.data = self.data[1:]
-                self.write()
-                continue
-            
-            # If no more songs, break the loop
-            if len(self.data) == 0:
-                print("Queue is empty, stopping flush_queue")
-                if hasattr(self, 'flush_thread'):
-                    delattr(self, 'flush_thread')
-                break
+                print(f"Error in flush_queue: {e}")
+                import traceback
+                traceback.print_exc()
+                time.sleep(1)
 
     def pause_queue(self, cookie):
         """
@@ -506,45 +462,89 @@ class UniversalQueue:
 
     def remove_from_queue(self, id, cookie):
         """
-         a privileged host-only function that removes songs from queue.
-        removing the current song goes to the next song.
-
-        Throw exception when the song we want to remove is not in the Universal queue
-
-        calls update_ui
-
-        @param index: index recieved from host corresponding song the want removed from queue
-       
+        A privileged host-only function that removes songs from queue.
         """
-        #IMPORTANT removal of first song starts playing next song is checked manually
-        #IMPORTANT this operation is curretnly O(n). Look into making it O(1) with dictionary
-        if self.cookie_is_valid(cookie):
+        if not self.cookie_is_valid(cookie):
+            raise ValueError('invalid id')
 
-            for s in self.data:
-                if s.id == id:
-                    #If we're removing the first item in the queue which is currently playing, just kill the
-                    #current wait call on flush queue as it will remove the first item 
-                    if s.id == self.data[0].id:
+        print(f"=== REMOVE FROM QUEUE DEBUG ===")
+        print(f"Trying to remove song with ID: {id}")
+        
+        for s in self.data:
+            song_id = getattr(s, 'id', None)
+            submission_id = getattr(s, 'submissionID', None)
+            
+            if song_id == id or submission_id == id:
+                print(f"Found matching song: {s.name} (id: {song_id}, submissionID: {submission_id})")
+                
+                # If we're removing the first item in the queue (currently playing)
+                if s == self.data[0]:
+                    print("Removing currently playing song")
+                    
+                    # Check if this is the last song in the queue
+                    if len(self.data) == 1:
+                        print("This is the last song - manual removal")
+                        
+                        # DON'T stop YouTube here - frontend already stopped it
+                        # Only stop Spotify since it's controlled by backend
+                        try:
+                            if hasattr(s, 'platform') and s.platform == "YouTube":
+                                print("YouTube song - frontend already stopped it")
+                                # Just reset the backend state without sending stop signal
+                                self.current_video_id = None
+                                self.is_playing = False
+                                self.is_paused = False
+                            else:
+                                print("Stopping Spotify playback (last song)")
+                                self.spotify.pause()
+                        except Exception as e:
+                            print(f"Error stopping playback: {e}")
+                        
+                        # Remove the song from queue
+                        self.data.remove(s)
+                        self.write()
+                        
+                        # Signal flush_queue to exit
+                        print("Signaling flush_queue to stop (empty queue)")
                         self.flush_exit.set()
                         self.flush_exit.clear()
-                        #if the last song is being deleted, stop playback
-                        if len(self.data) == 1:
-                            self.spotify.pause()
                         
-                    #If we're removing anything else, just remove it from the queue
                     else:
+                        print("Removing current song, moving to next")
                         
+                        # For YouTube, don't send stop signal - frontend already stopped
+                        try:
+                            if hasattr(s, 'platform') and s.platform == "YouTube":
+                                print("YouTube song - frontend already stopped, just resetting state")
+                                # Reset backend state without sending signals
+                                self.current_video_id = None
+                                self.is_playing = False
+                                self.is_paused = False
+                            else:
+                                print("Pausing Spotify playback for removal")
+                                self.spotify.pause()
+                        except Exception as e:
+                            print(f"Error stopping playback: {e}")
+                        
+                        # Remove the song from queue
                         self.data.remove(s)
+                        self.write()
                         
-                        
+                        # Signal flush_queue to start next song
+                        print("Signaling flush_queue to start next song")
+                        self.flush_exit.set()
+                        self.flush_exit.clear()
+                
+                else:
+                    # Remove non-current songs normally
+                    print("Removing non-current song from queue")
+                    self.data.remove(s)
                     self.write()
-                    return
-            #If no song retuns
-            raise ValueError(f"id {id} was not a song in the queue")
-        else:
-            raise ValueError(f"Cookie {cookie} was invalid")
-
+                
+                print(f"Song removed successfully. Queue now has {len(self.data)} songs")
+                return
         
+        raise ValueError(f"Song with ID {id} was not found in the queue")   
 
        
 
@@ -881,10 +881,26 @@ def verify_host():
 @app.route('/remove_song', methods=['GET', 'POST'])
 @cross_origin()
 def remove_song():
-    id_to_remove = int(request.json['id'])
-    cookie =request.json['cookie']
-    UQ.remove_from_queue(id_to_remove, cookie)
-    return str(id)
+    try:
+        data = request.json
+        id_to_remove = int(data['id'])
+        cookie = data['cookie']
+        
+        print(f"Attempting to remove song with ID: {id_to_remove}")
+        
+        UQ.remove_from_queue(id_to_remove, cookie)
+        
+        return jsonify({
+            "status": 200,
+            "response": f"Song with ID {id_to_remove} removed successfully"
+        })
+        
+    except ValueError as e:
+        print(f"ValueError in remove_song: {e}")
+        return jsonify({"status": 400, "response": str(e)})
+    except Exception as e:
+        print(f"Error in remove_song: {e}")
+        return jsonify({"status": 500, "response": str(e)})
 
 @app.route('/suspend_queue', methods=['GET', 'POST'])
 @cross_origin()

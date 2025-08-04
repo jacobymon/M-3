@@ -183,17 +183,38 @@ async function requestQueueUpdates (updateQueueError, updateSongs) {
  * @return {int} status of api call
  */
 async function removeSong(submissionID, cookie, updateHostToolsError) {
+    try {
+        console.log(`Attempting to remove song with ID: ${submissionID}`);
+        
+        // FIRST: Check if this is the currently playing song and if it's YouTube
+        const currentSongs = window.currentQueueState || []; // You'll need to expose this
+        const isCurrentSong = currentSongs.length > 0 && currentSongs[0].submissionID === submissionID;
+        const isYouTube = currentSongs.length > 0 && 
+            (currentSongs[0].platform === "YouTube" || currentSongs[0].albumname === "YouTube");
+        
+        // If removing current YouTube song, stop the player immediately
+        if (isCurrentSong && isYouTube) {
+            console.log("Stopping YouTube player before removal");
+            
+            // Stop via global controls
+            if (window.youtubePlayerControls && window.youtubePlayerControls.stop) {
+                window.youtubePlayerControls.stop();
+            }
+            
+            // Stop via context if available
+            // (you'd need to expose this somehow)
+        }
+        
+        // THEN: Send removal request to backend
+        const response = await axios.post(DELETE_SONG_CALL,
+                                        {"id": submissionID, "cookie": cookie}, 
+                                        {timeout: 5000});
 
-	try {
-		const response = await axios.post(DELETE_SONG_CALL,
-											{"id":submissionID, "cookie":cookie}, 
-											{timeout:5000})
-
-		return response.status;
-	} catch (error) {
-		updateHostToolsError(error.status? error.status : 500)
-		return error.status? error.status : 500;
-	}
+        return response.status;
+    } catch (error) {
+        updateHostToolsError(error.status ? error.status : 500);
+        return error.status ? error.status : 500;
+    }
 }
 
 /**
@@ -396,31 +417,54 @@ function YouTubeQueuePlayer({ currentSong, onSongEnd }) {
 
 
     // UPDATE: Expose these methods to parent components via context or props
-	useEffect(() => {
-		window.youtubePlayerControls = {
-			getCurrentTime,
-			getDuration,
-			getRemainingTime,
-			sendProgressToBackend,
-			playerRef: playerRef.current,
-			// ADD: Direct pause/play methods
-			pause: () => {
-				console.log("Direct pause called");
-				if (playerRef.current) {
-					playerRef.current.pauseVideo();
-				}
-			},
-			play: () => {
-				console.log("Direct play called");
-				if (playerRef.current) {
-					playerRef.current.playVideo();
+	// UPDATE: Expose these methods to parent components via context or props
+useEffect(() => {
+    window.youtubePlayerControls = {
+        getCurrentTime,
+        getDuration,
+        getRemainingTime,
+        sendProgressToBackend,
+        playerRef: playerRef.current,
+        // ADD: Direct pause/play methods
+        pause: () => {
+            console.log("Direct pause called");
+            if (playerRef.current) {
+                playerRef.current.pauseVideo();
+            }
+        },
+        play: () => {
+            console.log("Direct play called");
+            if (playerRef.current) {
+                playerRef.current.playVideo();
+            }
+        },
+
+        stop: () => {  
+			console.log("Direct stop called - clearing all state");
+			if (playerRef.current) {
+				try {
+					playerRef.current.stopVideo();
+					playerRef.current.clearVideo();
+					console.log("YouTube player stopped and cleared");
+				} catch (error) {
+					console.error("Error stopping YouTube player:", error);
 				}
 			}
-		};
-		
-		console.log('YouTube player controls exposed globally');
-	}, [isPlayerReady, currentVideoId]);
-
+			
+			// Reset ALL state that might trigger restart
+			setIsPlaying(false);
+			setCurrentVideoId(null);
+			setCurrentSubmissionId(null);
+			
+			// Also clear refs to prevent restart
+			currentVideoIdRef.current = null;
+			
+			console.log("All YouTube state cleared");
+		}
+    };
+    
+    console.log('YouTube player controls exposed globally');
+}, [isPlayerReady, currentVideoId]);
 
     // Initialize YouTube Player
     useEffect(() => {
@@ -439,74 +483,92 @@ function YouTubeQueuePlayer({ currentSong, onSongEnd }) {
     }, []);
 
 	// Handle song changes
-    useEffect(() => {
-        if (currentSong && isPlayerReady && playerRef.current) {
-            console.log("Current song changed:", currentSong);
-            
-            const isYouTubeSong = currentSong.platform === "YouTube" || 
-                                currentSong.albumname === "YouTube";
-            
-            console.log("Is YouTube song:", isYouTubeSong);
-            console.log("Player ready:", isPlayerReady);
-            
-            if (isYouTubeSong && currentSong.video_id) {
-                // This is a YouTube song - play it
-                const isDifferentVideo = currentVideoIdRef.current !== currentSong.video_id; // USE REF
-                const isDifferentSubmission = currentSubmissionId !== currentSong.submissionID;
-                
-                // CHANGE: Always reload if we previously stopped the player for a Spotify song
-                const wasPlayerStopped = currentVideoIdRef.current === null; // USE REF
-                
-                if (isDifferentVideo || isDifferentSubmission || wasPlayerStopped) {
-                    console.log(`Loading YouTube video: ${currentSong.video_id} (submission: ${currentSong.submissionID})`);
-                    console.log(`Reason: differentVideo=${isDifferentVideo}, differentSubmission=${isDifferentSubmission}, wasPlayerStopped=${wasPlayerStopped}`);
-                    
-                    // UPDATE BOTH STATE AND REF IMMEDIATELY
-                    setCurrentVideoId(currentSong.video_id);
-                    currentVideoIdRef.current = currentSong.video_id; // IMMEDIATE UPDATE
-                    setCurrentSubmissionId(currentSong.submissionID);
-                    setIsPlaying(false);
-                    
-                    setTimeout(() => {
-                        if (playerRef.current) {
-                            playerRef.current.loadVideoById(currentSong.video_id);
-                        }
-                    }, 100);
-                } else {
-                    console.log("Same video and submission already loaded");
-                    // CHANGE: But check if player is actually playing
-                    if (playerRef.current && !isPlaying) {
-                        console.log("Player not playing, starting playback");
-                        setTimeout(() => {
-                            playerRef.current.playVideo();
-                        }, 100);
-                    }
-                }
-            } else {
-                // This is NOT a YouTube song - stop and clear YouTube player
-                console.log("=== NON-YOUTUBE SONG DETECTED - STOPPING YOUTUBE PLAYER ===");
-                console.log("Stopping YouTube player for Spotify song:", currentSong?.name || "unknown");
-                
-                try {
-                    // Stop the YouTube player completely
-                    if (playerRef.current) {
-                        playerRef.current.stopVideo();
-                        playerRef.current.clearVideo();
-                        console.log("YouTube player stopped and cleared");
-                    }
-                    
-                    // Reset BOTH STATE AND REF
-                    setCurrentVideoId(null);
-                    currentVideoIdRef.current = null; // IMMEDIATE UPDATE
-                    setCurrentSubmissionId(null);
-                    setIsPlaying(false);
-                    
-                } catch (error) {
-                    console.error("Error stopping YouTube player:", error);
-                }
-            }
-        }
-    }, [currentSong, isPlayerReady]);
+	useEffect(() => {
+		console.log("=== YOUTUBE PLAYER EFFECT TRIGGERED ===");
+		console.log("currentSong:", currentSong?.name || "null");
+		console.log("currentVideoId:", currentVideoId);
+		console.log("isPlaying:", isPlaying);
+		console.log("isPlayerReady:", isPlayerReady);
+		
+		// CRITICAL: Don't start anything if no current song or invalid song
+		if (!currentSong || !currentSong.submissionID || currentSong.submissionID === -1) {
+			console.log("No valid current song - stopping any playback");
+			if (playerRef.current && isPlayerReady) {
+				try {
+					playerRef.current.stopVideo();
+					playerRef.current.clearVideo();
+					setCurrentVideoId(null);
+					currentVideoIdRef.current = null;
+					setIsPlaying(false);
+					setCurrentSubmissionId(null);
+				} catch (error) {
+					console.error("Error stopping player:", error);
+				}
+			}
+			return;
+		}
+		
+		if (currentSong && isPlayerReady && playerRef.current) {
+			console.log("Current song changed:", currentSong);
+			
+			const isYouTubeSong = currentSong.platform === "YouTube" || 
+								currentSong.albumname === "YouTube";
+			
+			console.log("Is YouTube song:", isYouTubeSong);
+			console.log("Player ready:", isPlayerReady);
+			
+			if (isYouTubeSong && currentSong.video_id) {
+				// This is a YouTube song - play it
+				const isDifferentVideo = currentVideoIdRef.current !== currentSong.video_id;
+				const isDifferentSubmission = currentSubmissionId !== currentSong.submissionID;
+				const wasPlayerStopped = currentVideoIdRef.current === null;
+				
+				if (isDifferentVideo || isDifferentSubmission || wasPlayerStopped) {
+					console.log(`Loading YouTube video: ${currentSong.video_id} (submission: ${currentSong.submissionID})`);
+					console.log(`Reason: differentVideo=${isDifferentVideo}, differentSubmission=${isDifferentSubmission}, wasPlayerStopped=${wasPlayerStopped}`);
+					
+					setCurrentVideoId(currentSong.video_id);
+					currentVideoIdRef.current = currentSong.video_id;
+					setCurrentSubmissionId(currentSong.submissionID);
+					setIsPlaying(false);
+					
+					setTimeout(() => {
+						if (playerRef.current) {
+							playerRef.current.loadVideoById(currentSong.video_id);
+						}
+					}, 100);
+				} else {
+					console.log("Same video and submission already loaded");
+					if (playerRef.current && !isPlaying) {
+						console.log("Player not playing, starting playback");
+						setTimeout(() => {
+							playerRef.current.playVideo();
+						}, 100);
+					}
+				}
+			} else {
+				// This is NOT a YouTube song - stop and clear YouTube player
+				console.log("=== NON-YOUTUBE SONG DETECTED - STOPPING YOUTUBE PLAYER ===");
+				console.log("Stopping YouTube player for Spotify song:", currentSong?.name || "unknown");
+				
+				try {
+					if (playerRef.current) {
+						playerRef.current.stopVideo();
+						playerRef.current.clearVideo();
+						console.log("YouTube player stopped and cleared");
+					}
+					
+					setCurrentVideoId(null);
+					currentVideoIdRef.current = null;
+					setCurrentSubmissionId(null);
+					setIsPlaying(false);
+					
+				} catch (error) {
+					console.error("Error stopping YouTube player:", error);
+				}
+			}
+		}
+	}, [currentSong, isPlayerReady]); // Remove other dependencies that might cause restart
 
     const initializePlayer = () => {
         playerRef.current = new window.YT.Player("youtube-player", {
@@ -544,46 +606,51 @@ function YouTubeQueuePlayer({ currentSong, onSongEnd }) {
     };
 
     const onPlayerStateChange = (event) => {
-		console.log("YouTube player state changed:", event.data);
-		console.log("Current song at state change:", currentSong);
-		
-		// CHANGE: More robust check for YouTube songs
-		const isCurrentSongYouTube = currentSong && 
-			(currentSong.platform === "YouTube" || currentSong.albumname === "YouTube");
-		
-		// CHANGE: Use REF for immediate video ID check
-		const hasVideoLoaded = currentVideoIdRef.current !== null && currentVideoIdRef.current !== "";
-		
-		console.log("Is current song YouTube?", isCurrentSongYouTube);
-		console.log("Has video loaded?", hasVideoLoaded);
-		console.log("Current video ID (ref):", currentVideoIdRef.current);
-		console.log("Current video ID (state):", currentVideoId);
-		
-		// CHANGE: Allow state changes if we have a video loaded OR if it's a YouTube song
-		if (!isCurrentSongYouTube && !hasVideoLoaded) {
-			console.log("Ignoring YouTube state change - no YouTube song or video loaded");
-			
-			// Force stop the YouTube player if it's trying to play
-			if (event.data === 1) { // Playing state
-				console.log("Force stopping YouTube player - no valid YouTube context");
-				if (playerRef.current) {
-					playerRef.current.stopVideo();
-				}
-			}
-			return;
-		}
-		
-		// Rest of your existing YouTube state change logic...
-		const stateNames = {
-			'-1': 'unstarted',
-			'0': 'ended',
-			'1': 'playing',
-			'2': 'paused',
-			'3': 'buffering',
-			'5': 'cued'
-		};
-		
-		console.log(`YouTube state: ${stateNames[event.data] || event.data}`);
+    console.log("YouTube player state changed:", event.data);
+    console.log("Current song at state change:", currentSong);
+    
+    // CHANGE: More robust check for YouTube songs
+    const isCurrentSongYouTube = currentSong && 
+        (currentSong.platform === "YouTube" || currentSong.albumname === "YouTube");
+    
+    // CHANGE: Use REF for immediate video ID check
+    const hasVideoLoaded = currentVideoIdRef.current !== null && currentVideoIdRef.current !== "";
+    
+    console.log("Is current song YouTube?", isCurrentSongYouTube);
+    console.log("Has video loaded?", hasVideoLoaded);
+    console.log("Current video ID (ref):", currentVideoIdRef.current);
+    console.log("Current video ID (state):", currentVideoId);
+    
+    // CRITICAL FIX: Don't process state changes if no valid YouTube context
+    if (!isCurrentSongYouTube && !hasVideoLoaded) {
+        console.log("Ignoring YouTube state change - no YouTube song or video loaded");
+        
+        // Force stop the YouTube player if it's trying to play
+        if (event.data === 1) { // Playing state
+            console.log("Force stopping YouTube player - no valid YouTube context");
+            if (playerRef.current) {
+                playerRef.current.stopVideo();
+                playerRef.current.clearVideo();
+                setCurrentVideoId(null);
+                currentVideoIdRef.current = null;
+                setIsPlaying(false);
+            }
+        }
+        return; // EXIT EARLY - don't process any other state changes
+    }
+    
+    // Rest of your existing YouTube state change logic...
+    const stateNames = {
+        '-1': 'unstarted',
+        '0': 'ended',
+        '1': 'playing',
+        '2': 'paused',
+        '3': 'buffering',
+        '5': 'cued'
+    };
+    
+    console.log(`YouTube state: ${stateNames[event.data] || event.data}`);
+    
 		
 		if (event.data === window.YT.PlayerState.ENDED) {
 			console.log("YouTube song ended naturally");
@@ -684,16 +751,19 @@ console.log("YouTube controls object created:", controls); // ADD THIS DEBUG LIN
  * @return HTML code for one song entry
  */
 function Song(props) {
-	return ( 
-	 <div className="songListItem">
-	  {/* Display the Name, album cover, Artist, etc*/}
-	  <div className="songTitle">{props.name}</div>
-	  <div className="songArtist">{props.artist}</div>
-	  <div className="songAlbum">{props.albumname}</div>
-	  <img className="songCover" src={props.albumcover} alt=""></img>
-	  <DeleteButton submissionID={props.submissionID}/>
-	 </div>
-	);
+    return ( 
+        <div className="songListItem">
+            {/* Display the Name, album cover, Artist, etc*/}
+            <div className="songTitle">{props.name}</div>
+            <div className="songArtist">{props.artist}</div>
+            <div className="songAlbum">{props.albumname}</div>
+            <img className="songCover" src={props.albumcover} alt=""></img>
+            <DeleteButton 
+                submissionID={props.submissionID}
+                songs={props.songs}  // ADD: Pass songs array
+            />
+        </div>
+    );
 }
 
 
@@ -705,20 +775,60 @@ function Song(props) {
  * @return HTML code for the button
  */
 function DeleteButton(props) {
-	const isHost = useContext(IsHostContext)
-	const cookie = useContext(CookieContext)
-	const updateHostToolsError = useContext(HostToolsContext);
+    const isHost = useContext(IsHostContext)
+    const cookie = useContext(CookieContext)
+    const updateHostToolsError = useContext(HostToolsContext);
 
-	if (isHost && (props.submissionID !== -1)) {
-		return <button 
-			data-testid="removeSongButton"
-			className="removeSongButton"
-			onClick={() => {removeSong(props.submissionID, cookie, updateHostToolsError)}}
-		>X</button>
-	} 
-	return <></>
-	
-	
+    const handleRemove = async () => {
+        console.log("=== DELETE BUTTON CLICKED ===");
+        console.log("Song ID:", props.submissionID);
+        console.log("Is host:", isHost);
+        console.log("Cookie:", cookie);
+        
+        // ADD: Get the current songs from the parent component
+        // We need to pass this from the parent
+        const currentSongs = props.songs || [];
+        const isCurrentSong = currentSongs.length > 0 && currentSongs[0].submissionID === props.submissionID;
+        const isYouTube = currentSongs.length > 0 && 
+            (currentSongs[0].platform === "YouTube" || currentSongs[0].albumname === "YouTube");
+        
+        // If removing current YouTube song, stop the player immediately
+        if (isCurrentSong && isYouTube) {
+            console.log("Stopping YouTube player before removal");
+            
+            // Stop via global controls
+            if (window.youtubePlayerControls && window.youtubePlayerControls.stop) {
+                window.youtubePlayerControls.stop();
+            }
+        }
+             
+        try {
+            const result = await removeSong(props.submissionID, cookie, updateHostToolsError);
+            console.log("Remove result:", result);
+            
+            if (result === 200) {
+                console.log('Song removed successfully');
+            } else {
+                console.error('Failed to remove song, status:', result);
+            }
+        } catch (error) {
+            console.error('Error in handleRemove:', error);
+        }
+    };
+
+    if (isHost && (props.submissionID !== -1)) {
+        return (
+            <button 
+                data-testid="removeSongButton"
+                className="removeSongButton"
+                onClick={handleRemove}
+                title="Remove this song"
+            >
+                X
+            </button>
+        );
+    } 
+    return <></>
 }
 
 /**
@@ -828,6 +938,8 @@ function HostToolsMenu({ songs, youtubeControls }) {
 		}
 	};
 
+	
+
     const extractVideoIdFromUri = (uri) => {
         if (!uri) return null;
         if (uri.includes("youtube.com/watch?v=")) {
@@ -864,6 +976,7 @@ function HostToolsMenu({ songs, youtubeControls }) {
     }
     return <></>;
 }
+
 
 /**
  * React component to display the current queue of songs.
@@ -937,9 +1050,9 @@ function DisplayedQueue() {
 		
 		// Add a small delay to prevent race conditions with queue polling
 		const timeoutId = setTimeout(() => {
-			if (songs.length > 0) {
+			if (songs.length > 0 && songs[0].submissionID !== -1) {
 				const newSong = songs[0];
-				console.log("Setting current song to:", newSong);
+				console.log("Setting current song to:", newSong.name);
 				
 				// Only update if it's actually different
 				setCurrentSong(prevSong => {
@@ -952,11 +1065,18 @@ function DisplayedQueue() {
 					}
 				});
 			} else {
-				// Only clear after a longer delay to prevent race conditions
-				console.log("No songs in queue - waiting before clearing current song");
-				// Don't set currentSong to null immediately to prevent race conditions
+				// Queue is empty or has invalid songs
+				console.log("No valid songs in queue - clearing current song");
+				setCurrentSong(prevSong => {
+					if (prevSong) {
+						console.log("Clearing current song due to empty queue");
+						return null;
+					} else {
+						return prevSong; // Already null
+					}
+				});
 			}
-		}, 100); // 100ms delay to let queue polling settle
+		}, 100);
 
 		return () => {
 			clearTimeout(timeoutId);
@@ -964,33 +1084,19 @@ function DisplayedQueue() {
 	}, [songs]);
 
     const handleSongEnd = async () => {
-		console.log("Song ended, moving to next in queue");
+		console.log("Song ended naturally - backend should handle removal");
 		
-		if (currentSong && currentSong.submissionID !== -1) {
-			console.log(`Removing finished song: ${currentSong.name} (ID: ${currentSong.submissionID})`);
-			
-			try {
-				// Call the backend to remove the finished song
-				const response = await axios.post(
-					DELETE_SONG_CALL,
-					{ "id": currentSong.submissionID, "cookie": cookie },
-					{ timeout: 5000 }
-				);
-				
-				if (response.status === 200) {
-					console.log("Successfully removed finished song from queue");
-					// The queue will be updated automatically through polling
-				} else {
-					console.error("Failed to remove song:", response.status);
-				}
-				
-			} catch (error) {
-				console.error("Error removing finished song:", error);
-				updateHostToolsError(error.status || 500);
-			}
-		} else {
-			console.log("No valid current song to remove");
-		}
+		// DON'T manually remove songs here - let the backend handle it
+		// The backend's flush_queue method will remove finished songs automatically
+		// and the frontend will update via polling
+		
+		console.log("Letting backend handle song removal and queue progression");
+		
+		// Optional: You could add a small delay and then refresh the queue
+		// to ensure we get the latest state
+		setTimeout(() => {
+			requestQueue(updateQueueError, updateSongs);
+		}, 500);
 	};
   
     return (
@@ -1022,6 +1128,7 @@ function DisplayedQueue() {
 									albumcover={song.albumcover}
 									artist={song.artist}
 									submissionID={song.submissionID}
+									songs={songs}  // ADD: Pass entire songs array
 									key={song.submissionID}
 								></Song>
 							))}

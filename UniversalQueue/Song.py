@@ -73,6 +73,8 @@ class Song:
         @param id: Unique ID created by the universal queue.
         """
         self.id = id
+        self.submissionID = id  # ADD THIS LINE - Set submissionID to match id
+        print(f"Set song ID and submissionID to: {id}")  # Debug line
 
     def to_dict(self):
         """
