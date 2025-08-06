@@ -1,5 +1,6 @@
 import requests
 import logging
+
 class YouTubeAPI:
     def __init__(self, api_keys=None):
         """
@@ -8,12 +9,41 @@ class YouTubeAPI:
 
         :param api_keys: List of YouTube Data API keys
         """
-        if api_keys is None:
-            api_keys = [
-                "AIzaSyDU-lh8yXjypSK7GEPIcIsiORoDtHckfps"
-            ]
+        if api_keys is None or not api_keys:
+            raise ValueError("No YouTube API keys provided. Please run startup.py to configure your API key.")
+            
         self.api_keys = api_keys  # List of API keys
         self.current_key_index = 0  # Index to track the current API key
+
+    def _load_api_keys_from_config(self):
+        """
+        Load YouTube API keys from the config file created during startup
+        
+        :return: List of API keys or empty list if none found
+        """
+        try:
+            # Navigate to config file from this location
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            config_path = os.path.join(current_dir, '../api_credentials.config')  # CHANGE: New path
+            
+            if not os.path.exists(config_path):
+                logging.warning("Config file not found - no YouTube API keys available")
+                return []
+            
+            with open(config_path, 'r') as file:
+                for line in file:
+                    if "YOUTUBE_API_KEY" in line and "=" in line:
+                        api_key = line.split("=", 1)[1].strip()
+                        if api_key and api_key != "":
+                            logging.info("Successfully loaded YouTube API key from config")
+                            return [api_key]  # Return as list for compatibility
+            
+            logging.warning("YouTube API key not found in config file")
+            return []
+            
+        except Exception as e:
+            logging.error(f"Error loading YouTube API key from config: {e}")
+            return []
 
     def get_api_key(self):
         """
@@ -22,9 +52,13 @@ class YouTubeAPI:
 
         :return: A YouTube Data API key
         """
+        if not self.api_keys:
+            raise ValueError("No YouTube API keys available")
+            
         key = self.api_keys[self.current_key_index]
         self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
         return key
+
 
     def search_videos(self, query, max_results=4):
         """

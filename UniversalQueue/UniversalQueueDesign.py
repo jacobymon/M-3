@@ -57,13 +57,6 @@ class UniversalQueue:
         "video_id": ""
     }
 
-    API_KEYS = [
-    "AIzaSyCvQt4I9nFifFCdhkf6aA7xwWTlI1V6LYE",
-    "AIzaSyC948uX02ZYvomTfRfw9eSwQJDE9bnIId4",
-    "AIzaSyCDAeaAOmP3M-TLn59923SGQTr7o1w1F4Y",
-    "AIzaSyCxzo4ExRujDH9kv1SysovtSSWTBXKDFec",
-    "AIzaSyAvOmpwSH-nePF4zeqEJwD8CfKX6dP4pTg"
-]
 
     def __init__(self):
         """
@@ -78,28 +71,54 @@ class UniversalQueue:
             @attribute pause_toggle: a boolean value where true indicates pausing, false is playing                                      
         """
         self.data = []
-
-        #PSUEDO CODE FOR NOW UNTIL MOCK COMES: self.spotify = Spotify_Interface_Class()
-
         self.suspend_toggle = False
-
         self.pause_toggle = False
-
-        #this is a MOCK for testing purposes!!!
         self.hostCookie = "host"
-
         self.idCount = 0
 
         self.spotify = Spotify_Interface_Class()
-        self.youtube = YouTube_Interface_Class()  # Add this line
+        self.youtube = YouTube_Interface_Class()
 
-
-        self.youtube_api = YouTubeAPI(api_keys=self.API_KEYS)
+        # CHANGE: Load API keys dynamically from config
+        api_keys = self.load_api_keys_from_config()  # Call as method
+        if api_keys:
+            self.youtube_api = YouTubeAPI(api_keys=api_keys)
+            print(f"YouTube API initialized with {len(api_keys)} API key(s)")
+        else:
+            print("Warning: No YouTube API keys available - YouTube functionality disabled")
+            self.youtube_api = None
 
         self.flush_exit = threading.Event()
-
         self.pause_exit = threading.Event()
 
+    def load_api_keys_from_config(self):
+        """
+        Load YouTube API key from config file created during startup
+        """
+        try:
+            path = os.path.dirname(os.path.abspath(__file__))
+            CONFIG_FILE = os.path.join(path, 'api_credentials.config')
+            
+            if not os.path.exists(CONFIG_FILE):
+                print("Config file not found - YouTube API key not available")
+                return []
+            
+            with open(CONFIG_FILE, 'r') as file:
+                for line in file:
+                    if "YOUTUBE_API_KEY" in line and "=" in line:
+                        api_key = line.split("=", 1)[1].strip()
+                        if api_key and api_key != "":
+                            print("Successfully loaded YouTube API key from config")
+                            return [api_key]  # Return as list for compatibility
+            
+            print("YouTube API key not found in config file")
+            return []
+            
+        except Exception as e:
+            print(f"Error loading YouTube API key: {e}")
+            return []
+
+    
     def insert(self, song, recover=False): 
         """
         When queue not suspended
@@ -653,47 +672,6 @@ class UniversalQueue:
         except FileNotFoundError:
             print(f"Error: File 'Write.json' not found.")   
 
-
-
-UQ = UniversalQueue()
-# List of API keys
-API_KEYS = [
-               "AIzaSyDU-lh8yXjypSK7GEPIcIsiORoDtHckfps"
-]
-
-# Initialize YouTubeAPI with multiple keys
-youtube_api = YouTubeAPI(api_keys=API_KEYS)
-
-UQ.youtube_api = youtube_api
-# UQ.youtube = YouTube_Interface_Class(socketio=None)  # Add this line
-
-
-# # Add WebSocket event handlers
-# @socketio.on('connect')
-# def handle_connect():
-#     print('Client connected to WebSocket')
-
-# @socketio.on('disconnect')
-# def handle_disconnect():
-#     print('Client disconnected from WebSocket')
-
-# @socketio.on('youtube_song_ended')
-# def handle_youtube_song_ended(data):
-#     """
-#     Handle when a YouTube song ends on the frontend
-#     """
-#     print(f"YouTube song ended: {data.get('video_id')}")
-#     # You can add logic here to move to the next song
-#     # For example: UQ.remove_current_song()
-
-# @socketio.on('youtube_position_update')
-# def handle_position_update(data):
-#     """
-#     Handle position updates from frontend YouTube player
-#     """
-#     if hasattr(UQ, 'youtube') and UQ.youtube:
-#         UQ.youtube.update_position(data.get('position', 0))
-
 @app.route('/', methods=['GET'])
 @cross_origin()
 def root():
@@ -938,12 +916,18 @@ def youtube_search():
         return jsonify({"status": 400, "response": "Search string is required."})
 
     try:
-        results = youtube_api.search_videos(search_string, max_results=4)  # Perform a search
+        # CHANGE: Use UQ.youtube_api instead of youtube_api
+        if not UQ.youtube_api:
+            return jsonify({"status": 500, "response": "YouTube API not available. Please check your API key configuration."})
+        
+        results = UQ.youtube_api.search_videos(search_string, max_results=4)
         return jsonify({"status": 200, "results": results})
     except Exception as e:
         logging.error(f"Error in YouTube search: {str(e)}")
+        print(f"YouTube search error details: {e}")  # Add debug print
+        import traceback
+        traceback.print_exc()  # Print full traceback
         return jsonify({"status": 500, "response": "An internal server error occurred."})
-
 """
 Helper function to parse ISO 8601 duration strings into microseconds
 """
@@ -1101,53 +1085,21 @@ def youtube_submit_url():
         print(f"Error in youtube_submit_url: {str(e)}")
         return jsonify({"status": 500, "response": str(e)})
 
-@app.route('/test_youtube_song', methods=['POST'])
-@cross_origin()
-def test_youtube_song():
-    try:
-        # Create a simple test YouTube song
-        song_data = {
-            "status": 200,
-            "platform": "YouTube",
-            "search_results": {
-                "uri": "https://youtube.com/watch?v=dQw4w9WgXcQ",
-                "video_url": "https://youtube.com/watch?v=dQw4w9WgXcQ",
-                "name": "Test Song",
-                "title": "Test Song",
-                "artist": "Test Artist",
-                "channel_name": "Test Artist",
-                "album": "YouTube",
-                "albumcover": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg",
-                "thumbnail_url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg",
-                "video_id": "dQw4w9WgXcQ",
-                "s_len": 213000,
-                "duration": 213000
-            },
-            "submissionID": UQ.idCount
-        }
-        
-        print(f"Test song data: {song_data}")
-        
-        song = Song(song_data, recover=False)
-        print(f"Created test song: {song}")
-        
-        result = UQ.insert(song)
-        print(f"Insert result: {result}")
-        
-        return jsonify({
-            "status": 200,
-            "response": "Test song added",
-            "song": song.to_dict()
-        })
-        
-    except Exception as e:
-        print(f"Error in test: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"status": 500, "response": str(e)})
-    
-with open(path + '/../m3-frontend/.env', 'w') as f_obj:
-    f_obj.write('REACT_APP_BACKEND_IP="'+local_ip+'"')
+
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=True)  # Change from socketio.run to app.run
+    import os
+    port = int(os.environ.get('FLASK_PORT', 8080))
+    print(f"🎵 Starting M^3 Backend Server on port {port}...")
+    print(f"🌐 Backend API available at http://0.0.0.0:{port}")
+    
+    # Initialize UniversalQueue
+    UQ = UniversalQueue()
+    
+    app.run(
+        host='0.0.0.0', 
+        port=port, 
+        debug=False,
+        threaded=True,
+        use_reloader=False
+    )

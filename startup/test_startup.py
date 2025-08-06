@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, mock_open, patch
 from startup import startup
 
 dirname = os.path.dirname(__file__)
-expected_creds = os.path.join(dirname, 'test_files/expected_creds.config')
+expected_creds = os.path.join(dirname, 'test_files/expected_api_credentials.config')
 expected_token = os.path.join(dirname, 'test_files/expected_token.config')
 test_creds_for_token = os.path.join(dirname, 'test_files/test_creds_for_token.config')
 
@@ -29,12 +29,11 @@ class TestSpotifyConfig(unittest.TestCase):
         - assert the file contents match expected configuration.
         - assert a log message is generated in format: "Config file successfully created"
         """
-        mock_join.return_value = "test_creds.config"
+        mock_join.return_value = "test_api_credentials.config"
         mock_exist.return_value = False
         mock_input.side_effect = ['a289-kfajek', 'bafoh2fpouenJaF931DF', 'https://example.com//callback']
         self.startup._create_config_file()
-        with open ('test_creds.config', 'r') as method_output, open(expected_creds, 'r') as expected_output:
-            self.assertEqual(method_output.read(), expected_output.read())
+        with open ('test_api_credentials.config', 'r') as method_output, open(expected_creds, 'r') as expected_output:            self.assertEqual(method_output.read(), expected_output.read())
         mock_log_info.assert_called_once_with("Config file successfully created")
     
     

@@ -5,7 +5,7 @@ import os
 path = os.path.dirname(os.path.abspath(__file__))
 
 config = configparser.RawConfigParser()   
-configFilePath = path + '/creds.config'
+configFilePath = path + '/../api_credentials.config'
 config.read(configFilePath)
 
 device = config.get("DEFAULT", "DEVICE")

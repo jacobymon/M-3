@@ -2,10 +2,16 @@
 This module implements the YouTube Interface class for handling YouTube playback
 similar to the Spotify Interface Class
 """
-
+"""
+This module implements the YouTube Interface class for handling YouTube playback
+similar to the Spotify Interface Class
+"""
+import logging
 import time
+import os
 import threading
 from typing import Optional, Dict, Any
+from googleapiclient.discovery import build  
 
 class YouTube_Interface_Class:
     """
@@ -16,16 +22,30 @@ class YouTube_Interface_Class:
     def __init__(self, socketio=None):
         """
         Creates a YouTube interface object
-        Manages playback state since YouTube player runs on frontend
-        
-        @attribute current_video_id: The currently loaded video ID
-        @attribute is_playing: Boolean indicating if video is currently playing
-        @attribute is_paused: Boolean indicating if video is paused
-        @attribute current_position: Current playback position in seconds
-        @attribute video_duration: Total video duration in seconds
-        @attribute play_start_time: Timestamp when current video started playing
-        @attribute socketio: SocketIO instance for communicating with frontend
         """
+        path = os.path.dirname(os.path.abspath(__file__))
+        CONFIG_FILE = os.path.join(path, '../api_credentials.config')  # CHANGE: New path
+        
+        self.api_key = None
+        self.youtube = None
+        
+        try:
+            if os.path.exists(CONFIG_FILE):
+                with open(CONFIG_FILE, 'r') as file:
+                    for line in file:
+                        if "YOUTUBE_API_KEY" in line and "=" in line:
+                            self.api_key = line.split("=", 1)[1].strip()
+                            break
+                            
+            if self.api_key and self.api_key.strip():
+                self.youtube = build('youtube', 'v3', developerKey=self.api_key)
+                logging.info("YouTube interface initialized successfully")
+            else:
+                logging.warning("YouTube API key not found in config file")
+                
+        except Exception as e:
+            logging.error(f"Failed to initialize YouTube interface: {e}")
+
         self.current_video_id: Optional[str] = None
         self.is_playing: bool = False
         self.is_paused: bool = False
@@ -34,7 +54,30 @@ class YouTube_Interface_Class:
         self.play_start_time: Optional[float] = None
         self.pause_time: Optional[float] = None
         self.socketio = socketio
+    
+    def is_api_key_valid(self) -> bool:
+        """
+        Check if YouTube API key is valid and working
         
+        @return: True if API key works, False otherwise
+        """
+        if not self.youtube or not self.api_key:
+            return False
+            
+        try:
+            # Test the API key with a simple request
+            request = self.youtube.search().list(
+                part="snippet",
+                q="test",
+                maxResults=1,
+                type="video"
+            )
+            request.execute()
+            return True
+        except Exception as e:
+            logging.error(f"YouTube API key validation failed: {e}")
+            return False
+
     def play(self, video_id: str, start_time: float = 0.0) -> int:
         """
         Initiates playback of a YouTube video and signals frontend

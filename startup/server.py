@@ -48,10 +48,40 @@ class Server:
         except socket.error as e:
             logging.error("Socket creation failed: %s", str(e))
             return None
+        
+    def _wait_for_backend(self):
+        """
+        Wait for the backend to start and verify it's responding
+        """
+        import requests
+        import time
+        
+        max_attempts = 30  # 30 seconds timeout
+        backend_url = f"http://{self.backend_ip}:{self.backend_port}"
+        
+        print(f"⏳ Waiting for backend to start at {backend_url}...")
+        
+        for attempt in range(max_attempts):
+            try:
+                # Try to connect to a simple endpoint
+                response = requests.get(f"{backend_url}/", timeout=2)
+                if response.status_code in [200, 404]:  # 404 is ok if no root route
+                    print(f"✅ Backend is responding on {backend_url}")
+                    return True
+            except requests.exceptions.RequestException:
+                pass
+            
+            time.sleep(1)
+            if attempt % 5 == 0:  # Print every 5 seconds
+                print(f"⏳ Still waiting for backend... (attempt {attempt + 1}/{max_attempts})")
+        
+        print(f"❌ Backend failed to start after {max_attempts} seconds")
+        print("🔍 Check the backend logs for errors")
+        return False
 
     def _update_frontend_config(self):
         """
-        Updates the frontend .env file with the backend IP address
+        Updates the frontend .env file with the backend IP address and port
         """
         try:
             current_path = os.path.dirname(__file__)
@@ -59,8 +89,10 @@ class Server:
             
             with open(env_path, 'w') as f:
                 f.write(f'REACT_APP_BACKEND_IP="{self.backend_ip}"\n')
+                f.write(f'REACT_APP_BACKEND_PORT="{self.backend_port}"\n')
+                f.write(f'REACT_APP_BACKEND_URL="http://{self.backend_ip}:{self.backend_port}"\n')
             
-            logging.info(f"Updated frontend .env file with backend IP: {self.backend_ip}")
+            logging.info(f"Updated frontend .env file with backend: {self.backend_ip}:{self.backend_port}")
         except Exception as e:
             logging.error(f"Failed to update frontend .env file: {e}")
 
@@ -125,22 +157,33 @@ class Server:
             backend_path = os.path.join(current_path, '../UniversalQueue')
             backend_script = os.path.join(backend_path, 'UniversalQueueDesign.py')
             
-            logging.info(f"Starting backend at: {backend_script}")
+            if not os.path.exists(backend_script):
+                logging.error(f"Backend script not found: {backend_script}")
+                return
+            
+            logging.info(f"🚀 Starting backend at: {backend_script}")
             
             # Add the backend path to Python path
             sys.path.insert(0, backend_path)
             
+            # Set environment variable for the backend to know its port
+            os.environ['FLASK_PORT'] = str(self.backend_port)
+            
             # Run the backend script
             result = subprocess.run([sys.executable, backend_script], 
-                                  cwd=backend_path, 
-                                  capture_output=False)
+                                cwd=backend_path,
+                                capture_output=False,
+                                text=True)
             
             if result.returncode != 0:
-                logging.error(f"Backend exited with code: {result.returncode}")
-                
+                logging.error(f"❌ Backend exited with code: {result.returncode}")
+            else:
+                logging.info("✅ Backend started successfully")
+                    
         except Exception as e:
-            logging.error("Failed to start backend: %s", str(e))
-            exit()
+            logging.error(f"❌ Failed to start backend: {str(e)}")
+            import traceback
+            traceback.print_exc()
 
     def thread_run_backend(self):
         """
@@ -159,7 +202,8 @@ class Server:
         """
         specifies order of operations for the class methods to run
         """
-        port = 3000
+        frontend_port = 3000
+        backend_port = 8080  # ADD: Backend port
         ip = self._get_local_ip()
         
         if ip is None:
@@ -167,19 +211,24 @@ class Server:
             ip = "localhost"
         
         self.backend_ip = ip
-        self.url = "http://" + ip + ":" + str(port)
+        self.backend_port = backend_port  # ADD: Store backend port
+        self.url = "http://" + ip + ":" + str(frontend_port)  # Frontend URL for QR code
+        self.backend_url = "http://" + ip + ":" + str(backend_port)  # ADD: Backend URL
         
-        # Update frontend configuration with backend IP
+        print(f"🌐 Frontend will be available at: {self.url}")
+        print(f"🔧 Backend will be available at: {self.backend_url}")
+        
+        # Update frontend configuration with backend IP and port
         self._update_frontend_config()
         
-        # Generate QR code
+        # Generate QR code for frontend
         self.generate_qr_code()
         
         # Start backend in separate thread
         self.thread_run_backend()
         
-        # Wait for backend to start
-        time.sleep(8)  # Increased wait time
+        # Wait for backend to start and verify it's running
+        self._wait_for_backend()
         
         # Start frontend
         self.react_run()
