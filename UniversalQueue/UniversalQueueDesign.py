@@ -1084,6 +1084,63 @@ def youtube_submit_url():
     except Exception as e:
         print(f"Error in youtube_submit_url: {str(e)}")
         return jsonify({"status": 500, "response": str(e)})
+    
+@app.route('/save_playlist', methods=['POST'])
+@cross_origin()
+def save_playlist():
+    """
+    Save the current queue as a playlist JSON file.
+    """
+    try:
+        data = request.json
+        playlist_name = data.get('playlist_name')
+        if not playlist_name:
+            return jsonify({"status": 400, "response": "Playlist name is required."})
+
+        # Ensure the playlists folder exists
+        playlists_folder = os.path.join(os.path.dirname(__file__), 'playlists')
+        os.makedirs(playlists_folder, exist_ok=True)
+
+        # Save the current queue to a JSON file
+        playlist_path = os.path.join(playlists_folder, f"{playlist_name}.json")
+        with open(playlist_path, 'w') as f:
+            json.dump(UQ.data, f, indent=4)
+
+        return jsonify({"status": 200, "response": f"Playlist '{playlist_name}' saved successfully."})
+    except Exception as e:
+        logging.error(f"Error saving playlist: {e}")
+        return jsonify({"status": 500, "response": "An error occurred while saving the playlist."})
+    
+
+@app.route('/load_playlist', methods=['POST'])
+@cross_origin()
+def load_playlist():
+    """
+    Load a playlist JSON file into the queue.
+    """
+    try:
+        data = request.json
+        playlist_name = data.get('playlist_name')
+        if not playlist_name:
+            return jsonify({"status": 400, "response": "Playlist name is required."})
+
+        # Load the playlist JSON file
+        playlists_folder = os.path.join(os.path.dirname(__file__), 'playlists')
+        playlist_path = os.path.join(playlists_folder, f"{playlist_name}.json")
+        if not os.path.exists(playlist_path):
+            return jsonify({"status": 404, "response": f"Playlist '{playlist_name}' not found."})
+
+        with open(playlist_path, 'r') as f:
+            playlist_data = json.load(f)
+
+        # Replace the current queue with the playlist data
+        UQ.data = playlist_data
+        UQ.write()  # Save the updated queue to Write.json
+
+        return jsonify({"status": 200, "response": f"Playlist '{playlist_name}' loaded successfully."})
+    except Exception as e:
+        logging.error(f"Error loading playlist: {e}")
+        return jsonify({"status": 500, "response": "An error occurred while loading the playlist."})
 
 
 
