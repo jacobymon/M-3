@@ -44,6 +44,7 @@ To use YouTube functionality, you need to set up YouTube Data API v3 access:
   ```
   python startup/startup.py 
   ```
+- You may be prompted by the terminal to quickly play and unpause your Spotify desktop app if the program detects that a spotify instance hasn't been runninging in a few minutes, 
 - Only the first time you run startup.py:
     - It will install dependent packages, so it may take a few minutes.
     - You will be prompted to enter Client ID, Client secret, and Redirect URI to authorize your account and create an access token. After you enter those 3 credentials, you will be directed into your spotify account to authorize the app to play songs. After you accept the authorization, you will be directed to your Redirect URI, and the URL will have the authorization cookie appended to it. Copy the entire URL and paste it as prompted.
@@ -51,7 +52,7 @@ To use YouTube functionality, you need to set up YouTube Data API v3 access:
 - Other members can join by scanning the QR code or copying the URL as long as they are connected to the same network.
 
 ### Note!
-- In order for proper playback, you will need to manually ensure your Spotify desktop app does not have automatic song repeat enabled.
+- In order for proper playback, you will need to manually ensure your Spotify desktop app does not have automatic song repeat enabled. 
 
 ### In case of providing invalid credentials:
 If you entered a wrong Client ID, Client Secret, or Redirect URI, the Spotify pop-up webpage that authorizes your account will warn you which credential is invalid, and the program will not be able to authorize your account. To provide the correct credentials, you can either manually edit the config file or delete the config file and run startup.py again.
