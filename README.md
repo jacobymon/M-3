@@ -50,6 +50,9 @@ To use YouTube functionality, you need to set up YouTube Data API v3 access:
 - Then, your default browser will open the Web Application!
 - Other members can join by scanning the QR code or copying the URL as long as they are connected to the same network.
 
+### Note!
+- In order for proper playback, you will need to manually ensure your Spotify desktop app does not have automatic song repeat enabled.
+
 ### In case of providing invalid credentials:
 If you entered a wrong Client ID, Client Secret, or Redirect URI, the Spotify pop-up webpage that authorizes your account will warn you which credential is invalid, and the program will not be able to authorize your account. To provide the correct credentials, you can either manually edit the config file or delete the config file and run startup.py again.
 The path to the config file is 
