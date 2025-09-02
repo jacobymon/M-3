@@ -992,24 +992,77 @@ function DisplayedQueue() {
     const failedRequests = useRef(0);
     const [isHost, updateIsHost] = useState(false);
     const [cookie, updateCookie] = useState("");
+    const [playlistName, setPlaylistName] = useState("");
 
-	useEffect(() => {
-		if (songs.length > 0) {
-			console.log("Current songs in queue:", songs);
-			console.log("First song:", songs[0]);
-			console.log("First song platform:", songs[0]?.platform);
-			console.log("First song URI:", songs[0]?.uri);
-		}
-	}, [songs]);
-  
+    // Function to save the current queue as a playlist
+    const savePlaylist = async () => {
+        if (!playlistName.trim()) {
+            alert("Please enter a valid playlist name.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://${process.env.REACT_APP_BACKEND_IP}:8080/save_playlist`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ playlist_name: playlistName.trim() }),
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                alert(`Playlist "${playlistName}" saved successfully!`);
+            } else {
+                alert(`Failed to save playlist: ${result.response}`);
+            }
+        } catch (error) {
+            console.error("Error saving playlist:", error);
+            alert("An error occurred while saving the playlist.");
+        }
+    };
+
+    const loadPlaylist = async () => {
+        if (!playlistName.trim()) {
+            alert("Please enter a valid playlist name.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://${process.env.REACT_APP_BACKEND_IP}:8080/load_playlist`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ playlist_name: playlistName.trim() }),
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                
+                requestQueue(updateQueueError, updateSongs); // Refresh the queue
+            } else {
+                alert(`Failed to load playlist: ${result.response}`);
+            }
+        } catch (error) {
+            console.error("Error loading playlist:", error);
+            alert("An error occurred while loading the playlist.");
+        }
+    };
+
+    useEffect(() => {
+        if (songs.length > 0) {
+            console.log("Current songs in queue:", songs);
+            console.log("First song:", songs[0]);
+            console.log("First song platform:", songs[0]?.platform);
+            console.log("First song URI:", songs[0]?.uri);
+        }
+    }, [songs]);
+
     useEffect(() => {
         requestQueue(updateQueueError, updateSongs);
     }, []);
-  
+
     useEffect(() => {
         verify_host(updateIsHost, updateCookie);
     }, []);
-  
+
     useEffect(() => {
         autoCallRequestQueue(updateQueueError, updateSongs);
     }, []);
@@ -1042,102 +1095,123 @@ function DisplayedQueue() {
         );
     }, [hostToolsError]);
 
-	// Set current song as first in queue with debouncing
-	useEffect(() => {
-		console.log("=== UPDATING CURRENT SONG ===");
-		console.log("Songs array:", songs);
-		console.log("Songs length:", songs.length);
-		
-		// Add a small delay to prevent race conditions with queue polling
-		const timeoutId = setTimeout(() => {
-			if (songs.length > 0 && songs[0].submissionID !== -1) {
-				const newSong = songs[0];
-				console.log("Setting current song to:", newSong.name);
-				
-				// Only update if it's actually different
-				setCurrentSong(prevSong => {
-					if (!prevSong || prevSong.submissionID !== newSong.submissionID) {
-						console.log("Current song actually changed, updating");
-						return newSong;
-					} else {
-						console.log("Same song, not updating");
-						return prevSong;
-					}
-				});
-			} else {
-				// Queue is empty or has invalid songs
-				console.log("No valid songs in queue - clearing current song");
-				setCurrentSong(prevSong => {
-					if (prevSong) {
-						console.log("Clearing current song due to empty queue");
-						return null;
-					} else {
-						return prevSong; // Already null
-					}
-				});
-			}
-		}, 100);
+    // Set current song as first in queue with debouncing
+    useEffect(() => {
+        console.log("=== UPDATING CURRENT SONG ===");
+        console.log("Songs array:", songs);
+        console.log("Songs length:", songs.length);
 
-		return () => {
-			clearTimeout(timeoutId);
-		};
-	}, [songs]);
+        // Add a small delay to prevent race conditions with queue polling
+        const timeoutId = setTimeout(() => {
+            if (songs.length > 0 && songs[0].submissionID !== -1) {
+                const newSong = songs[0];
+                console.log("Setting current song to:", newSong.name);
+
+                // Only update if it's actually different
+                setCurrentSong(prevSong => {
+                    if (!prevSong || prevSong.submissionID !== newSong.submissionID) {
+                        console.log("Current song actually changed, updating");
+                        return newSong;
+                    } else {
+                        console.log("Same song, not updating");
+                        return prevSong;
+                    }
+                });
+            } else {
+                // Queue is empty or has invalid songs
+                console.log("No valid songs in queue - clearing current song");
+                setCurrentSong(prevSong => {
+                    if (prevSong) {
+                        console.log("Clearing current song due to empty queue");
+                        return null;
+                    } else {
+                        return prevSong; // Already null
+                    }
+                });
+            }
+        }, 100);
+
+        return () => {
+            clearTimeout(timeoutId);
+        };
+    }, [songs]);
 
     const handleSongEnd = async () => {
-		console.log("Song ended naturally - backend should handle removal");
-		
-		// DON'T manually remove songs here - let the backend handle it
-		// The backend's flush_queue method will remove finished songs automatically
-		// and the frontend will update via polling
-		
-		console.log("Letting backend handle song removal and queue progression");
-		
-		// Optional: You could add a small delay and then refresh the queue
-		// to ensure we get the latest state
-		setTimeout(() => {
-			requestQueue(updateQueueError, updateSongs);
-		}, 500);
-	};
-  
+        console.log("Song ended naturally - backend should handle removal");
+
+        // DON'T manually remove songs here - let the backend handle it
+        // The backend's flush_queue method will remove finished songs automatically
+        // and the frontend will update via polling
+
+        console.log("Letting backend handle song removal and queue progression");
+
+        // Optional: You could add a small delay and then refresh the queue
+        // to ensure we get the latest state
+        setTimeout(() => {
+            requestQueue(updateQueueError, updateSongs);
+        }, 500);
+    };
+
     return (
-		<>
-			{/* Add the YouTube player - this provides the YouTubeControlContext */}
-			<YouTubeQueuePlayer currentSong={currentSong} onSongEnd={handleSongEnd} />
-			
-			<IsHostContext.Provider value={isHost}>
-				<CookieContext.Provider value={cookie}>
-					<HostToolsContext.Provider value={updateHostToolsError}>
-						{hostToolsError !== 0 && (
-							<>
-								<h2>Error with Host Tools: Code {hostToolsError}</h2>
-							</>
-						)}
-	
+        <>
+            {/* Add the YouTube player - this provides the YouTubeControlContext */}
+            <YouTubeQueuePlayer currentSong={currentSong} onSongEnd={handleSongEnd} />
+
+            <IsHostContext.Provider value={isHost}>
+                <CookieContext.Provider value={cookie}>
+                    <HostToolsContext.Provider value={updateHostToolsError}>
+                        {hostToolsError !== 0 && (
+                            <>
+                                <h2>Error with Host Tools: Code {hostToolsError}</h2>
+                            </>
+                        )}
+
+                        {/* NEW: Playlist Management Section */}
+                        <div className="playlistManagement">
+                            <input
+                                type="text"
+                                placeholder="Enter playlist name"
+                                value={playlistName}
+                                onChange={(e) => setPlaylistName(e.target.value)}
+                            />
+                            <button onClick={savePlaylist} disabled={!playlistName.trim()}>
+                                Save Playlist
+                            </button>
+                            <button onClick={loadPlaylist} disabled={!playlistName.trim()}>
+                                Load Playlist
+                            </button>
+                        </div>
+
 						{/* CHANGE: Wrap HostToolsMenu with YouTubeControlContext.Consumer */}
-						<YouTubeControlContext.Consumer>
-							{(youtubeControls) => (
-								<HostToolsMenu songs={songs} youtubeControls={youtubeControls} />
-							)}
-						</YouTubeControlContext.Consumer>
-	
-						<div className="songListContainer">
-							{songs?.map((song) => (
-								<Song
-									name={song.name}
-									albumname={song.albumname}
-									albumcover={song.albumcover}
-									artist={song.artist}
-									submissionID={song.submissionID}
-									songs={songs}  // ADD: Pass entire songs array
-									key={song.submissionID}
-								></Song>
-							))}
-						</div>
-					</HostToolsContext.Provider>
-				</CookieContext.Provider>
-			</IsHostContext.Provider>
-		</>
-	);
+                        <YouTubeControlContext.Consumer>
+                            {(youtubeControls) => (
+                                <HostToolsMenu songs={songs} youtubeControls={youtubeControls} />
+                            )}
+                        </YouTubeControlContext.Consumer>
+
+                        {/* Render the queue */}
+                        <div className="songListContainer">
+                            {songs?.map((song) => (
+                                <Song
+                                    name={song.name}
+                                    albumname={song.albumname}
+                                    albumcover={song.albumcover}
+                                    artist={song.artist}
+                                    submissionID={song.submissionID}
+                                    songs={songs}
+                                    key={song.submissionID}
+                                ></Song>
+                            ))}
+                        </div>
+						<img src="/logo.png" alt="Logo" width="200" height="200" />
+
+
+
+                    </HostToolsContext.Provider>
+                </CookieContext.Provider>
+            </IsHostContext.Provider>
+        </>
+    );
 }  
   // Keep DisplayedQueue as the default export
 

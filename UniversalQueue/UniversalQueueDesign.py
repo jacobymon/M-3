@@ -1085,6 +1085,7 @@ def youtube_submit_url():
         print(f"Error in youtube_submit_url: {str(e)}")
         return jsonify({"status": 500, "response": str(e)})
     
+
 @app.route('/save_playlist', methods=['POST'])
 @cross_origin()
 def save_playlist():
@@ -1097,20 +1098,26 @@ def save_playlist():
         if not playlist_name:
             return jsonify({"status": 400, "response": "Playlist name is required."})
 
+        if not UQ.data:
+            return jsonify({"status": 400, "response": "The queue is empty. Cannot save an empty playlist."})
+
         # Ensure the playlists folder exists
         playlists_folder = os.path.join(os.path.dirname(__file__), 'playlists')
         os.makedirs(playlists_folder, exist_ok=True)
 
+        # Convert Song objects to dictionaries
+        playlist_data = [song.to_dict() for song in UQ.data]
+
         # Save the current queue to a JSON file
         playlist_path = os.path.join(playlists_folder, f"{playlist_name}.json")
         with open(playlist_path, 'w') as f:
-            json.dump(UQ.data, f, indent=4)
+            json.dump(playlist_data, f, indent=4)
 
+        logging.info(f"Playlist '{playlist_name}' saved successfully with data: {playlist_data}")
         return jsonify({"status": 200, "response": f"Playlist '{playlist_name}' saved successfully."})
     except Exception as e:
         logging.error(f"Error saving playlist: {e}")
-        return jsonify({"status": 500, "response": "An error occurred while saving the playlist."})
-    
+        return jsonify({"status": 500, "response": "An error occurred while saving the playlist."})    
 
 @app.route('/load_playlist', methods=['POST'])
 @cross_origin()
@@ -1133,17 +1140,21 @@ def load_playlist():
         with open(playlist_path, 'r') as f:
             playlist_data = json.load(f)
 
-        # Replace the current queue with the playlist data
-        UQ.data = playlist_data
+        logging.info(f"Loaded playlist data: {playlist_data}")
+
+        # Convert dictionaries back into Song objects
+        UQ.data = [Song(song_dict) for song_dict in playlist_data]
         UQ.write()  # Save the updated queue to Write.json
+
+        # Start the queue processing
+        if len(UQ.data) > 0:
+            threading.Thread(target=UQ.flush_queue, daemon=True).start()
 
         return jsonify({"status": 200, "response": f"Playlist '{playlist_name}' loaded successfully."})
     except Exception as e:
         logging.error(f"Error loading playlist: {e}")
-        return jsonify({"status": 500, "response": "An error occurred while loading the playlist."})
-
-
-
+        return jsonify({"status": 500, "response": f"An error occurred while loading the playlist: {e}"})
+    
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('FLASK_PORT', 8080))

@@ -1,5 +1,6 @@
 import json
 
+
 class Song:
     def __init__(self, json_data, recover=False):
         """
@@ -8,7 +9,7 @@ class Song:
         @param json_data: JSON string or dictionary containing song attributes.
         @param recover: Boolean flag for recovery mode.
         """
-        # Loading JSON data into a Python dictionary
+        # Load JSON data into a Python dictionary
         if isinstance(json_data, str):
             try:
                 data = json.loads(json_data)
@@ -19,52 +20,53 @@ class Song:
         else:
             raise ValueError(f"json_data must be string or dict, got {type(json_data)}")
 
-        if recover == False:
-            status = data.get('status')
-
-            if status == 200:
-                self.platform = data.get('platform', 'Spotify')  # Default to Spotify if platform is not provided
-
-                if self.platform == "YouTube":
-                    # Handle YouTube-specific metadata
-                    search_results = data.get('search_results', {})
-                    self.uri = search_results.get('video_url') or search_results.get('uri')
-                    self.name = search_results.get('title') or search_results.get('name')
-                    self.artist = search_results.get('channel_name') or search_results.get('artist')
-                    self.s_len = search_results.get('duration') or search_results.get('s_len')
-                    self.album = search_results.get('album') or "YouTube"  # Set default album for YouTube
-                    self.albumname = "YouTube"  
-                    self.albumcover = search_results.get('thumbnail_url') or search_results.get('albumcover', '')
-                    self.video_id = search_results.get('video_id', '')
-                else:
-                    # Handle Spotify-specific metadata
-                    search_results = data.get('search_results', {})
-                    self.uri = search_results.get('uri')
-                    self.s_len = search_results.get('s_len')
-                    self.name = search_results.get('name')
-                    self.album = search_results.get('album')
-                    self.albumname = search_results.get('album')  # Add this for frontend compatibility
-                    self.artist = search_results.get('artist')
-                    self.albumcover = search_results.get('albumcover', '')
-                    self.video_id = ''  # No video ID for Spotify
-
-                self.id = None
-                self.submissionID = data.get('submissionID', 0)
-            else:
-                raise ValueError('status of json not acceptable')
+        # Handle recovery mode or direct playlist JSON
+        if recover or "name" in data:
+            # Direct mapping from playlist JSON
+            self.name = data.get("name", "")
+            self.artist = data.get("artist", "")
+            self.albumname = data.get("albumname", "")
+            self.album = data.get("album", self.albumname)  # Default to albumname if album is not present
+            self.albumcover = data.get("albumcover", "")
+            self.platform = data.get("platform", "Spotify")
+            self.uri = data.get("uri", "")
+            self.video_id = data.get("video_id", "")
+            self.submissionID = data.get("submissionID", 0)
+            self.s_len = data.get("s_len", 0)
+            self.id = data.get("id", None)
         else:
-            # Recovery mode - song data is directly in the dictionary
-            self.uri = data.get('uri')
-            self.s_len = data.get('s_len')
-            self.name = data.get('name')
-            self.album = data.get('album')
-            self.albumname = data.get('albumname') or data.get('album')  # Add this
-            self.artist = data.get('artist')
-            self.platform = data.get('platform', 'Spotify')  # Default to Spotify if platform is not provided
-            self.albumcover = data.get('albumcover', '')
-            self.video_id = data.get('video_id', '')
-            self.submissionID = data.get('submissionID', 0)
+            # Handle API response with `search_results`
+            status = data.get("status", 200)  # Default to 200 if status is missing
+            if status != 200:
+                raise ValueError("status of json not acceptable")
+
+            self.platform = data.get("platform", "Spotify")  # Default to Spotify if platform is not provided
+
+            if self.platform == "YouTube":
+                # Handle YouTube-specific metadata
+                search_results = data.get("search_results", {})
+                self.uri = search_results.get("video_url") or search_results.get("uri", "")
+                self.name = search_results.get("title") or search_results.get("name", "")
+                self.artist = search_results.get("channel_name") or search_results.get("artist", "")
+                self.s_len = search_results.get("duration") or search_results.get("s_len", 0)
+                self.albumname = "YouTube"
+                self.album = "YouTube"  # Default album for YouTube
+                self.albumcover = search_results.get("thumbnail_url") or search_results.get("albumcover", "")
+                self.video_id = search_results.get("video_id", "")
+            else:
+                # Handle Spotify-specific metadata
+                search_results = data.get("search_results", {})
+                self.uri = search_results.get("uri", "")
+                self.s_len = search_results.get("s_len", 0)
+                self.name = search_results.get("name", "")
+                self.albumname = search_results.get("album", "")
+                self.album = search_results.get("album", self.albumname)  # Default to albumname if album is not present
+                self.artist = search_results.get("artist", "")
+                self.albumcover = search_results.get("albumcover", "")
+                self.video_id = ""
+
             self.id = None
+            self.submissionID = data.get("submissionID", 0)
 
     def set_id(self, id):
         """
@@ -85,7 +87,8 @@ class Song:
         return {
             'name': getattr(self, 'name', ''),
             'artist': getattr(self, 'artist', ''),
-            'albumname': getattr(self, 'albumname', getattr(self, 'album', '')),
+            'albumname': getattr(self, 'albumname', ''),
+            'album': getattr(self, 'album', self.albumname),  # Default to albumname if album is not present
             'albumcover': getattr(self, 'albumcover', ''),
             'platform': getattr(self, 'platform', 'Spotify'),
             'uri': getattr(self, 'uri', ''),

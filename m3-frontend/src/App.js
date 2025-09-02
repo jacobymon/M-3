@@ -23,7 +23,7 @@ function App() {
 
       <header className="App-header">
         {!largeQR &&
-          <h1 className='h1-mt'>M-3</h1>
+          <h1 className='h1-mt'>M^3</h1>
         }
         {largeQR &&
           <div>

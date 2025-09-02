@@ -172,3 +172,31 @@
     width: auto;
     max-height: 140px;
 }
+
+.playlistManagement {
+    margin: 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.playlistManagement input {
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.playlistManagement button {
+    padding: 8px 16px;
+    font-size: 16px;
+    background-color: #FFC20E;
+    color: rgb(5, 5, 5);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.playlistManagement button:hover {
+    background-color:#FFD31F; /*lighter when hovering*/
+}
